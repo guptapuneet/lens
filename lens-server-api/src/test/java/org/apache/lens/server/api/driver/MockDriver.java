@@ -40,6 +40,7 @@ import org.apache.lens.server.api.query.cost.FactPartitionBasedQueryCost;
 import org.apache.lens.server.api.query.cost.QueryCost;
 
 import org.apache.hadoop.conf.Configuration;
+
 import org.apache.hive.service.cli.ColumnDescriptor;
 
 import com.beust.jcommander.internal.Sets;
@@ -48,7 +49,7 @@ import com.google.common.collect.ImmutableSet;
 /**
  * The Class MockDriver.
  */
-public class MockDriver implements LensDriver {
+public class MockDriver extends AbstractLensDriver {
   private static AtomicInteger mockDriverId = new AtomicInteger();
 
   /**
@@ -91,10 +92,11 @@ public class MockDriver implements LensDriver {
    * @see org.apache.lens.server.api.driver.LensDriver#configure(org.apache.hadoop.conf.Configuration)
    */
   @Override
-  public void configure(Configuration conf) throws LensException {
+  public void configure(Configuration conf, String driverType, String driverName) throws LensException {
+    super.configure(conf, driverType, driverName);
     this.conf = conf;
     ioTestVal = conf.getInt("mock.driver.test.val", -1);
-    this.conf.addResource("failing-query-driver-site.xml");
+    this.conf.addResource("drivers/fail/fail1/failing-query-driver-site.xml");
   }
 
   /**

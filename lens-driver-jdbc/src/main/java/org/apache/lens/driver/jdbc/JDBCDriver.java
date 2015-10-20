@@ -21,6 +21,7 @@ package org.apache.lens.driver.jdbc;
 import static java.lang.Integer.parseInt;
 
 import static org.apache.lens.driver.jdbc.JDBCDriverConfConstants.*;
+
 import static org.apache.lens.server.api.util.LensUtil.getImplementations;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -56,23 +57,24 @@ import org.apache.lens.server.model.LogSegregationContext;
 import org.apache.lens.server.model.MappedDiagnosticLogSegregationContext;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hadoop.conf.Configuration;
+
+ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
 
 import com.google.common.collect.ImmutableSet;
+
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * This driver is responsible for running queries against databases which can be queried using the JDBC API.
  */
 @Slf4j
-public class JDBCDriver implements LensDriver {
+public class JDBCDriver extends AbstractLensDriver {
 
   /** The Constant THID. */
   public static final AtomicInteger THID = new AtomicInteger();
@@ -417,17 +419,17 @@ public class JDBCDriver implements LensDriver {
     return conf;
   }
 
-  /**
-   * Configure driver with {@link org.apache.hadoop.conf.Configuration} passed
+  /*
+   * (non-Javadoc)
    *
-   * @param conf The configuration object
-   * @throws LensException the lens exception
+   * @see org.apache.lens.server.api.driver.LensDriver#configure(org.apache.hadoop.conf.Configuration)
    */
   @Override
-  public void configure(Configuration conf) throws LensException {
+  public void configure(Configuration conf, String driverType, String driverName) throws LensException {
+    super.configure(conf, driverType, driverName);
     this.conf = new Configuration(conf);
     this.conf.addResource("jdbcdriver-default.xml");
-    this.conf.addResource("jdbcdriver-site.xml");
+    this.conf.addResource(super.getDriverResourcePath("jdbcdriver-site.xml"));
     init(conf);
     try {
       queryHook = this.conf.getClass(

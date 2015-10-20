@@ -85,7 +85,7 @@ public class TestJdbcDriver {
     hConf = new HiveConf(baseConf, this.getClass());
 
     driver = new JDBCDriver();
-    driver.configure(baseConf);
+    driver.configure(baseConf, "jdbc", "jdbc1");
 
     assertNotNull(driver);
     assertTrue(driver.configured);

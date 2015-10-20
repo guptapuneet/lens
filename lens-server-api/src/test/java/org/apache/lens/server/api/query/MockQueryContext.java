@@ -50,7 +50,7 @@ public class MockQueryContext extends QueryContext {
   public static List<LensDriver> getDrivers(Configuration conf) throws LensException {
     List<LensDriver> drivers = Lists.newArrayList();
     MockDriver d = new MockDriver();
-    d.configure(conf);
+    d.configure(conf, "mock", "mock1");
     drivers.add(d);
     return drivers;
   }

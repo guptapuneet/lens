@@ -251,7 +251,7 @@ public abstract class TestAbstractFileFormatter {
   protected QueryContext createContext(Configuration conf, String queryName) {
     final LensDriver mockDriver = new MockDriver();
     try {
-      mockDriver.configure(conf);
+      mockDriver.configure(conf, "mock", "mock1");
     } catch (LensException e) {
       Assert.fail(e.getMessage());
     }

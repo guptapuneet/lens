@@ -54,7 +54,7 @@ public final class LensConfConstants {
   /**
    * The Constant DRIVER_CLASSES.
    */
-  public static final String DRIVER_CLASSES = SERVER_PFX + "drivers";
+  public static final String DRIVER_TYPES_AND_CLASSES = SERVER_PFX + "drivers";
   /**
    * The Constant DRIVER_SELECTOR_CLASS.
    */
@@ -941,5 +941,20 @@ public final class LensConfConstants {
    * Default fetch count of saved query list api.
    */
   public static final int DEFAULT_FETCH_COUNT_SAVED_QUERY_LIST = 20;
+
+  /**
+   * This is the base directory name where all drivers are available under Conf directory.
+   */
+  public static final String DRIVERS_BASE_DIR = "drivers";
+
+  /**
+   * Name of the property that holds the path of "conf" directory of server
+   */
+  public static final String CONFIG_LOCATION = "config.location";
+
+  /**
+   * Default location of "conf" directory (wrt to lens-server/bin)
+   */
+  public static final String DEFAULT_CONFIG_LOCATION = "../conf";
 
 }

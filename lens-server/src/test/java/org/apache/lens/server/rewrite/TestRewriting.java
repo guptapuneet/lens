@@ -177,7 +177,7 @@ public class TestRewriting {
     MockDriver driver = new MockDriver();
     LensConf lensConf = new LensConf();
     Configuration conf = new Configuration();
-    driver.configure(conf);
+    driver.configure(conf, "mock", "mock1");
     drivers.add(driver);
 
     CubeQueryRewriter mockWriter = getMockedRewriter();
@@ -190,7 +190,7 @@ public class TestRewriting {
     runRewrites(RewriteUtil.rewriteQuery(ctx));
 
     conf.set(LensConfConstants.QUERY_METRIC_UNIQUE_ID_CONF_KEY, TestRewriting.class.getSimpleName());
-    driver.configure(conf);
+    driver.configure(conf, "mock", "mock1");
     String q2 = "cube select name from table";
     Assert.assertTrue(RewriteUtil.isCubeQuery(q2));
     cubeQueries = RewriteUtil.findCubePositions(q2, hconf);
@@ -418,7 +418,7 @@ public class TestRewriting {
 
     // failing query for second driver
     MockDriver driver2 = new MockDriver();
-    driver2.configure(conf);
+    driver2.configure(conf, "mock", "mock1");
     drivers.add(driver2);
 
     Assert.assertEquals(drivers.size(), 2);

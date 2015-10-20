@@ -47,6 +47,7 @@ import org.apache.lens.driver.hive.HiveDriver;
 import org.apache.lens.server.BaseLensService;
 import org.apache.lens.server.LensServerConf;
 import org.apache.lens.server.LensServices;
+import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.driver.*;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.error.LensMultiCauseException;
@@ -72,7 +73,8 @@ import org.apache.lens.server.util.FairPriorityBlockingQueue;
 import org.apache.lens.server.util.UtilityMethods;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -86,9 +88,11 @@ import org.slf4j.LoggerFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -333,25 +337,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    * @throws LensException the lens exception
    */
   private void loadDriversAndSelector() throws LensException {
-    Class<?>[] driverClasses = conf.getClasses(DRIVER_CLASSES);
-    if (driverClasses != null) {
-      for (Class<?> driverClass : driverClasses) {
-        try {
-          LensDriver driver = (LensDriver) driverClass.newInstance();
-          driver.configure(LensServerConf.getConfForDrivers());
-          if (driver instanceof HiveDriver) {
-            driver.registerDriverEventListener(driverEventListener);
-          }
-          drivers.put(driverClass.getName(), driver);
-          log.info("Driver for {} is loaded", driverClass);
-        } catch (Exception e) {
-          log.warn("Could not load the driver:{}", driverClass, e);
-          throw new LensException("Could not load driver " + driverClass, e);
-        }
-      }
-    } else {
-      throw new LensException("No drivers specified");
-    }
+    loadDrivers();
     try {
       Class<? extends DriverSelector> driverSelectorClass = conf.getClass(DRIVER_SELECTOR_CLASS,
         MinQueryCostSelector.class,
@@ -362,6 +348,73 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       throw new LensException("Couldn't instantiate driver selector class. Class name: "
         + conf.get(DRIVER_SELECTOR_CLASS) + ". Please supply a valid value for "
         + DRIVER_SELECTOR_CLASS);
+    }
+  }
+
+  /**
+   * Loads Configured Lens Driver types in lens-site.xml
+   *
+   * The Driver resources (<driver_type>-site.xml and other files) should be present
+   * under directory conf/drivers/<driver-type>/<driver-name>
+   * Example :conf/drivers/hive/h1, conf/drivers/hive/h2, conf/drivers/jdbc/mysql1, conf/drivers/jdbc/vertica1
+   *
+   * @throws LensException
+   */
+  private void loadDrivers() throws LensException {
+    Collection<String> driverTypes = conf.getStringCollection(DRIVER_TYPES_AND_CLASSES);
+    if (driverTypes.isEmpty()) {
+      throw new LensException("No drivers configured");
+    }
+    File driversBaseDir = new File(System.getProperty(LensConfConstants.CONFIG_LOCATION,
+        LensConfConstants.DEFAULT_CONFIG_LOCATION), LensConfConstants.DRIVERS_BASE_DIR);
+    if (!driversBaseDir.isDirectory()) {
+      throw new LensException("No drivers found at location " + driversBaseDir.getAbsolutePath());
+    }
+    for (String driverType : driverTypes) {
+      if (StringUtils.isBlank(driverType)) {
+        throw new LensException("Driver type Configuration not specified correctly. Encountered blank driver type");
+      }
+      String[] driverTypeAndClass = StringUtils.split(driverType.trim(), ':');
+      if (driverTypeAndClass.length != 2) {
+        throw new LensException("Driver type Configuration not specified correctly : " + driverType);
+      }
+      loadDriversForType(driverTypeAndClass[0], driverTypeAndClass[1], driversBaseDir);
+    }
+  }
+
+  private void loadDriversForType(String driverType, String driverTypeClassName, File driversBaseDir)
+    throws LensException {
+    File driverTypeDir = new File(driversBaseDir, driverType);
+    File[] driverPaths = driverTypeDir.listFiles();
+    if (!driverTypeDir.isDirectory() || driverPaths == null || driverPaths.length == 0) {
+      // May be the deployment does not have drivers of this type. We can log
+      // and ignore.
+      log.warn("No drivers of type {} found in {}.", driverType, driverTypeDir);
+      return;
+    }
+
+    Class classForDriverType = null;
+    try {
+      classForDriverType = conf.getClassByName(driverTypeClassName);
+    } catch (Exception e) {
+      log.error("Could not load the driver type class {}", driverTypeClassName, e);
+      throw new LensException("Could not load Driver type class " + driverTypeClassName, e);
+    }
+
+    LensDriver driver = null;
+    String driverName = null;
+    for (File driverPath : driverPaths) {
+      try {
+        driverName = driverPath.getName();
+        driver = (LensDriver) classForDriverType.newInstance();
+        driver.configure(LensServerConf.getConfForDrivers(), driverType, driverName);
+        // Register listener for all drivers. Drivers can choose to ignore this registration.
+        driver.registerDriverEventListener(driverEventListener);
+        drivers.put(driverType + "/" + driverName, driver);
+        log.info("Driver {} for type {} is loaded", driverPath.getName(), driverType);
+      } catch (Exception e) {
+        log.error("Could not load driver {} ot type {}", driverPath.getName(), driverType, e);
+      }
     }
   }
 
@@ -2040,10 +2093,10 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    * (non-Javadoc)
    *
    * @see org.apache.lens.server.api.query.QueryExecutionService#getAllQueries(org.apache.lens.api.LensSessionHandle,
-   * java.lang.String, java.lang.String, java.lang.String, long, long)
+   * java.lang.String, java.lang.String, java.lang.String, java.lang.String, long, long)
    */
   @Override
-  public List<QueryHandle> getAllQueries(LensSessionHandle sessionHandle, String state, String userName,
+  public List<QueryHandle> getAllQueries(LensSessionHandle sessionHandle, String state, String userName, String driver,
     String queryName, long fromDate, long toDate) throws LensException {
     validateTimeRange(fromDate, toDate);
     userName = UtilityMethods.removeDomain(userName);
@@ -2062,6 +2115,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       if (StringUtils.isBlank(userName)) {
         userName = getSession(sessionHandle).getLoggedInUser();
       }
+      boolean filterByDriver = StringUtils.isNotBlank(driver);
 
       List<QueryHandle> all = new ArrayList<QueryHandle>(allQueries.keySet());
       Iterator<QueryHandle> itr = all.iterator();
@@ -2071,6 +2125,8 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         long querySubmitTime = context.getSubmissionTime();
         if ((filterByStatus && status != context.getStatus().getStatus())
           || (filterByQueryName && !context.getQueryName().toLowerCase().contains(queryName))
+          //TODO DO EXACT MATHC OF CHECK FOR CONTAINS. THAT WAY USER CAN QUERY hive/ and jdbc/ also along with hive/hive1 
+          || (filterByDriver && !context.getSelectedDriver().getFullyQualifiedName().equalsIgnoreCase(driver)) 
           || (!"all".equalsIgnoreCase(userName) && !userName.equalsIgnoreCase(context.getSubmittedUser()))
           || (!(fromDate <= querySubmitTime && querySubmitTime <= toDate))) {
           itr.remove();
@@ -2082,8 +2138,8 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         if ("all".equalsIgnoreCase(userName)) {
           userName = null;
         }
-        List<QueryHandle> persistedQueries = lensServerDao.findFinishedQueries(state, userName, queryName, fromDate,
-          toDate);
+        List<QueryHandle> persistedQueries = lensServerDao.findFinishedQueries(state, userName, driver, queryName,
+          fromDate, toDate);
         if (persistedQueries != null && !persistedQueries.isEmpty()) {
           log.info("Adding persisted queries {}", persistedQueries.size());
           all.addAll(persistedQueries);
@@ -2287,21 +2343,25 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     // Restore drivers
     synchronized (drivers) {
       int numDrivers = in.readInt();
+      String driverQualifiedName;
+      String driverClsName;
       for (int i = 0; i < numDrivers; i++) {
-        String driverClsName = in.readUTF();
-        LensDriver driver = drivers.get(driverClsName);
+        driverQualifiedName = in.readUTF();
+        driverClsName = in.readUTF();
+        LensDriver driver = drivers.get(driverQualifiedName);
         if (driver == null) {
           // this driver is removed in the current server restart
           // we will create an instance and read its state still.
           try {
             Class<? extends LensDriver> driverCls = (Class<? extends LensDriver>) Class.forName(driverClsName);
             driver = (LensDriver) driverCls.newInstance();
-            driver.configure(conf);
+            String[] driverTypeAndName = StringUtils.split(driverQualifiedName, '/');
+            driver.configure(conf, driverTypeAndName[0], driverTypeAndName[1]);
           } catch (Exception e) {
-            log.error("Could not instantiate driver:{}", driverClsName, e);
+            log.error("Could not instantiate driver:{} represented by class {}", driverQualifiedName, driverClsName, e);
             throw new IOException(e);
           }
-          log.info("Driver state for {} will be ignored", driverClsName);
+          log.info("Driver state for {} will be ignored", driverQualifiedName);
         }
         driver.readExternal(in);
       }
@@ -2372,8 +2432,11 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     // persist all drivers
     synchronized (drivers) {
       out.writeInt(drivers.size());
-      for (LensDriver driver : drivers.values()) {
+      LensDriver driver = null;
+      for (Map.Entry<String, LensDriver> driverEntry : drivers.entrySet()) {
+        driver = driverEntry.getValue();
         synchronized (driver) {
+          out.writeUTF(driverEntry.getKey());
           out.writeUTF(driver.getClass().getName());
           driver.writeExternal(out);
         }

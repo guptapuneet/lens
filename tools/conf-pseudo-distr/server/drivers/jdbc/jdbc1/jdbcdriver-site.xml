@@ -24,7 +24,7 @@
 <configuration>
   <property>
     <name>lens.driver.jdbc.driver.class</name>
-    <value>org.hsqldb.jdbcDriver</value>
+    <value>jdbc:org.hsqldb.jdbcDriver</value>
   </property>
   <property>
     <name>lens.driver.jdbc.db.uri</name>

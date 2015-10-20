@@ -50,6 +50,7 @@ import org.apache.lens.server.api.query.priority.CostToPriorityRangeConf;
 import org.apache.lens.server.api.query.priority.QueryPriorityDecider;
 
 import org.apache.commons.lang.StringUtils;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -65,6 +66,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 
 import com.google.common.collect.ImmutableSet;
+
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -72,7 +74,7 @@ import lombok.extern.slf4j.Slf4j;
  * The Class HiveDriver.
  */
 @Slf4j
-public class HiveDriver implements LensDriver {
+public class HiveDriver extends AbstractLensDriver {
 
   /** The Constant HIVE_CONNECTION_CLASS. */
   public static final String HIVE_CONNECTION_CLASS = "lens.driver.hive.connection.class";
@@ -331,16 +333,18 @@ public class HiveDriver implements LensDriver {
    * @see org.apache.lens.server.api.driver.LensDriver#configure(org.apache.hadoop.conf.Configuration)
    */
   @Override
-  public void configure(Configuration conf) throws LensException {
+  public void configure(Configuration conf, String driverType, String driverName) throws LensException {
+    super.configure(conf, driverType, driverName);
     this.driverConf = new Configuration(conf);
+    String driverConfPath = super.getDriverResourcePath("hivedriver-site.xml");
     this.driverConf.addResource("hivedriver-default.xml");
-    this.driverConf.addResource("hivedriver-site.xml");
+    this.driverConf.addResource(driverConfPath);
 
     // resources have to be added separately on hiveConf again because new HiveConf() overrides hive.* properties
     // from HiveConf
     this.hiveConf = new HiveConf(conf, HiveDriver.class);
     this.hiveConf.addResource("hivedriver-default.xml");
-    this.hiveConf.addResource("hivedriver-site.xml");
+    this.hiveConf.addResource(driverConfPath);
 
     connectionClass = this.driverConf.getClass(HIVE_CONNECTION_CLASS, EmbeddedThriftConnection.class,
       ThriftConnection.class);

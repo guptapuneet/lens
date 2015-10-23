@@ -943,7 +943,7 @@ public final class LensConfConstants {
   public static final int DEFAULT_FETCH_COUNT_SAVED_QUERY_LIST = 20;
 
   /**
-   * This is the base directory name where all drivers are available under Conf directory.
+   * This is the base directory name where all drivers are available under lens-server Conf directory.
    */
   public static final String DRIVERS_BASE_DIR = "drivers";
 

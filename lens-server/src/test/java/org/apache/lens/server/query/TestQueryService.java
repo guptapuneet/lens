@@ -1395,12 +1395,12 @@ public class TestQueryService extends LensJerseyTest {
 
     assertTrue(reg.getGauges().keySet().containsAll(Arrays.asList(
         "lens.MethodMetricGauge.TestQueryService-testEstimateGauges-DRIVER_SELECTION",
-        "lens.MethodMetricGauge.TestQueryService-testEstimateGauges-HiveDriver-CUBE_REWRITE",
-        "lens.MethodMetricGauge.TestQueryService-testEstimateGauges-HiveDriver-DRIVER_ESTIMATE",
-        "lens.MethodMetricGauge.TestQueryService-testEstimateGauges-HiveDriver-RewriteUtil-rewriteQuery",
-        "lens.MethodMetricGauge.TestQueryService-testEstimateGauges-JDBCDriver-CUBE_REWRITE",
-        "lens.MethodMetricGauge.TestQueryService-testEstimateGauges-JDBCDriver-DRIVER_ESTIMATE",
-        "lens.MethodMetricGauge.TestQueryService-testEstimateGauges-JDBCDriver-RewriteUtil-rewriteQuery",
+        "lens.MethodMetricGauge.TestQueryService-testEstimateGauges-hive/hive1-CUBE_REWRITE",
+        "lens.MethodMetricGauge.TestQueryService-testEstimateGauges-hive/hive1-DRIVER_ESTIMATE",
+        "lens.MethodMetricGauge.TestQueryService-testEstimateGauges-hive/hive1-RewriteUtil-rewriteQuery",
+        "lens.MethodMetricGauge.TestQueryService-testEstimateGauges-jdbc/jdbc1-CUBE_REWRITE",
+        "lens.MethodMetricGauge.TestQueryService-testEstimateGauges-jdbc/jdbc1-DRIVER_ESTIMATE",
+        "lens.MethodMetricGauge.TestQueryService-testEstimateGauges-jdbc/jdbc1-RewriteUtil-rewriteQuery",
         "lens.MethodMetricGauge.TestQueryService-testEstimateGauges-PARALLEL_ESTIMATE")),
       reg.getGauges().keySet().toString());
   }

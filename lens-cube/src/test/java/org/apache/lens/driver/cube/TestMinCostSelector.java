@@ -66,13 +66,13 @@ public class TestMinCostSelector {
     LensConf qconf = new LensConf();
 
     MockDriver d1 = new MockDriver();
-    d1.configure(conf, "mock", "mock1");
+    d1.configure(conf, null, null);
     MockDriver d2 = new MockDriver();
-    d2.configure(conf, "mock", "mock2");
+    d2.configure(conf, null, null);
     MockFailDriver fd1 = new MockFailDriver();
-    fd1.configure(conf, "mock", "mock3");
+    fd1.configure(conf, null, null);
     MockFailDriver fd2 = new MockFailDriver();
-    fd2.configure(conf, "mock", "mock4");
+    fd2.configure(conf, null, null);
 
     drivers.add(d1);
     drivers.add(d2);

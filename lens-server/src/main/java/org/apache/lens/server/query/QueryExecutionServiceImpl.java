@@ -352,9 +352,9 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
   }
 
   /**
-   * Loads Configured Lens Driver types in lens-site.xml
+   * Loads drivers for the configured Driver types in lens-site.xml
    *
-   * The Driver resources (<driver_type>-site.xml and other files) should be present
+   * The driver's resources (<driver_type>-site.xml and other files) should be present
    * under directory conf/drivers/<driver-type>/<driver-name>
    * Example :conf/drivers/hive/h1, conf/drivers/hive/h2, conf/drivers/jdbc/mysql1, conf/drivers/jdbc/vertica1
    *
@@ -381,39 +381,52 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       loadDriversForType(driverTypeAndClass[0], driverTypeAndClass[1], driversBaseDir);
     }
   }
-
+  /**
+   * Loads drivers of a particular type
+   *
+   * @param driverType : type of driver (hive, jdbc, el, etc)
+   * @param driverTypeClassName :driver class name
+   * @param driversBaseDir :path for drivers directory where all driver relates resources are avilable
+   * @throws LensException
+   */
   private void loadDriversForType(String driverType, String driverTypeClassName, File driversBaseDir)
     throws LensException {
-    File driverTypeDir = new File(driversBaseDir, driverType);
-    File[] driverPaths = driverTypeDir.listFiles();
-    if (!driverTypeDir.isDirectory() || driverPaths == null || driverPaths.length == 0) {
-      // May be the deployment does not have drivers of this type. We can log
-      // and ignore.
-      log.warn("No drivers of type {} found in {}.", driverType, driverTypeDir);
+    File driverTypeBaseDir = new File(driversBaseDir, driverType);
+    File[] driverPaths = driverTypeBaseDir.listFiles();
+    if (!driverTypeBaseDir.isDirectory() || driverPaths == null || driverPaths.length == 0) {
+      // May be the deployment does not have drivers of this type. We can log and ignore.
+      log.warn("No drivers of type {} found in {}.", driverType, driverTypeBaseDir.getAbsolutePath());
       return;
     }
-
-    Class classForDriverType = null;
+    Class driverTypeClass = null;
     try {
-      classForDriverType = conf.getClassByName(driverTypeClassName);
+      driverTypeClass = conf.getClassByName(driverTypeClassName);
     } catch (Exception e) {
       log.error("Could not load the driver type class {}", driverTypeClassName, e);
-      throw new LensException("Could not load Driver type class " + driverTypeClassName, e);
+      throw new LensException("Could not load Driver type class " + driverTypeClassName);
     }
-
     LensDriver driver = null;
     String driverName = null;
     for (File driverPath : driverPaths) {
       try {
+        if (!driverPath.isDirectory()){
+          log.warn("Ignoring resource {} while loading drivers. A driver directory was expected instead",
+              driverPath.getAbsolutePath());
+          continue;
+        }
         driverName = driverPath.getName();
-        driver = (LensDriver) classForDriverType.newInstance();
+        driver = (LensDriver) driverTypeClass.newInstance();
         driver.configure(LensServerConf.getConfForDrivers(), driverType, driverName);
+        if (driver instanceof HiveDriver) {
+          driver.registerDriverEventListener(driverEventListener);
+        }
         // Register listener for all drivers. Drivers can choose to ignore this registration.
-        driver.registerDriverEventListener(driverEventListener);
-        drivers.put(driverType + "/" + driverName, driver);
+        //driver.registerDriverEventListener(driverEventListener);
+        drivers.put(driver.getFullyQualifiedName(), driver);
         log.info("Driver {} for type {} is loaded", driverPath.getName(), driverType);
       } catch (Exception e) {
-        log.error("Could not load driver {} ot type {}", driverPath.getName(), driverType, e);
+        log.error("Could not load driver {} of type {}", driverPath.getName(), driverType, e);
+        throw new LensException("Could not load driver "+driverPath.getName()+ " of type "+ driverType);
       }
     }
   }
@@ -2125,8 +2138,8 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         long querySubmitTime = context.getSubmissionTime();
         if ((filterByStatus && status != context.getStatus().getStatus())
           || (filterByQueryName && !context.getQueryName().toLowerCase().contains(queryName))
-          //TODO DO EXACT MATHC OF CHECK FOR CONTAINS. THAT WAY USER CAN QUERY hive/ and jdbc/ also along with hive/hive1 
-          || (filterByDriver && !context.getSelectedDriver().getFullyQualifiedName().equalsIgnoreCase(driver)) 
+          //TODO DO EXACT MATHC OF CHECK FOR CONTAINS. THAT WAY USER CAN QUERY hive/ & jdbc/ also along with hive/hive1
+          || (filterByDriver && !context.getSelectedDriver().getFullyQualifiedName().equalsIgnoreCase(driver))
           || (!"all".equalsIgnoreCase(userName) && !userName.equalsIgnoreCase(context.getSubmittedUser()))
           || (!(fromDate <= querySubmitTime && querySubmitTime <= toDate))) {
           itr.remove();
@@ -2384,8 +2397,8 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         // set the selected driver if available, if not available for the cases of queued queries,
         // query service will do the selection from existing drivers and update
         if (driverAvailable) {
-          String clsName = in.readUTF();
-          ctx.getDriverContext().setSelectedDriver(drivers.get(clsName));
+          String driverQualifiedName = in.readUTF();
+          ctx.getDriverContext().setSelectedDriver(drivers.get(driverQualifiedName));
         }
         allQueries.put(ctx.getQueryHandle(), ctx);
       }
@@ -2451,7 +2464,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
           boolean isDriverAvailable = (ctx.getSelectedDriver() != null);
           out.writeBoolean(isDriverAvailable);
           if (isDriverAvailable) {
-            out.writeUTF(ctx.getSelectedDriver().getClass().getName());
+            out.writeUTF(ctx.getSelectedDriver().getFullyQualifiedName());
           }
         }
       }

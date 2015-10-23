@@ -78,7 +78,7 @@ public class MockDriver extends AbstractLensDriver {
 
   @Override
   public String toString() {
-    return "MockDriver:" + driverId;
+    return getFullyQualifiedName()+":"+driverId;
   }
 
   @Override
@@ -93,10 +93,14 @@ public class MockDriver extends AbstractLensDriver {
    */
   @Override
   public void configure(Configuration conf, String driverType, String driverName) throws LensException {
-    super.configure(conf, driverType, driverName);
     this.conf = conf;
     ioTestVal = conf.getInt("mock.driver.test.val", -1);
-    this.conf.addResource("drivers/fail/fail1/failing-query-driver-site.xml");
+    this.conf.addResource(getDriverResourcePath("failing-query-driver-site.xml"));
+  }
+
+  @Override
+  public String getFullyQualifiedName() {
+    return "mock/fail1";
   }
 
   /**

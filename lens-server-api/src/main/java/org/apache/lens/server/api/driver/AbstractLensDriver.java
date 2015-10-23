@@ -22,7 +22,6 @@ import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
 
 import org.apache.commons.lang.StringUtils;
-
 import org.apache.hadoop.conf.Configuration;
 
 import lombok.Getter;
@@ -61,13 +60,12 @@ public abstract class AbstractLensDriver implements LensDriver {
    * @return
    */
   public String getDriverResourcePath(String resourceName) {
-    return new StringBuilder(LensConfConstants.DRIVERS_BASE_DIR).append('/').append(driverType).append('/')
-        .append(driverName).append('/').append(resourceName).toString();
+    return new StringBuilder(LensConfConstants.DRIVERS_BASE_DIR).append('/').append(getFullyQualifiedName())
+        .append('/').append(resourceName).toString();
   }
 
   @Override
   public String getFullyQualifiedName() {
     return new StringBuilder(driverType).append('/').append(driverName).toString();
   }
-
 }

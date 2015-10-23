@@ -311,7 +311,7 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
       boolean isDriverAvailable = (ctx.getSelectedDriver() != null);
       out.writeBoolean(isDriverAvailable);
       if (isDriverAvailable) {
-        out.writeUTF(ctx.getSelectedDriver().getClass().getName());
+        out.writeUTF(ctx.getSelectedDriver().getFullyQualifiedName());
       }
     } finally {
       out.flush();
@@ -340,7 +340,7 @@ public class TestRemoteHiveDriver extends TestHiveDriver {
       ctx.setConf(driver.getConf());
       boolean driverAvailable = in.readBoolean();
       if (driverAvailable) {
-        String clsName = in.readUTF();
+        String driverQualifiedName = in.readUTF();
         ctx.setSelectedDriver(driver);
       }
     } finally {

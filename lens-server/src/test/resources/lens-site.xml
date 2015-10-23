@@ -25,7 +25,7 @@
   <property>
     <name>lens.server.drivers</name>
     <value>hive:org.apache.lens.driver.hive.HiveDriver,jdbc:org.apache.lens.driver.jdbc.JDBCDriver,
-      fail:org.apache.lens.server.common.FailingQueryDriver</value> <!--$LENS_CONF/drivers-->
+      mock:org.apache.lens.server.common.FailingQueryDriver</value> <!--$LENS_CONF/drivers-->
   </property>
 
   <property>

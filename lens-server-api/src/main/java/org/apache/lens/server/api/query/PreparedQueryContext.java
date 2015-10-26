@@ -148,8 +148,7 @@ public class PreparedQueryContext extends AbstractQueryContext implements Delaye
    */
   public LensPreparedQuery toPreparedQuery() {
     return new LensPreparedQuery(prepareHandle, userQuery, preparedTime, preparedUser,
-      getDriverContext().getSelectedDriver() != null ? getDriverContext().getSelectedDriver().getClass()
-        .getCanonicalName() : null, getDriverContext().getSelectedDriverQuery(),
+      getDriverContext().getSelectedDriver() != null ? getDriverContext().getSelectedDriver().getFullyQualifiedName() : null, getDriverContext().getSelectedDriverQuery(),
       lensConf);
   }
 

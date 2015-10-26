@@ -290,9 +290,9 @@ public class TestRewriting {
     runRewrites(RewriteUtil.rewriteQuery(ctx));
     reg = LensMetricsRegistry.getStaticRegistry();
     Assert.assertTrue(reg.getGauges().keySet().containsAll(Arrays.asList(
-      "lens.MethodMetricGauge.TestRewriting-multiple-MockDriver-1-RewriteUtil-rewriteQuery-toHQL",
-      "lens.MethodMetricGauge.TestRewriting-multiple-MockDriver-2-RewriteUtil-rewriteQuery-toHQL",
-      "lens.MethodMetricGauge.TestRewriting-multiple-MockDriver-RewriteUtil-rewriteQuery")));
+      "lens.MethodMetricGauge.TestRewriting-"+driver.getFullyQualifiedName()+"-1-RewriteUtil-rewriteQuery-toHQL",
+      "lens.MethodMetricGauge.TestRewriting-multiple-"+driver.getFullyQualifiedName()+"-2-RewriteUtil-rewriteQuery-toHQL",
+      "lens.MethodMetricGauge.TestRewriting-multiple-"+driver.getFullyQualifiedName()+"-RewriteUtil-rewriteQuery")));
     conf.unset(LensConfConstants.QUERY_METRIC_UNIQUE_ID_CONF_KEY);
 
     q2 = "select * from (cube select name from table) a full outer join"

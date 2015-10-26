@@ -93,11 +93,11 @@ public class LensPreparedQuery {
   private String preparedUser;
 
   /**
-   * The selected driver class name.
+   * The selected driver's fully qualified name.
    */
   @XmlElement
   @Getter
-  private String selectedDriverClassName;
+  private String selectedDriverName;
 
   /**
    * The driver query.

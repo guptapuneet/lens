@@ -1789,6 +1789,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       acquire(sessionHandle);
       QueryContext ctx = allQueries.get(queryHandle);
       if (ctx == null) {
+        log.info(queryHandle +": queryHandle not found in allQueries :"+allQueries.keySet().toString());
         return getQueryContextOfFinishedQuery(queryHandle);
       }
       updateStatus(queryHandle);
@@ -2427,10 +2428,12 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
           break;
         case CLOSED:
           allQueries.remove(ctx.getQueryHandle());
+          log.info("Removed closed query from all Queries:"+ctx.getQueryHandle() );
         }
       }
       queuedQueries.addAll(allRestoredQueuedQueries);
       log.info("Recovered {} queries", allQueries.size());
+      log.info("Recovered queries:"+allQueries.keySet().toString());
     }
   }
 
@@ -2469,6 +2472,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         }
       }
       log.info("Persisted {} queries", allQueries.size());
+      log.info("Persisted queries: ", allQueries.keySet().toString());
     }
   }
 

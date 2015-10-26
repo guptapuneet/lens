@@ -34,13 +34,11 @@ public abstract class AbstractLensDriver implements LensDriver {
   /*
    * Type of Driver ( Example hive,jdbc)
    */
-  @Getter
   private String driverType = null;
 
   /*
    * Name of Driver
    */
-  @Getter
   private String driverName = null;
 
   @Override
@@ -59,7 +57,7 @@ public abstract class AbstractLensDriver implements LensDriver {
    * @param resourceName
    * @return
    */
-  public String getDriverResourcePath(String resourceName) {
+  protected String getDriverResourcePath(String resourceName) {
     return new StringBuilder(LensConfConstants.DRIVERS_BASE_DIR).append('/').append(getFullyQualifiedName())
         .append('/').append(resourceName).toString();
   }

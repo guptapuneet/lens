@@ -159,7 +159,7 @@ public class FinishedLensQuery {
   private String queryName;
 
   /**
-   * The selected driver class name.
+   * The selected driver's fully qualified name.
    */
   @Getter
   @Setter

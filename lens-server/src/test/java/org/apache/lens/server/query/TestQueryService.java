@@ -462,8 +462,7 @@ public class TestQueryService extends LensJerseyTest {
       .get(LensPreparedQuery.class);
     assertTrue(ctx.getUserQuery().equalsIgnoreCase("select ID from " + TEST_TABLE));
     assertTrue(ctx.getDriverQuery().equalsIgnoreCase("select ID from " + TEST_TABLE));
-    assertEquals(ctx.getSelectedDriverClassName(),
-      org.apache.lens.driver.hive.HiveDriver.class.getCanonicalName());
+    assertEquals(ctx.getSelectedDriverName(), "hive/hive1");
     assertNull(ctx.getConf().getProperties().get("my.property"));
 
     // Update conf for prepared query
@@ -537,8 +536,7 @@ public class TestQueryService extends LensJerseyTest {
       .request().get(LensPreparedQuery.class);
     assertTrue(ctx.getUserQuery().equalsIgnoreCase("select ID from " + TEST_TABLE));
     assertTrue(ctx.getDriverQuery().equalsIgnoreCase("select ID from " + TEST_TABLE));
-    assertEquals(ctx.getSelectedDriverClassName(),
-      org.apache.lens.driver.hive.HiveDriver.class.getCanonicalName());
+    assertEquals(ctx.getSelectedDriverName(), "hive/hive1");
     assertNull(ctx.getConf().getProperties().get("my.property"));
 
     // Update conf for prepared query

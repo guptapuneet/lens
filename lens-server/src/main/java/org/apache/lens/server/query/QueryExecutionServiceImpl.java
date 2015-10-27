@@ -2424,7 +2424,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
           break;
         case CLOSED:
           allQueries.remove(ctx.getQueryHandle());
-          log.info("Removed closed query from all Queries:"+ctx.getQueryHandle() );
+          log.info("Removed closed query from all Queries:"+ctx.getQueryHandle());
         }
       }
       queuedQueries.addAll(allRestoredQueuedQueries);

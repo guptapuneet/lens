@@ -291,7 +291,8 @@ public class TestRewriting {
     reg = LensMetricsRegistry.getStaticRegistry();
     Assert.assertTrue(reg.getGauges().keySet().containsAll(Arrays.asList(
       "lens.MethodMetricGauge.TestRewriting-"+driver.getFullyQualifiedName()+"-1-RewriteUtil-rewriteQuery-toHQL",
-      "lens.MethodMetricGauge.TestRewriting-multiple-"+driver.getFullyQualifiedName()+"-2-RewriteUtil-rewriteQuery-toHQL",
+      "lens.MethodMetricGauge.TestRewriting-multiple-"+driver.getFullyQualifiedName()
+        +"-2-RewriteUtil-rewriteQuery-toHQL",
       "lens.MethodMetricGauge.TestRewriting-multiple-"+driver.getFullyQualifiedName()+"-RewriteUtil-rewriteQuery")));
     conf.unset(LensConfConstants.QUERY_METRIC_UNIQUE_ID_CONF_KEY);
 

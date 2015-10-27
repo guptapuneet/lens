@@ -158,11 +158,7 @@ public class LensServerDAO {
    *
    * @param state     the state
    * @param user      the user
-<<<<<<< HEAD
-   * @param driverName the driverName
-=======
-   * @param driverName the driverClass
->>>>>>> master
+   * @param driverName the driver's fully qualified Name
    * @param queryName the query name
    * @param fromDate  the from date
    * @param toDate    the to date

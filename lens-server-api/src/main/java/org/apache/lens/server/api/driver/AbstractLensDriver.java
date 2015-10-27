@@ -33,11 +33,12 @@ import lombok.Getter;
  * implementations and some utility methods for drivers
  */
 public abstract class AbstractLensDriver implements LensDriver {
-  /*
+  /**
    * Separator used for constructing fully qualified name and driver resource path
    */
   private static final char SEPARATOR = '/';
-  /*
+
+  /**
    * Driver's fully qualified name ( Example hive/hive,jdbc/mysql1)
    */
   @Getter

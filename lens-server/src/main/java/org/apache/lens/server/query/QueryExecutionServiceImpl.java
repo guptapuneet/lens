@@ -337,7 +337,9 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    * @throws LensException the lens exception
    */
   private void loadDriversAndSelector() throws LensException {
+    //Load all configured Drivers
     loadDrivers();
+    //Load configured Driver Selector
     try {
       Class<? extends DriverSelector> driverSelectorClass = conf.getClass(DRIVER_SELECTOR_CLASS,
         MinQueryCostSelector.class,

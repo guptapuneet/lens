@@ -204,7 +204,7 @@ public interface LensDriver extends Externalizable {
 
   /**
    * @return fully qualified name of this driver. This should be unique for each driver instance. This name can be used
-   * for logging, persisting and restoring driver details,etc.
+   * for referring to the driver while logging, persisting and restoring driver details,etc.
    * (Examples: hive/hive1, jdbc/mysql1 )
    */
   String getFullyQualifiedName();

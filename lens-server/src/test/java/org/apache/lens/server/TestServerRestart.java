@@ -61,8 +61,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * The Class TestServerRestart.
  */
-@Test(alwaysRun = true, groups = "restart-test",
-dependsOnGroups = "unit-test")
+@Test(alwaysRun = true, groups = "restart-test", dependsOnGroups = "unit-test")
 @Slf4j
 public class TestServerRestart extends LensAllApplicationJerseyTest {
 

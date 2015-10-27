@@ -394,8 +394,8 @@ public class TestExpressionResolver extends TestQueryRewrite {
       + "c1_countrytable countrydim on" + " statedim.countryid = countrydim.id";
     joinExpr = join2 + join3 + join1;
     String expected =
-      getExpectedQuery("citydim", "SELECT citydim.name cname, concat((citydim.name), \":\", (statedim.name ),"
-        + " \":\",(countrydim.name),  \":\" , ( zipdim . code )) caddr FROM ", joinExpr, null, null, "c1_citytable",
+      getExpectedQuery("citydim", "SELECT citydim.name as `cname`, concat((citydim.name), \":\", (statedim.name ),"
+        + " \":\",(countrydim.name),  \":\" , ( zipdim . code )) as `caddr` FROM ", joinExpr, null, null, "c1_citytable",
         true);
     TestCubeRewriter.compareQueries(hqlQuery, expected);
   }
@@ -438,8 +438,8 @@ public class TestExpressionResolver extends TestQueryRewrite {
         + "";
 
     String expected =
-      getExpectedQuery("ct", "SELECT ct.name cname, concat((ct.name), \":\", (statedim.name ),"
-        + " \":\",(countrydim.name),  \":\" , ( zipdim . code )) caddr FROM ", joinExpr, null, null, "c1_citytable",
+      getExpectedQuery("ct", "SELECT ct.name as `cname`, concat((ct.name), \":\", (statedim.name ),"
+        + " \":\",(countrydim.name),  \":\" , ( zipdim . code )) as `caddr` FROM ", joinExpr, null, null, "c1_citytable",
         true);
     TestCubeRewriter.compareQueries(hqlQuery, expected);
   }

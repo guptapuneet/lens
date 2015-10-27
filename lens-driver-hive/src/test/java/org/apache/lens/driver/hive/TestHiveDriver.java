@@ -112,7 +112,7 @@ public class TestHiveDriver {
 
   protected void createDriver() throws LensException {
     conf = new HiveConf();
-    conf.addResource("hive/hive1/hivedriver-site.xml");
+    conf.addResource("drivers/hive/hive1/hivedriver-site.xml");
     conf.setClass(HiveDriver.HIVE_CONNECTION_CLASS, EmbeddedThriftConnection.class, ThriftConnection.class);
     conf.setClass(HiveDriver.HIVE_QUERY_HOOK_CLASS, MockDriverQueryHook.class, DriverQueryHook.class);
     conf.set("hive.lock.manager", "org.apache.hadoop.hive.ql.lockmgr.EmbeddedLockManager");

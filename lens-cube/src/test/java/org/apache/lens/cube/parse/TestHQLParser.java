@@ -253,7 +253,8 @@ public class TestHQLParser {
     Assert.assertEquals(getSelectStrForQuery("select id as `column identity` from sample_dim"),
         "id  as `column identity`");
     Assert.assertEquals(getSelectStrForQuery("select id identity from sample_dim"), "id  as `identity`");
-    Assert.assertEquals(getSelectStrForQuery("select id `column identity` from sample_dim"), "id  as `column identity`");
+    Assert.assertEquals(getSelectStrForQuery("select id `column identity` from sample_dim"),
+        "id  as `column identity`");
   }
 
   private String getSelectStrForQuery(String query) throws Exception {

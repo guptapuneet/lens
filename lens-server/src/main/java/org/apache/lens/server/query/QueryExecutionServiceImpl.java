@@ -417,11 +417,9 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         driverName = driverPath.getName();
         driver = (LensDriver) driverTypeClass.newInstance();
         driver.configure(LensServerConf.getConfForDrivers(), driverType, driverName);
-        if (driver instanceof HiveDriver) {
-          driver.registerDriverEventListener(driverEventListener);
-        }
-        // Register listener for all drivers. Drivers can choose to ignore this registration.
-        //driver.registerDriverEventListener(driverEventListener);
+        // Register listener for all drivers. Drivers can choose to ignore this registration. As of now only Hive
+        // Driver supports driver event listeners.
+        driver.registerDriverEventListener(driverEventListener);
         drivers.put(driver.getFullyQualifiedName(), driver);
         log.info("Driver {} for type {} is loaded", driverPath.getName(), driverType);
       } catch (Exception e) {
@@ -1789,7 +1787,6 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       acquire(sessionHandle);
       QueryContext ctx = allQueries.get(queryHandle);
       if (ctx == null) {
-        log.info(queryHandle +": queryHandle not found in allQueries :"+allQueries.keySet().toString());
         return getQueryContextOfFinishedQuery(queryHandle);
       }
       updateStatus(queryHandle);
@@ -2139,7 +2136,6 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         long querySubmitTime = context.getSubmissionTime();
         if ((filterByStatus && status != context.getStatus().getStatus())
           || (filterByQueryName && !context.getQueryName().toLowerCase().contains(queryName))
-          //TODO DO EXACT MATHC OF CHECK FOR CONTAINS. THAT WAY USER CAN QUERY hive/ & jdbc/ also along with hive/hive1
           || (filterByDriver && !context.getSelectedDriver().getFullyQualifiedName().equalsIgnoreCase(driver))
           || (!"all".equalsIgnoreCase(userName) && !userName.equalsIgnoreCase(context.getSubmittedUser()))
           || (!(fromDate <= querySubmitTime && querySubmitTime <= toDate))) {
@@ -2433,7 +2429,6 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       }
       queuedQueries.addAll(allRestoredQueuedQueries);
       log.info("Recovered {} queries", allQueries.size());
-      log.info("Recovered queries:"+allQueries.keySet().toString());
     }
   }
 
@@ -2472,7 +2467,6 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         }
       }
       log.info("Persisted {} queries", allQueries.size());
-      log.info("Persisted queries: ", allQueries.keySet().toString());
     }
   }
 

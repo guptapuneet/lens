@@ -323,7 +323,7 @@ public class ESDriver extends AbstractLensDriver {
     super.configure(conf, driverType, driverName);
     this.conf = new Configuration(conf);
     this.conf.addResource("esdriver-default.xml");
-    this.conf.addResource(super.getDriverResourcePath("esdriver-site.xml"));
+    this.conf.addResource(getDriverResourcePath("esdriver-site.xml"));
     config = new ESDriverConfig(this.conf);
     Class klass;
     try {

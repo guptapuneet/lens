@@ -18,10 +18,12 @@
  */
 package org.apache.lens.server.api.driver;
 
+
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
 
 import org.apache.commons.lang.StringUtils;
+
 import org.apache.hadoop.conf.Configuration;
 
 import lombok.Getter;
@@ -32,38 +34,32 @@ import lombok.Getter;
  */
 public abstract class AbstractLensDriver implements LensDriver {
   /*
-   * Type of Driver ( Example hive,jdbc)
+   * Separator used for constructing fully qualified name and driver resource path
    */
-  private String driverType = null;
-
+  private static final char SEPARATOR = '/';
   /*
-   * Name of Driver
+   * Driver's fully qualified name ( Example hive/hive,jdbc/mysql1)
    */
-  private String driverName = null;
+  @Getter
+  private String fullyQualifiedName = null;
 
   @Override
   public void configure(Configuration conf, String driverType, String driverName) throws LensException {
     if (StringUtils.isBlank(driverType) || StringUtils.isBlank(driverName)) {
-      throw new LensException("Driver Type or Name is empty");
+      throw new LensException("Driver Type and Name can not be null or empty");
     }
-    this.driverType = driverType;
-    this.driverName = driverName;
+    fullyQualifiedName =  new StringBuilder(driverType).append(SEPARATOR).append(driverName).toString();
   }
 
   /**
-   * Gets the path for the driver resource in the system. This is a utility
+   * Gets the path (relative to conf location) for the driver resource in the system. This is a utility
    * method that can be used by sub classes to build resource paths.
    *
    * @param resourceName
    * @return
    */
   protected String getDriverResourcePath(String resourceName) {
-    return new StringBuilder(LensConfConstants.DRIVERS_BASE_DIR).append('/').append(getFullyQualifiedName())
-        .append('/').append(resourceName).toString();
-  }
-
-  @Override
-  public String getFullyQualifiedName() {
-    return new StringBuilder(driverType).append('/').append(driverName).toString();
+    return new StringBuilder(LensConfConstants.DRIVERS_BASE_DIR).append(SEPARATOR).append(getFullyQualifiedName())
+        .append(SEPARATOR).append(resourceName).toString();
   }
 }

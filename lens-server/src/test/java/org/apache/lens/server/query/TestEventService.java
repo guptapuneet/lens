@@ -18,11 +18,7 @@
  */
 package org.apache.lens.server.query;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
+import static org.testng.Assert.*;
 
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -40,12 +36,7 @@ import org.apache.lens.server.api.events.AsyncEventListener;
 import org.apache.lens.server.api.events.LensEvent;
 import org.apache.lens.server.api.events.LensEventListener;
 import org.apache.lens.server.api.events.LensEventService;
-import org.apache.lens.server.api.query.QueryAccepted;
-import org.apache.lens.server.api.query.QueryEnded;
-import org.apache.lens.server.api.query.QueryFailed;
-import org.apache.lens.server.api.query.QuerySuccess;
-import org.apache.lens.server.api.query.QueuePositionChange;
-import org.apache.lens.server.api.query.StatusChange;
+import org.apache.lens.server.api.query.*;
 import org.apache.lens.server.api.session.SessionClosed;
 import org.apache.lens.server.api.session.SessionExpired;
 import org.apache.lens.server.api.session.SessionOpened;
@@ -53,10 +44,10 @@ import org.apache.lens.server.api.session.SessionRestored;
 import org.apache.lens.server.query.QueryExecutionServiceImpl.QueryStatusLogger;
 import org.apache.lens.server.stats.event.query.QueryExecutionStatistics;
 
-import lombok.extern.slf4j.Slf4j;
-
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * The Class TestEventService.

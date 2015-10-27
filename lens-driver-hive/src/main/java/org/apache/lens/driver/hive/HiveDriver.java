@@ -336,7 +336,7 @@ public class HiveDriver extends AbstractLensDriver {
   public void configure(Configuration conf, String driverType, String driverName) throws LensException {
     super.configure(conf, driverType, driverName);
     this.driverConf = new Configuration(conf);
-    String driverConfPath = super.getDriverResourcePath("hivedriver-site.xml");
+    String driverConfPath = getDriverResourcePath("hivedriver-site.xml");
     this.driverConf.addResource("hivedriver-default.xml");
     this.driverConf.addResource(driverConfPath);
 

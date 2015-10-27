@@ -429,7 +429,7 @@ public class JDBCDriver extends AbstractLensDriver {
     super.configure(conf, driverType, driverName);
     this.conf = new Configuration(conf);
     this.conf.addResource("jdbcdriver-default.xml");
-    this.conf.addResource(super.getDriverResourcePath("jdbcdriver-site.xml"));
+    this.conf.addResource(getDriverResourcePath("jdbcdriver-site.xml"));
     init(conf);
     try {
       queryHook = this.conf.getClass(

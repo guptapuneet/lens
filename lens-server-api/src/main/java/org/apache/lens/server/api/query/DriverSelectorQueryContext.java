@@ -70,7 +70,7 @@ public class DriverSelectorQueryContext {
       String metricId = ctx.driverSpecificConf.get(LensConfConstants.QUERY_METRIC_UNIQUE_ID_CONF_KEY);
       if (!StringUtils.isBlank(metricId)) {
         ctx.driverSpecificConf.set(LensConfConstants.QUERY_METRIC_DRIVER_STACK_NAME,
-          metricId + "-" + driver.getFullyQualifiedName()); //TODO is / allowed in metric id?
+          metricId + "-" + driver.getFullyQualifiedName());
       }
       ctx.setQuery(userQuery);
       driverQueryContextMap.put(driver, ctx);

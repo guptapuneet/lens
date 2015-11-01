@@ -204,6 +204,11 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
   private final Thread prepareQueryPurger = new Thread(new PreparedQueryPurger(), "PrepareQueryPurger");
 
   /**
+   * The query result purger
+   */
+  private QueryResultPurger queryResultPurger;
+
+  /**
    * The query acceptors.
    */
   private List<QueryAcceptor> queryAcceptors = new ArrayList<QueryAcceptor>();
@@ -1153,6 +1158,11 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     }
 
     estimatePool.shutdownNow();
+
+    if (null != queryResultPurger) {
+      queryResultPurger.stop();
+    }
+
     log.info("Query execution service stopped");
   }
 
@@ -1189,6 +1199,13 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     prepareQueryPurger.start();
 
     startEstimatePool();
+
+    if (conf.getBoolean(RESULTSET_PURGE_ENABLED, DEFAULT_RESULTSET_PURGE_ENABLED)) {
+      queryResultPurger = new QueryResultPurger();
+      queryResultPurger.init(conf);
+    } else {
+      log.info("Query result purger is not enabled");
+    }
   }
 
   private void startEstimatePool() {
@@ -2398,6 +2415,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         if (driverAvailable) {
           String driverQualifiedName = in.readUTF();
           ctx.getDriverContext().setSelectedDriver(drivers.get(driverQualifiedName));
+          ctx.setDriverQuery(ctx.getSelectedDriver(), ctx.getSelectedDriverQuery());
         }
         allQueries.put(ctx.getQueryHandle(), ctx);
       }
@@ -2513,6 +2531,11 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     if (querySubmitterRunnable.pausedForTest) {
       isHealthy = false;
       details.append("QuerySubmitter paused for test.");
+    }
+
+    if (null != this.queryResultPurger && !this.queryResultPurger.isHealthy()) {
+      isHealthy = false;
+      details.append("QueryResultPurger is dead.");
     }
 
     if (!isHealthy) {

@@ -22,6 +22,7 @@ import static org.apache.hadoop.hive.ql.parse.HiveParser.*;
 
 import java.util.*;
 
+import org.apache.lens.api.util.CommonUtils;
 import org.apache.lens.cube.metadata.CubeMetastoreClient;
 import org.apache.lens.cube.parse.CubeSemanticAnalyzer;
 import org.apache.lens.cube.parse.HQLParser;
@@ -176,6 +177,7 @@ public class ColumnarSQLRewriter implements QueryRewriter {
   /** The from ast. */
   @Getter
   protected ASTNode fromAST;
+  private Map<String, String> regexReplaceMap;
 
   /**
    * Instantiates a new columnar sql rewriter.
@@ -185,6 +187,7 @@ public class ColumnarSQLRewriter implements QueryRewriter {
 
   @Override
   public void init(Configuration conf) {
+    regexReplaceMap = CommonUtils.parseMapFromString(conf.get(JDBCDriverConfConstants.REGEX_REPLACEMENT_VALUES));
   }
 
   public String getClause() {
@@ -533,15 +536,19 @@ public class ColumnarSQLRewriter implements QueryRewriter {
       log.debug("AST is null ");
       return;
     }
-    if (node.getToken().getType() == HiveParser.DOT
-      && node.getParent().getChild(0).getType() != HiveParser.Identifier) {
-      String table = HQLParser.findNodeByPath(node, TOK_TABLE_OR_COL, Identifier).toString();
-      String column = node.getChild(1).toString().toLowerCase();
+    if (HQLParser.isAggregateAST(node)) {
+      return;
+    } else {
+      if (node.getToken().getType() == HiveParser.DOT
+              && node.getParent().getChild(0).getType() != HiveParser.Identifier) {
+        String table = HQLParser.findNodeByPath(node, TOK_TABLE_OR_COL, Identifier).toString();
+        String column = node.getChild(1).toString().toLowerCase();
 
-      String factAlias = getFactAlias();
+        String factAlias = getFactAlias();
 
-      if (table.equals(factAlias)) {
-        factKeys.add(factAlias + "." + column);
+        if (table.equals(factAlias)) {
+          factKeys.add(factAlias + "." + column);
+        }
       }
     }
 
@@ -660,7 +667,10 @@ public class ColumnarSQLRewriter implements QueryRewriter {
           .replaceAll("[(,)]", "");
         String dimJoinKeys = HQLParser.getString(right).replaceAll("\\s+", "")
           .replaceAll("[(,)]", "");
-        String dimTableName = dimJoinKeys.substring(0, dimJoinKeys.indexOf("__"));
+        int dimTableDelimIndex = dimJoinKeys.indexOf("__");
+        String dimTableName = dimJoinKeys.substring(0, dimTableDelimIndex);
+        String dimAlias = dimJoinKeys.
+            substring(dimTableDelimIndex + 3, dimJoinKeys.indexOf('.')).trim();
 
         // Construct part of subquery by referring join condition
         // fact.fact_key = dim_table.dim_key
@@ -678,14 +688,16 @@ public class ColumnarSQLRewriter implements QueryRewriter {
         // Check the occurrence of dimension table in the filter list and
         // combine all filters of same dimension table with and .
         // eg. "dim_table.key1 = 'abc' and dim_table.key2 = 'xyz'"
-        if (setAllFilters.toString().matches("(.*)" + dimTableName + "(.*)")) {
+        if (setAllFilters.toString().replaceAll("\\s+", "")
+            .matches("(.*)" + dimAlias + "(.*)")) {
 
           factFilters.delete(0, factFilters.length());
 
           // All filters in where clause
           for (int i = 0; i < setAllFilters.toArray().length; i++) {
 
-            if (setAllFilters.toArray()[i].toString().matches("(.*)" + dimTableName + ("(.*)"))) {
+            if (setAllFilters.toArray()[i].toString().replaceAll("\\s+", "")
+                .matches("(.*)" + dimAlias + ("(.*)"))) {
               String filters2 = setAllFilters.toArray()[i].toString();
               filters2 = filters2.replaceAll(
                 getTableOrAlias(filters2, "alias"),
@@ -932,13 +944,7 @@ public class ColumnarSQLRewriter implements QueryRewriter {
    * @return the string
    */
   public String replaceUDFForDB(String query) {
-    Map<String, String> imputnmatch = new LinkedHashMap<String, String>();
-    imputnmatch.put("to_date", "date");
-    imputnmatch.put("format_number", "format");
-    imputnmatch.put("date_sub\\((.*?),\\s*([0-9]+\\s*)\\)", "date_sub($1, interval $2 day)");
-    imputnmatch.put("date_add\\((.*?),\\s*([0-9]+\\s*)\\)", "date_add($1, interval $2 day)");
-
-    for (Map.Entry<String, String> entry : imputnmatch.entrySet()) {
+    for (Map.Entry<String, String> entry : regexReplaceMap.entrySet()) {
       query = query.replaceAll(entry.getKey(), entry.getValue());
     }
     return query;
@@ -991,7 +997,11 @@ public class ColumnarSQLRewriter implements QueryRewriter {
     replaceWithUnderlyingStorage(hconf);
     replaceAliasInAST();
     getFilterInJoinCond(fromAST);
-    getAggregateColumns(selectAST, new MutableInt(0));
+    MutableInt alaisCount = new MutableInt(0);
+    getAggregateColumns(selectAST, alaisCount);
+    if (havingAST != null) {
+      getAggregateColumns(havingAST, alaisCount);
+    }
     constructJoinChain();
     getAllFilters(whereAST);
     buildSubqueries(fromAST);
@@ -1167,8 +1177,9 @@ public class ColumnarSQLRewriter implements QueryRewriter {
     }
     rewrittenQuery.append("select ").append(selecttree).append(" from ");
     if (factInLineQuery.length() != 0) {
-      rewrittenQuery.append(finalJoinClause.replaceFirst(factNameAndAlias.substring(0, factNameAndAlias.indexOf(' ')),
-        factInLineQuery.toString()));
+      finalJoinClause = finalJoinClause.substring(finalJoinClause.indexOf(" "));
+      rewrittenQuery.append(factInLineQuery);
+      rewrittenQuery.append(finalJoinClause);
     } else {
       rewrittenQuery.append(finalJoinClause);
     }
@@ -1203,8 +1214,9 @@ public class ColumnarSQLRewriter implements QueryRewriter {
     reset();
 
     try {
+      String finalRewrittenQuery;
       if (query.toLowerCase().matches("(.*)union all(.*)")) {
-        String finalRewrittenQuery = "";
+        finalRewrittenQuery = "";
         String[] queries = query.toLowerCase().split("union all");
         for (int i = 0; i < queries.length; i++) {
           log.info("Union Query Part {} : {}", i, queries[i]);
@@ -1214,16 +1226,14 @@ public class ColumnarSQLRewriter implements QueryRewriter {
           finalRewrittenQuery = mergedQuery.toString().substring(0, mergedQuery.lastIndexOf("union all"));
           reset();
         }
-        queryReplacedUdf = replaceUDFForDB(finalRewrittenQuery);
-        log.info("Input Query : {}", query);
-        log.info("Rewritten Query : {}", queryReplacedUdf);
       } else {
         ast = HQLParser.parseHQL(query, metastoreConf);
         buildQuery(conf, metastoreConf);
-        queryReplacedUdf = replaceUDFForDB(rewrittenQuery.toString());
-        log.info("Input Query : {}", query);
-        log.info("Rewritten Query :  {}", queryReplacedUdf);
+        finalRewrittenQuery = rewrittenQuery.toString();
       }
+      queryReplacedUdf = replaceUDFForDB(finalRewrittenQuery);
+      log.info("Input Query : {}", query);
+      log.info("Rewritten Query : {}", queryReplacedUdf);
     } catch (SemanticException e) {
       throw new LensException(e);
     }

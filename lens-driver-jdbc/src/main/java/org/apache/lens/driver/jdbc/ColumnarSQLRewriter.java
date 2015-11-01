@@ -216,10 +216,10 @@ public class ColumnarSQLRewriter implements QueryRewriter {
       return;
     }
 
-    if (!qb.getSubqAliases().isEmpty()) {
+    /**if (!qb.getSubqAliases().isEmpty()) {
       log.warn("Subqueries in from clause is not supported by {} Query : {}", this, this.query);
       throw new SemanticException("Subqueries in from clause is not supported by " + this + " Query : " + this.query);
-    }
+    }*/
 
     // Get clause name
     TreeSet<String> ks = new TreeSet<String>(qb.getParseInfo().getClauseNames());
@@ -1403,4 +1403,22 @@ public class ColumnarSQLRewriter implements QueryRewriter {
     return tbl == null ? null : tbl.getProperty(LensConfConstants.NATIVE_TABLE_NAME);
   }
 
+  
+  public void printTree(ASTNode root , String spc)
+  {
+    
+    if(root.getChildren() == null)
+    {
+      System.out.println(spc);
+      System.out.println(root.getText());
+      return;
+    }
+    
+/*    for(ASTNode node : root.getChildren())
+    {
+      System.out.println(spc);
+      System.out.println(HQLParser.getString(node));  
+      printTree(node
+    }*/
+  }
 }

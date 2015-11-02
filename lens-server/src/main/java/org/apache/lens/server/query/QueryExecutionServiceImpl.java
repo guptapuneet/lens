@@ -387,8 +387,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       }
       loadDriversForType(driverTypeAndClass[0], driverTypeAndClass[1], driversBaseDir);
     }
-    if(drivers.isEmpty())
-    {
+    if (drivers.isEmpty()){
       throw new LensException("No drivers loaded. Please check the drivers in :"+driversBaseDir);
     }
   }

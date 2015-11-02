@@ -52,7 +52,7 @@ public final class LensConfConstants {
   public static final String METASTORE_PFX = "lens.metastore.";
 
   /**
-   * The Constant DRIVER_CLASSES.
+   * The Constant DRIVER_TYPES_AND_CLASSES
    */
   public static final String DRIVER_TYPES_AND_CLASSES = SERVER_PFX + "drivers";
   /**
@@ -943,7 +943,7 @@ public final class LensConfConstants {
   public static final int DEFAULT_FETCH_COUNT_SAVED_QUERY_LIST = 20;
 
   /**
-   * This is the base directory name where all drivers are available under lens-server Conf directory.
+   * This is the base directory where all drivers are available under lens-server's Conf directory.
    */
   public static final String DRIVERS_BASE_DIR = "drivers";
 

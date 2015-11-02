@@ -39,7 +39,7 @@ public abstract class AbstractLensDriver implements LensDriver {
   private static final char SEPARATOR = '/';
 
   /**
-   * Driver's fully qualified name ( Example hive/hive,jdbc/mysql1)
+   * Driver's fully qualified name ( Example hive/hive1, jdbc/mysql1)
    */
   @Getter
   private String fullyQualifiedName = null;
@@ -53,8 +53,8 @@ public abstract class AbstractLensDriver implements LensDriver {
   }
 
   /**
-   * Gets the path (relative to conf location) for the driver resource in the system. This is a utility
-   * method that can be used by sub classes to build resource paths.
+   * Gets the path (relative to lens server's conf location) for the driver resource in the system. This is a utility
+   * method that can be used by extending driver implementations to build path for their resources.
    *
    * @param resourceName
    * @return

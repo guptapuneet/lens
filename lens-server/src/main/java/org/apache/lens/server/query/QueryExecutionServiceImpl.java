@@ -387,6 +387,10 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       }
       loadDriversForType(driverTypeAndClass[0], driverTypeAndClass[1], driversBaseDir);
     }
+    if(drivers.isEmpty())
+    {
+      throw new LensException("No drivers loaded. Please check the drivers in :"+driversBaseDir);
+    }
   }
   /**
    * Loads drivers of a particular type
@@ -2413,8 +2417,8 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         // set the selected driver if available, if not available for the cases of queued queries,
         // query service will do the selection from existing drivers and update
         if (driverAvailable) {
-          String driverQualifiedName = in.readUTF();
-          ctx.getDriverContext().setSelectedDriver(drivers.get(driverQualifiedName));
+          String selectedDriverQualifiedName = in.readUTF();
+          ctx.getDriverContext().setSelectedDriver(drivers.get(selectedDriverQualifiedName));
           ctx.setDriverQuery(ctx.getSelectedDriver(), ctx.getSelectedDriverQuery());
         }
         allQueries.put(ctx.getQueryHandle(), ctx);

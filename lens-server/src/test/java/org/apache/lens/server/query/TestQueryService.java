@@ -220,6 +220,20 @@ public class TestQueryService extends LensJerseyTest {
     assertEquals(rs.getStatus(), 400);
   }
 
+  @Test
+  public void testLoadingMultipleDrivers() {
+    Collection<LensDriver> drivers = queryService.getDrivers();
+    assertEquals(drivers.size(), 4);
+    Set<String> driverNames = new HashSet<String>(drivers.size());
+    for(LensDriver driver : drivers){
+      driverNames.add(driver.getFullyQualifiedName());
+    }
+    assertTrue(driverNames.contains("hive/hive1"));
+    assertTrue(driverNames.contains("hive/hive2"));
+    assertTrue(driverNames.contains("jdbc/jdbc1"));
+    assertTrue(driverNames.contains("mock/fail1"));
+  }
+
   /**
    * Test rewrite failure in execute operation.
    *

@@ -50,8 +50,8 @@ import lombok.NoArgsConstructor;
  *          the prepared time
  * @param preparedUser
  *          the prepared user
- * @param selectedDriverClassName
- *          the selected driver class name
+ * @param selectedDriverName
+ *          the selected driver's fully qualified name
  * @param driverQuery
  *          the driver query
  * @param conf

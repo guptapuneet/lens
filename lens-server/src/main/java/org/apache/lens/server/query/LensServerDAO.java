@@ -192,7 +192,7 @@ public class LensServerDAO {
       }
 
       if (StringUtils.isNotBlank(driverName)) {
-        filters.add("lower(driverName)=?");
+        filters.add("lower(drivername)=?");
         params.add(driverName.toLowerCase());
       }
 

@@ -755,7 +755,6 @@ public class ColumnarSQLRewriter implements QueryRewriter {
    */
   public ArrayList<String> getAggregateColumns(ASTNode node, MutableInt count) {
 
-    StringBuilder aggmeasures = new StringBuilder();
     if (HQLParser.isAggregateAST(node)) {
       if (node.getToken().getType() == HiveParser.TOK_FUNCTION || node.getToken().getType() == HiveParser.DOT) {
 

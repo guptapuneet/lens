@@ -63,4 +63,9 @@ public abstract class AbstractLensDriver implements LensDriver {
     return new StringBuilder(LensConfConstants.DRIVERS_BASE_DIR).append(SEPARATOR).append(getFullyQualifiedName())
         .append(SEPARATOR).append(resourceName).toString();
   }
+
+  @Override
+  public String toString() {
+    return getFullyQualifiedName();
+  }
 }

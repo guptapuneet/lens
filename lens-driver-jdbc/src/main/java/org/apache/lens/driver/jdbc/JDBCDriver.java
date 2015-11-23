@@ -442,7 +442,7 @@ public class JDBCDriver extends AbstractLensDriver {
       throw new LensException("Can't instantiate driver query hook for hivedriver with given class", e);
     }
     configured = true;
-    log.info("JDBC Driver configured");
+    log.info("JDBC Driver {} configured", getFullyQualifiedName());
   }
 
   /**
@@ -516,9 +516,9 @@ public class JDBCDriver extends AbstractLensDriver {
       DummyQueryRewriter.class, QueryRewriter.class);
     try {
       rewriter = queryRewriterClass.newInstance();
-      log.info("Initialized :{}", queryRewriterClass);
+      log.info("{} Initialized :{}", getFullyQualifiedName(), queryRewriterClass);
     } catch (Exception e) {
-      log.error("Unable to create rewriter object", e);
+      log.error("{} Unable to create rewriter object", getFullyQualifiedName(), e);
       throw new LensException(e);
     }
     rewriter.init(conf);
@@ -638,7 +638,7 @@ public class JDBCDriver extends AbstractLensDriver {
       explainQuery = rewrittenQuery.replaceAll("select ", "select "
         + explainKeyword + " ");
     }
-    log.info("Explain Query : {}", explainQuery);
+    log.info("{} Explain Query : {}", getFullyQualifiedName(), explainQuery);
     QueryContext explainQueryCtx = QueryContext.createContextWithSingleDriver(explainQuery, null,
       new LensConf(), explainConf, this, explainCtx.getLensSessionIdentifier(), false);
     QueryResult result = null;
@@ -875,7 +875,7 @@ public class JDBCDriver extends AbstractLensDriver {
     checkConfigured();
 
     String rewrittenQuery = rewriteQuery(context);
-    log.info("Execute {}", context.getQueryHandle());
+    log.info("{} Execute {}", getFullyQualifiedName(), context.getQueryHandle());
     QueryResult result = executeInternal(context, rewrittenQuery);
     return result.getLensResultSet(true);
 
@@ -921,7 +921,7 @@ public class JDBCDriver extends AbstractLensDriver {
       throw new LensException("Query execution rejected: " + context.getQueryHandle() + " reason:" + e.getMessage(), e);
     }
     queryContextMap.put(context.getQueryHandle(), jdbcCtx);
-    log.info("ExecuteAsync: {}", context.getQueryHandle());
+    log.info("{} ExecuteAsync: {}", getFullyQualifiedName(), context.getQueryHandle());
   }
 
   /**
@@ -1034,7 +1034,7 @@ public class JDBCDriver extends AbstractLensDriver {
         context.setEndTime(System.currentTimeMillis());
       }
       context.closeResult();
-      log.info("Cancelled query: {}", handle);
+      log.info("{} Cancelled query : {}", getFullyQualifiedName(), handle);
     }
     return cancelResult;
   }
@@ -1055,7 +1055,7 @@ public class JDBCDriver extends AbstractLensDriver {
     } finally {
       queryContextMap.remove(handle);
     }
-    log.info("Closed query {}", handle.getHandleId());
+    log.info("{} Closed query {}", getFullyQualifiedName(), handle.getHandleId());
   }
 
   /**
@@ -1071,7 +1071,7 @@ public class JDBCDriver extends AbstractLensDriver {
         try {
           closeQuery(query);
         } catch (LensException e) {
-          log.warn("Error closing query : {}", query.getHandleId(), e);
+          log.warn("{} Error closing query : {}", getFullyQualifiedName(), query.getHandleId(), e);
         }
       }
       for (QueryPrepareHandle query : preparedQueries.keySet()) {
@@ -1082,7 +1082,7 @@ public class JDBCDriver extends AbstractLensDriver {
             throw new LensException();
           }
         } catch (LensException e) {
-          log.warn("Error closing prapared query : {}", query, e);
+          log.warn("{} Error closing prapared query : {}", getFullyQualifiedName(), query, e);
         }
       }
     } finally {

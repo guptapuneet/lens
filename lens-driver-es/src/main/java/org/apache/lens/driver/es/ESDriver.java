@@ -344,10 +344,10 @@ public class ESDriver extends AbstractLensDriver {
       | InstantiationException
       | IllegalAccessException
       | InvocationTargetException e) {
-      log.error("ES driver cannot start!", e);
+      log.error("ES driver {} cannot start!", getFullyQualifiedName(), e);
       throw new LensException("Cannot start es driver", e);
     }
-    log.debug("ES Driver configured");
+    log.info("ES Driver {} configured", getFullyQualifiedName());
     asyncQueryPool = Executors.newCachedThreadPool(new ThreadFactory() {
       @Override
       public Thread newThread(Runnable runnable) {

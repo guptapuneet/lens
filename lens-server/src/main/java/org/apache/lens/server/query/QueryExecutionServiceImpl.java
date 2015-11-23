@@ -2787,7 +2787,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
 
     String command = "add " + res.getType().toLowerCase() + " " + uri;
     driver.execute(createResourceQuery(command, sessionHandle, driver));
-    log.info("Added resource to hive driver for session {} cmd: {}", sessionIdentifier, command);
+    log.info("Added resource to hive driver {} for session {} cmd: {}", driver, sessionIdentifier, command);
   }
 
   private boolean removeFromLaunchedQueries(final QueryContext finishedQuery) {

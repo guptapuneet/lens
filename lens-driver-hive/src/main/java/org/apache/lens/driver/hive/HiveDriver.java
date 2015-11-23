@@ -756,7 +756,7 @@ public class HiveDriver extends AbstractLensDriver {
    */
   @Override
   public void close() {
-    log.info("CloseDriver {}" + getFullyQualifiedName());
+    log.info("CloseDriver {}", getFullyQualifiedName());
     // Close this driver and release all resources
     sessionLock.lock();
     try {

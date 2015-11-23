@@ -37,9 +37,9 @@ Configuring lens server
 
   System can have multiple drivers of same type, for example MySQL and Postgres can be two drivers of
   type JDBC. The configuration for each driver is specified in its site.xml file which should be 
-  present under the folder <Server Conf location>/drivers/<driver-type>/<driver-name>. 
+  present under the folder <Server_Conf_location>/drivers/<driver-type>/<driver-name>. 
   For example, Hive driver's configuration should be specified in 
-  <LensServer Install location>/Conf/drivers/hive/hive1/hivedriver-site.xml where hive1 is the driver name.
+  <LensServer_Install_Location>/Conf/drivers/hive/hive1/hivedriver-site.xml where hive1 is the driver name.
   A driver is identified by its fully qualified name which includes the driver type and driver name. For the
   example discussed above the fully qualified name would be "hive/hive1"
   

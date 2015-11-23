@@ -228,10 +228,7 @@ public class TestQueryService extends LensJerseyTest {
     for(LensDriver driver : drivers){
       driverNames.add(driver.getFullyQualifiedName());
     }
-    assertTrue(driverNames.contains("hive/hive1"));
-    assertTrue(driverNames.contains("hive/hive2"));
-    assertTrue(driverNames.contains("jdbc/jdbc1"));
-    assertTrue(driverNames.contains("mock/fail1"));
+    assertTrue(driverNames.containsAll(Arrays.asList("hive/hive1", "hive/hive2","jdbc/jdbc1", "mock/fail1")));
   }
 
   /**
@@ -476,7 +473,7 @@ public class TestQueryService extends LensJerseyTest {
       .get(LensPreparedQuery.class);
     assertTrue(ctx.getUserQuery().equalsIgnoreCase("select ID from " + TEST_TABLE));
     assertTrue(ctx.getDriverQuery().equalsIgnoreCase("select ID from " + TEST_TABLE));
-    //both drivers hive/hiv1 and hive/hive2 are capable of handling the query as they point to the same hive server
+    //both drivers hive/hive1 and hive/hive2 are capable of handling the query as they point to the same hive server
     assertTrue(ctx.getSelectedDriverName().equals("hive/hive1") || ctx.getSelectedDriverName().equals("hive/hive2"));
     assertNull(ctx.getConf().getProperties().get("my.property"));
 
@@ -551,7 +548,7 @@ public class TestQueryService extends LensJerseyTest {
       .request().get(LensPreparedQuery.class);
     assertTrue(ctx.getUserQuery().equalsIgnoreCase("select ID from " + TEST_TABLE));
     assertTrue(ctx.getDriverQuery().equalsIgnoreCase("select ID from " + TEST_TABLE));
-    //both drivers hive/hiv1 and hive/hive2 are capable of handling the query as they point to the same hive server
+    //both drivers hive/hive1 and hive/hive2 are capable of handling the query as they point to the same hive server
     assertTrue(ctx.getSelectedDriverName().equals("hive/hive1") || ctx.getSelectedDriverName().equals("hive/hive2"));
     assertNull(ctx.getConf().getProperties().get("my.property"));
 

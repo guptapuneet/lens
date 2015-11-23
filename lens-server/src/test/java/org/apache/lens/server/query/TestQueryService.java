@@ -1288,8 +1288,8 @@ public class TestQueryService extends LensJerseyTest {
           addedToHiveDriver =
             ((HiveDriver) driver).areDBResourcesAddedForSession(sessionHandle.getPublicId().toString(),
               LensTestUtil.DB_WITH_JARS);
-          if(addedToHiveDriver){
-            break;//There are two Hive drivers now both pointing to same hive server. So break after fisrt success.
+          if( addedToHiveDriver){
+            break; //There are two Hive drivers now both pointing to same hive server. So break after first success
           }
         }
       }

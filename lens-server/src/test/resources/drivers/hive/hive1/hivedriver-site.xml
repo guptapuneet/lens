@@ -77,4 +77,9 @@
     <value>set</value>
   </property>
 
+  <property>
+    <name>lens.driver.test.key2</name>
+    <value>hive/hive1</value>
+  </property>
+
 </configuration>

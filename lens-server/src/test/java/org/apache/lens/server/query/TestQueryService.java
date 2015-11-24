@@ -226,6 +226,7 @@ public class TestQueryService extends LensJerseyTest {
     assertEquals(drivers.size(), 4);
     Set<String> driverNames = new HashSet<String>(drivers.size());
     for(LensDriver driver : drivers){
+      assertEquals(driver.getConf().get("lens.driver.test.key2"), driver.getFullyQualifiedName());
       driverNames.add(driver.getFullyQualifiedName());
     }
     assertTrue(driverNames.containsAll(Arrays.asList("hive/hive1", "hive/hive2","jdbc/jdbc1", "mock/fail1")));

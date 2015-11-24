@@ -51,5 +51,8 @@
     <name>lens.driver.test.key</name>
     <value>set</value>
   </property>
-
+  <property>
+    <name>lens.driver.test.key2</name>
+    <value>jdbc/jdbc1</value>
+  </property>
 </configuration>

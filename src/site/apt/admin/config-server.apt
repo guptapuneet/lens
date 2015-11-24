@@ -46,18 +46,20 @@ Configuring lens server
   The organization of drivers in the system is illustrated below 
 
 +---+
-    --conf
-    ----drivers 
-    ------hive 
-    --------driver1
-    ----------hivedriver-site.xml
-    --------driver2
-    ----------hivedriver-site.xml
-    ------jdbc
-    --------driver1
-    ----------jdbcdriver-site.xml
-    --------driver2
-    ----------jdbcdriver-site.xml
+
+  ├── conf
+      └── drivers
+          ├── hive
+          │   ├── hive1
+          │   │   └── hivedriver-site.xml
+          │   └── hive2
+          │       └── hivedriver-site.xml
+          └── jdbc
+              ├── jdbc1
+              │   └── jdbcdriver-site.xml
+              └── jdbc2
+                  └── jdbcdriver-site.xml
+
 +---+
 
   Supported drivers in this version are 

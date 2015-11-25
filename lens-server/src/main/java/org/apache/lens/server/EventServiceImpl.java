@@ -18,26 +18,23 @@
  */
 package org.apache.lens.server;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import lombok.extern.slf4j.Slf4j;
-
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hive.service.AbstractService;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.events.LensEvent;
 import org.apache.lens.server.api.events.LensEventListener;
 import org.apache.lens.server.api.events.LensEventService;
 import org.apache.lens.server.api.health.HealthStatus;
+
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+
+import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hive.service.AbstractService;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Implementation of LensEventService

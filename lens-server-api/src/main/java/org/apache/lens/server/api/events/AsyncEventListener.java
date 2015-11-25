@@ -20,6 +20,8 @@ package org.apache.lens.server.api.events;
 
 import java.util.concurrent.*;
 
+import lombok.extern.slf4j.Slf4j;
+
 import org.apache.lens.server.api.error.LensException;
 
 /**
@@ -28,6 +30,7 @@ import org.apache.lens.server.api.error.LensException;
  *
  * @param <T> the generic type
  */
+@Slf4j
 public abstract class AsyncEventListener<T extends LensEvent> implements LensEventListener<T> {
 
   /**
@@ -98,7 +101,12 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
       processor.execute(new Runnable() {
         @Override
         public void run() {
-          process(event);
+          try{
+            process(event);
+          }catch(Exception e){
+            log.error("Failed to send Aysnchronous Event {}", event.toString(), e);
+            throw new RuntimeException(e.getMessage());
+          }
         }
       });
     } catch (RejectedExecutionException rejected) {

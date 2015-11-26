@@ -89,10 +89,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.ToString;
-
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -145,6 +142,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
   /**
    * The launched queries.
    */
+  @Getter
   private EstimatedQueryCollection launchedQueries;
 
   /**
@@ -2563,6 +2561,14 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       throw new NotFoundException("http result not available");
     }
     final Path resultPath = new Path(resultSet.getOutputPath());
+    try {
+      FileSystem fs = resultPath.getFileSystem(conf);
+      if (!fs.exists(resultPath)) {
+        throw new NotFoundException("Result file does not exist!");
+      }
+    } catch (IOException e) {
+      throw new LensException(e);
+    }
     final QueryContext ctx = getQueryContext(sessionHandle, queryHandle);
     String resultFSReadUrl = conf.get(RESULT_FS_READ_URL);
     if (resultFSReadUrl != null) {
@@ -2644,6 +2650,19 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
   @Override
   public long getFinishedQueriesCount() {
     return finishedQueries.size();
+  }
+
+  @Data
+  @AllArgsConstructor
+  public static class QueryCount {
+    long running, queued, waiting;
+  }
+
+  public QueryCount getQueryCountSnapshot() {
+    removalFromLaunchedQueriesLock.lock();
+    QueryCount count = new QueryCount(getRunningQueriesCount(), getQueuedQueriesCount(), getWaitingQueriesCount());
+    removalFromLaunchedQueriesLock.unlock();
+    return count;
   }
 
   /**

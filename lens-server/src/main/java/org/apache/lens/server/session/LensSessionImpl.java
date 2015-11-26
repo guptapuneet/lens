@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.ws.rs.NotFoundException;
 
@@ -33,7 +34,6 @@ import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.session.SessionService;
 import org.apache.lens.server.util.UtilityMethods;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.common.JavaUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -435,12 +435,10 @@ public class LensSessionImpl extends HiveSessionImpl {
     final String location;
     // For tests
     /** The restore count. */
-    @Getter
-    transient int restoreCount;
+    transient AtomicInteger restoreCount = new AtomicInteger();
 
     /** Set of databases for which this resource has been added */
     final transient Set<String> databases = new HashSet<String>();
-
 
     /**
      * Instantiates a new resource entry.
@@ -468,7 +466,15 @@ public class LensSessionImpl extends HiveSessionImpl {
      * Restored resource.
      */
     public void restoredResource() {
-      restoreCount++;
+      restoreCount.incrementAndGet();
+    }
+    
+    /**
+     * Returns the value of restoreCount for the resource
+     * @return
+     */
+    public int getRestoreCount(){
+      return restoreCount.get();
     }
 
     /*

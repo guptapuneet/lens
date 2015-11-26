@@ -1172,14 +1172,15 @@ public class HiveDriver extends AbstractLensDriver {
     for (SessionHandle session : hiveSessionsToCheck) {
       if (isSessionInvalid(exc, session)) {
         // We have to expire previous session
-        log.info("Hive server session {} for lens session {} has become invalid", session, lensSession);
+        log.info("{} Hive server session {} for lens session {} has become invalid", getFullyQualifiedName(), session,
+            lensSession);
         sessionLock.lock();
         try {
           // We should close all connections and clear the session map since
           // most likely all sessions are gone
           closeAllConnections();
           lensToHiveSession.clear();
-          log.info("Cleared all sessions");
+          log.info("{} Cleared all sessions" , getFullyQualifiedName() );
         } finally {
           sessionLock.unlock();
         }

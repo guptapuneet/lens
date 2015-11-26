@@ -2673,19 +2673,19 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       List<ResourceEntry> resources = session.getLensSessionPersistInfo().getResources();
       if (resources != null && !resources.isEmpty()) {
         for (ResourceEntry resource : resources) {
-          log.info("Restoring resource {} for session {}", resource, lensSession);
+          log.info("{} Restoring resource {} for session {}", hiveDriver, resource, lensSession);
           String command = "add " + resource.getType().toLowerCase() + " " + resource.getLocation();
           try {
             // Execute add resource query in blocking mode
             hiveDriver.execute(createResourceQuery(command, sessionHandle, hiveDriver));
             resource.restoredResource();
-            log.info("Restored resource {} for session {}", resource, lensSession);
+            log.info("{} Restored resource {} for session {}", hiveDriver, resource, lensSession);
           } catch (Exception exc) {
-            log.error("Unable to add resource {} for session {}", resource, lensSession, exc);
+            log.error("{} Unable to add resource {} for session {}", hiveDriver, resource, lensSession, exc);
           }
         }
       } else {
-        log.info("No resources to restore for session {}", lensSession);
+        log.info("{} No resources to restore for session {}", hiveDriver, lensSession);
       }
     } catch (Exception e) {
       log.warn(

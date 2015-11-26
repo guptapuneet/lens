@@ -34,6 +34,7 @@ import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.session.SessionService;
 import org.apache.lens.server.util.UtilityMethods;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.common.JavaUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
@@ -468,7 +469,7 @@ public class LensSessionImpl extends HiveSessionImpl {
     public void restoredResource() {
       restoreCount.incrementAndGet();
     }
-    
+
     /**
      * Returns the value of restoreCount for the resource
      * @return

@@ -1180,7 +1180,7 @@ public class HiveDriver extends AbstractLensDriver {
           // most likely all sessions are gone
           closeAllConnections();
           lensToHiveSession.clear();
-          log.info("{} Cleared all sessions" , getFullyQualifiedName() );
+          log.info("{} Cleared all sessions", getFullyQualifiedName());
         } finally {
           sessionLock.unlock();
         }

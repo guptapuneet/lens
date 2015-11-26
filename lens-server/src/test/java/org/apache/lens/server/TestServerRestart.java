@@ -67,7 +67,7 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
 
   /** The data file. */
   private File dataFile;
-  
+
   /**
    * No of valid hive drivers that can execute queries in this test class
    */
@@ -352,8 +352,8 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
       LensSessionImpl.ResourceEntry resourceEntry = sessionResources.get(i);
       //The restore count can vary based on How many Hive Drivers were able to execute the estimate on the query
       //successfully after Hive Server Restart.
-      Assert.assertTrue((resourceEntry.getRestoreCount() > restoreCounts[i] && 
-          resourceEntry.getRestoreCount() <=  restoreCounts[i] + NO_OF_HIVE_DRIVERS),
+      Assert.assertTrue((resourceEntry.getRestoreCount() > restoreCounts[i]
+          && resourceEntry.getRestoreCount() <=  restoreCounts[i] + NO_OF_HIVE_DRIVERS),
           "Restore test failed for " + resourceEntry + " pre count=" + restoreCounts[i] + " post count=" + resourceEntry
               .getRestoreCount());
       log.info("@@ Latest count {}={}", resourceEntry, resourceEntry.getRestoreCount());

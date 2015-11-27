@@ -101,12 +101,7 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
       processor.execute(new Runnable() {
         @Override
         public void run() {
-          try{
-            process(event);
-          }catch(Exception e){
-            log.error("Failed to send Aysnchronous Event {}", event.toString(), e);
-            throw new RuntimeException(e.getMessage());
-          }
+          process(event);
         }
       });
     } catch (RejectedExecutionException rejected) {

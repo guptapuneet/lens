@@ -29,7 +29,6 @@ import org.apache.lens.server.api.events.AsyncEventListener;
 import org.apache.lens.server.api.metrics.MetricsService;
 import org.apache.lens.server.api.query.*;
 import org.apache.lens.server.model.LogSegregationContext;
-
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.util.ReflectionUtils;
@@ -179,4 +178,8 @@ public class ResultFormatter extends AsyncEventListener<QueryExecuted> {
     }
   }
 
+  @Override
+  protected String getName(){
+    return "ResultFormatter";
+  }
 }

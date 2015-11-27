@@ -140,4 +140,9 @@ public class LogStatisticsStore extends StatisticsStore<LoggableLensStatistics> 
     }
   }
 
+  @Override
+  protected String getName(){
+    return "LogStatisticsStore";
+  }
+
 }

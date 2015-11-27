@@ -51,10 +51,8 @@ import org.apache.lens.server.quota.QuotaServiceImpl;
 import org.apache.lens.server.scheduler.QuerySchedulerServiceImpl;
 import org.apache.lens.server.session.DatabaseResourceService;
 import org.apache.lens.server.session.HiveSessionService;
-
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hive.service.AbstractService;
-
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.model.ResourceMethod;
 
@@ -70,7 +68,6 @@ import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import info.ganglia.gmetric4j.gmetric.GMetric;
 import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
 import lombok.Getter;
-
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -200,6 +197,11 @@ public class MetricsServiceImpl extends AbstractService implements MetricsServic
         break;
       }
     }
+
+    @Override
+    protected String getName(){
+      return "AsyncQueryStatusListener";
+    }
   }
 
   /**
@@ -225,6 +227,11 @@ public class MetricsServiceImpl extends AbstractService implements MetricsServic
       } else if (event instanceof SessionClosed) {
         totalClosedSessions.inc();
       }
+    }
+
+    @Override
+    protected String getName(){
+      return "AsyncSessionEventListener";
     }
   }
 

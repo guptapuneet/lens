@@ -20,10 +20,9 @@ package org.apache.lens.server.api.events;
 
 import java.util.concurrent.*;
 
-import lombok.extern.slf4j.Slf4j;
-
 import org.apache.lens.server.api.error.LensException;
 
+import lombok.extern.slf4j.Slf4j;
 /**
  * Event listeners should implement this class if they wish to process events asynchronously. This should be used when
  * event processing can block, or is computationally intensive.
@@ -81,7 +80,7 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
         @Override
         public Thread newThread(Runnable runnable) {
           Thread th = new Thread(runnable);
-          th.setName("event_processor_thread");
+          th.setName(getName()+"_thread");
           th.setDaemon(isDaemon);
           return th;
         }
@@ -101,7 +100,12 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
       processor.execute(new Runnable() {
         @Override
         public void run() {
-          process(event);
+          try{
+            process(event);
+          }
+          catch(Exception e){
+            log.error("{} Failed to process event {}", getName(), event);
+          }
         }
       });
     } catch (RejectedExecutionException rejected) {
@@ -125,5 +129,14 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
 
   public BlockingQueue<Runnable> getEventQueue() {
     return eventQueue;
+  }
+
+  /**
+   * Name of this Asynchronous Event Listener. Will be used for logging and to name the threads in thread pool that
+   * allow asynchronous handling of events. Sub Classes can override this to provide appropriate name.
+   * @return
+   */
+  protected String getName(){
+    return "AsyncEventListener";
   }
 }

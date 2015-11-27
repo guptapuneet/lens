@@ -40,7 +40,6 @@ import org.apache.lens.server.api.metrics.MetricsService;
 import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.QueryEnded;
 import org.apache.lens.server.model.LogSegregationContext;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 
@@ -118,6 +117,8 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
       return;
     }
 
+    log.info("Sending completion email for query handle: {}", event.getQueryHandle());
+
     String queryName = queryContext.getQueryName();
     String mailSubject = "Query " + (StringUtils.isBlank(queryName) ? "" : (queryName + " "))
       + queryContext.getStatus().getStatus() + ": " + event.getQueryHandle();
@@ -128,7 +129,6 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
 
     String cc = queryContext.getConf().get(QUERY_RESULT_EMAIL_CC, QUERY_RESULT_DEFAULT_EMAIL_CC);
 
-    log.info("Sending completion email for query handle: {}", event.getQueryHandle());
     sendMail(host, port, new Email(from, to, cc, mailSubject, mailMessage), mailSmtpTimeout, mailSmtpConnectionTimeout);
   }
 
@@ -217,5 +217,10 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
       metricsService.incrCounter(QueryEndNotifier.class, EMAIL_ERROR_COUNTER);
       log.error("Error sending query end email", e);
     }
+  }
+
+  @Override
+  protected String getName(){
+    return "QueryEndNotifier";
   }
 }

@@ -202,4 +202,9 @@ public class StatisticsLogPartitionHandler extends AsyncEventListener<PartitionE
     }
     IOUtils.copyBytes(new FileInputStream(localPath), fs.create(finalPath), conf, true);
   }
+
+  @Override
+  protected String getName(){
+    return "StatisticsLogPartitionHandler";
+  }
 }

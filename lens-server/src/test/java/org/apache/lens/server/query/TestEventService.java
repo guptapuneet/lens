@@ -42,7 +42,6 @@ import org.apache.lens.server.api.session.SessionOpened;
 import org.apache.lens.server.api.session.SessionRestored;
 import org.apache.lens.server.query.QueryExecutionServiceImpl.QueryStatusLogger;
 import org.apache.lens.server.stats.event.query.QueryExecutionStatistics;
-
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -108,6 +107,11 @@ public class TestEventService {
       processed = true;
       latch.countDown();
       log.info("LensEvent: {}", event.getEventId());
+    }
+
+    @Override
+    protected String getName(){
+      return "GenericEventListener";
     }
   }
 

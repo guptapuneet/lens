@@ -20,6 +20,7 @@ package org.apache.lens.server.query;
 
 import static org.apache.lens.server.api.LensServerAPITestUtil.getLensConf;
 import static org.apache.lens.server.common.RestAPITestUtil.*;
+
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -45,7 +46,9 @@ import org.apache.lens.server.LensServices;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.query.QueryExecutionService;
 import org.apache.lens.server.common.TestResourceFile;
+
 import org.apache.hadoop.hive.conf.HiveConf;
+
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.subethamail.wiser.Wiser;
@@ -86,7 +89,6 @@ public class TestQueryEndEmailNotifier extends LensJerseyTest {
     sessionconf.put("test.session.key", "svalue");
     sessionconf.put(LensConfConstants.QUERY_MAIL_NOTIFY, "true");
     sessionconf.put(LensConfConstants.QUERY_RESULT_EMAIL_CC, "foo1@localhost,foo2@localhost,foo3@localhost");
-    sessionconf.put("lens.server.domain", "fail.com");
     lensSessionId = queryService.openSession("foo@localhost", "bar", sessionconf); // @localhost should be removed
     // automatically
     createTable(TEST_TABLE);
@@ -192,11 +194,7 @@ public class TestQueryEndEmailNotifier extends LensJerseyTest {
       assertTrue(string.contains(keyword.toString().replaceAll("\\n", "\r\n")), o + " doesn't contain " + keyword);
     }
   }
-  @Test
-  public void testEmailFailure() throws InterruptedException{
-    testLaunchFailure();
-    testLaunchFailure();
-  }
+
   /**
    * Test launch fail.
    *

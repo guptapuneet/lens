@@ -27,6 +27,7 @@ import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.QueryEnded;
 import org.apache.lens.server.stats.event.query.QueryDriverStatistics;
 import org.apache.lens.server.stats.event.query.QueryExecutionStatistics;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

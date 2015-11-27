@@ -51,8 +51,10 @@ import org.apache.lens.server.quota.QuotaServiceImpl;
 import org.apache.lens.server.scheduler.QuerySchedulerServiceImpl;
 import org.apache.lens.server.session.DatabaseResourceService;
 import org.apache.lens.server.session.HiveSessionService;
+
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hive.service.AbstractService;
+
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.model.ResourceMethod;
 

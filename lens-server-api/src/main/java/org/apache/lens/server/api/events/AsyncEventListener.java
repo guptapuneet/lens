@@ -102,8 +102,7 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
         public void run() {
           try{
             process(event);
-          }
-          catch(Exception e){
+          }catch(Exception e){
             log.error("{} Failed to process event {}", getName(), event);
           }
         }

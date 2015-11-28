@@ -22,12 +22,14 @@ import java.util.concurrent.*;
 
 import org.apache.lens.server.api.error.LensException;
 
+import lombok.extern.slf4j.Slf4j;
 /**
  * Event listeners should implement this class if they wish to process events asynchronously. This should be used when
  * event processing can block, or is computationally intensive.
  *
  * @param <T> the generic type
  */
+@Slf4j
 public abstract class AsyncEventListener<T extends LensEvent> implements LensEventListener<T> {
 
   /**
@@ -39,6 +41,15 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
    * The event queue.
    */
   protected final BlockingQueue<Runnable> eventQueue;
+
+  /**
+   * Name of this Asynchronous Event Listener. Will be used for logging and to name the threads in thread pool that
+   * allow asynchronous handling of events. If required, Sub Classes can override <code>getName</code> method to
+   * provide more appropriate name.
+   * 
+   * Default value is the class Name (Example QueryEndNotfoer, ResultFormatter, etc)
+   */
+  private final String name = this.getClass().getSimpleName();
 
   /**
    * Create a single threaded event listener with an unbounded queue, with daemon threads.
@@ -78,12 +89,12 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
         @Override
         public Thread newThread(Runnable runnable) {
           Thread th = new Thread(runnable);
-          th.setName("event_processor_thread");
+          th.setName(getName()+"_AsyncEventThread");
           th.setDaemon(isDaemon);
           return th;
         }
       });
-    processor.allowCoreThreadTimeOut(true);
+    //processor.allowCoreThreadTimeOut(true); Disabling core pool timeout.Most listeners are using just one core thread
   }
 
   /**
@@ -98,7 +109,11 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
       processor.execute(new Runnable() {
         @Override
         public void run() {
-          process(event);
+          try{
+            process(event);
+          }catch(Exception e){
+            log.error("{} Failed to process event {}", getName(), event);
+          }
         }
       });
     } catch (RejectedExecutionException rejected) {
@@ -122,5 +137,12 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
 
   public BlockingQueue<Runnable> getEventQueue() {
     return eventQueue;
+  }
+
+  /**
+   * @return name
+   */
+  protected String getName(){
+    return name;
   }
 }

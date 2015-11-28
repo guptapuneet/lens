@@ -29,6 +29,8 @@ import org.apache.lens.server.api.events.LensEventListener;
 import org.apache.lens.server.api.events.LensEventService;
 import org.apache.lens.server.api.health.HealthStatus;
 
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
+
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hive.service.AbstractService;
 
@@ -64,8 +66,13 @@ public class EventServiceImpl extends AbstractService implements LensEventServic
   @Override
   public synchronized void init(HiveConf hiveConf) {
     int numProcs = Runtime.getRuntime().availableProcessors();
+    BasicThreadFactory factory = new BasicThreadFactory.Builder()
+      .namingPattern("Event_Service_Thread-%d")
+      .daemon(false)
+      .priority(Thread.NORM_PRIORITY)
+      .build();
     eventHandlerPool = Executors.newFixedThreadPool(hiveConf.getInt(LensConfConstants.EVENT_SERVICE_THREAD_POOL_SIZE,
-      numProcs));
+      numProcs), factory);
     super.init(hiveConf);
   }
 

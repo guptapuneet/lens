@@ -46,7 +46,7 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
    * Name of this Asynchronous Event Listener. Will be used for logging and to name the threads in thread pool that
    * allow asynchronous handling of events. If required, Sub Classes can override <code>getName</code> method to
    * provide more appropriate name.
-   * 
+   *
    * Default value is the class Name (Example QueryEndNotfoer, ResultFormatter, etc)
    */
   private final String name = this.getClass().getSimpleName();

@@ -21,6 +21,7 @@ package org.apache.lens.server;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
@@ -28,9 +29,7 @@ import org.apache.lens.server.api.events.LensEvent;
 import org.apache.lens.server.api.events.LensEventListener;
 import org.apache.lens.server.api.events.LensEventService;
 import org.apache.lens.server.api.health.HealthStatus;
-
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hive.service.AbstractService;
 
@@ -66,7 +65,7 @@ public class EventServiceImpl extends AbstractService implements LensEventServic
   @Override
   public synchronized void init(HiveConf hiveConf) {
     int numProcs = Runtime.getRuntime().availableProcessors();
-    BasicThreadFactory factory = new BasicThreadFactory.Builder()
+    ThreadFactory factory = new BasicThreadFactory.Builder()
       .namingPattern("Event_Service_Thread-%d")
       .daemon(false)
       .priority(Thread.NORM_PRIORITY)

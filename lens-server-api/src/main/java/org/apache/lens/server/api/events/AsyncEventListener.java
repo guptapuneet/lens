@@ -20,8 +20,9 @@ package org.apache.lens.server.api.events;
 
 import java.util.concurrent.*;
 
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.lens.server.api.error.LensException;
+
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 import lombok.extern.slf4j.Slf4j;
 /**
@@ -56,7 +57,7 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
    * Create a single threaded event listener with an unbounded queue, with daemon threads.
    */
   public AsyncEventListener() {
-    this(1,1);
+    this(1, 1);
   }
 
   /**
@@ -80,7 +81,8 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
    *                       if false, then implementation should call stop()
    *                       to stop the thread pool
    */
-  public AsyncEventListener(int poolSize, int maxPoolSize, int maxQueueSize, long timeOutSeconds, final boolean isDaemon) {
+  public AsyncEventListener(int poolSize, int maxPoolSize, int maxQueueSize, long timeOutSeconds,
+      final boolean isDaemon) {
     if (maxQueueSize <= 0) {
       eventQueue = new LinkedBlockingQueue<Runnable>();
     } else {
@@ -88,10 +90,10 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
     }
 
     ThreadFactory factory = new BasicThreadFactory.Builder()
-    .namingPattern(getName()+"_AsyncThread-%d")
-    .daemon(isDaemon)
-    .priority(Thread.NORM_PRIORITY)
-    .build();
+      .namingPattern(getName()+"_AsyncThread-%d")
+      .daemon(isDaemon)
+      .priority(Thread.NORM_PRIORITY)
+      .build();
     processor = new ThreadPoolExecutor(poolSize, maxPoolSize, timeOutSeconds, TimeUnit.SECONDS, eventQueue, factory);
   }
 
@@ -109,7 +111,7 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
         public void run() {
           try{
             process(event);
-          }catch(Exception e){
+          }catch(Throwable e){
             log.error("{} Failed to process event {}", getName(), event, e);
           }
         }

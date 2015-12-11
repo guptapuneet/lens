@@ -77,7 +77,7 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
 
   private final LogSegregationContext logSegregationContext;
 
-  /** QueryEndNotifier core and max pool size*/
+  /** QueryEndNotifier core and max pool size */
   private static final int CORE_POOL_SIZE = 2;
   private static final int MAX_POOL_SIZE = 5;
 

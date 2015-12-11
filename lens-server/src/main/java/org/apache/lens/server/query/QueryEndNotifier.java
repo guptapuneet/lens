@@ -117,19 +117,25 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
     if (!whetherMailNotify) {
       return;
     }
+    try{
+      //Create and Send EMAIL 
+      String queryName = queryContext.getQueryName();
+      String mailSubject = "Query " + (StringUtils.isBlank(queryName) ? "" : (queryName + " "))
+        + queryContext.getStatus().getStatus() + ": " + event.getQueryHandle();
 
-    String queryName = queryContext.getQueryName();
-    String mailSubject = "Query " + (StringUtils.isBlank(queryName) ? "" : (queryName + " "))
-      + queryContext.getStatus().getStatus() + ": " + event.getQueryHandle();
+      String mailMessage = createMailMessage(queryContext);
 
-    String mailMessage = createMailMessage(queryContext);
+      String to = queryContext.getSubmittedUser() + "@" + queryService.getServerDomain();
 
-    String to = queryContext.getSubmittedUser() + "@" + queryService.getServerDomain();
+      String cc = queryContext.getConf().get(QUERY_RESULT_EMAIL_CC, QUERY_RESULT_DEFAULT_EMAIL_CC);
 
-    String cc = queryContext.getConf().get(QUERY_RESULT_EMAIL_CC, QUERY_RESULT_DEFAULT_EMAIL_CC);
-
-    log.info("Sending completion email for query handle: {}", event.getQueryHandle());
-    sendMail(host, port, new Email(from, to, cc, mailSubject, mailMessage), mailSmtpTimeout, mailSmtpConnectionTimeout);
+      log.info("Sending completion email for query handle: {}", event.getQueryHandle());
+      sendMail(host, port, new Email(from, to, cc, mailSubject, mailMessage), mailSmtpTimeout, mailSmtpConnectionTimeout);
+    }catch (Exception e) {
+      MetricsService metricsService = LensServices.get().getService(MetricsService.NAME);
+      metricsService.incrCounter(QueryEndNotifier.class, EMAIL_ERROR_COUNTER);
+      log.error("Error sending query end email", e);
+    }
   }
 
   /** Creates the mail message.
@@ -184,38 +190,32 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
    * @param mailSmtpTimeout           the mail smtp timeout
    * @param mailSmtpConnectionTimeout the mail smtp connection timeout */
   public static void sendMail(String host, String port,
-    Email email, int mailSmtpTimeout, int mailSmtpConnectionTimeout) {
+    Email email, int mailSmtpTimeout, int mailSmtpConnectionTimeout) throws Exception{
     Properties props = System.getProperties();
     props.put("mail.smtp.host", host);
     props.put("mail.smtp.port", port);
     props.put("mail.smtp.timeout", mailSmtpTimeout);
     props.put("mail.smtp.connectiontimeout", mailSmtpConnectionTimeout);
     Session session = Session.getDefaultInstance(props, null);
-    try {
-      MimeMessage message = new MimeMessage(session);
-      message.setFrom(new InternetAddress(email.getFrom()));
-      for (String recipient : email.getTo().trim().split("\\s*,\\s*")) {
-        message.addRecipients(Message.RecipientType.TO, InternetAddress.parse(recipient));
-      }
-      if (email.getCc() != null && email.getCc().length() > 0) {
-        for (String recipient : email.getCc().trim().split("\\s*,\\s*")) {
-          message.addRecipients(Message.RecipientType.CC, InternetAddress.parse(recipient));
-        }
-      }
-      message.setSubject(email.getSubject());
-      message.setSentDate(new Date());
-
-      MimeBodyPart messagePart = new MimeBodyPart();
-      messagePart.setText(email.getMessage());
-      Multipart multipart = new MimeMultipart();
-
-      multipart.addBodyPart(messagePart);
-      message.setContent(multipart);
-      Transport.send(message);
-    } catch (Exception e) {
-      MetricsService metricsService = LensServices.get().getService(MetricsService.NAME);
-      metricsService.incrCounter(QueryEndNotifier.class, EMAIL_ERROR_COUNTER);
-      log.error("Error sending query end email", e);
+    MimeMessage message = new MimeMessage(session);
+    message.setFrom(new InternetAddress(email.getFrom()));
+    for (String recipient : email.getTo().trim().split("\\s*,\\s*")) {
+      message.addRecipients(Message.RecipientType.TO, InternetAddress.parse(recipient));
     }
+    if (email.getCc() != null && email.getCc().length() > 0) {
+      for (String recipient : email.getCc().trim().split("\\s*,\\s*")) {
+        message.addRecipients(Message.RecipientType.CC, InternetAddress.parse(recipient));
+      }
+    }
+    message.setSubject(email.getSubject());
+    message.setSentDate(new Date());
+
+    MimeBodyPart messagePart = new MimeBodyPart();
+    messagePart.setText(email.getMessage());
+    Multipart multipart = new MimeMultipart();
+
+    multipart.addBodyPart(messagePart);
+    message.setContent(multipart);
+    Transport.send(message);
   }
 }

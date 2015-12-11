@@ -47,7 +47,7 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
    * allow asynchronous handling of events. If required, Sub Classes can override <code>getName</code> method to
    * provide more appropriate name.
    *
-   * Default value is the class Name (Example QueryEndNotfoer, ResultFormatter, etc)
+   * Default value is the class Name (Example QueryEndNotifier, ResultFormatter, etc)
    */
   private final String name = this.getClass().getSimpleName();
 
@@ -94,7 +94,6 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
           return th;
         }
       });
-    //processor.allowCoreThreadTimeOut(true); Disabling core pool timeout.Most listeners are using just one core thread
   }
 
   /**

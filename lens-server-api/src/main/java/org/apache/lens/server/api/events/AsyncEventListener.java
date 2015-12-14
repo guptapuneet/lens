@@ -21,9 +21,10 @@ package org.apache.lens.server.api.events;
 import java.util.concurrent.*;
 
 import org.apache.lens.server.api.error.LensException;
-
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
+import lombok.Getter;
+import lombok.AccessLevel;
 import lombok.extern.slf4j.Slf4j;
 /**
  * Event listeners should implement this class if they wish to process events asynchronously. This should be used when
@@ -51,6 +52,7 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
    *
    * Default value is the class Name (Example QueryEndNotifier, ResultFormatter, etc)
    */
+  @Getter(AccessLevel.PROTECTED)
   private final String name = this.getClass().getSimpleName();
 
   /**
@@ -109,9 +111,9 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
       processor.execute(new Runnable() {
         @Override
         public void run() {
-          try{
+          try {
             process(event);
-          }catch(Throwable e){
+          } catch (Throwable e) {
             log.error("{} Failed to process event {}", getName(), event, e);
           }
         }
@@ -137,12 +139,5 @@ public abstract class AsyncEventListener<T extends LensEvent> implements LensEve
 
   public BlockingQueue<Runnable> getEventQueue() {
     return eventQueue;
-  }
-
-  /**
-   * @return name
-   */
-  protected String getName(){
-    return name;
   }
 }

@@ -46,6 +46,7 @@ import org.apache.lens.server.api.session.SessionOpened;
 import org.apache.lens.server.api.session.SessionRestored;
 import org.apache.lens.server.query.QueryExecutionServiceImpl.QueryStatusLogger;
 import org.apache.lens.server.stats.event.query.QueryExecutionStatistics;
+
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -507,14 +508,14 @@ public class TestEventService {
 
   @Test
   public void testAysncEventListenerPoolThreads(){
-    AsyncEventListener<QuerySuccess> l = new DummyAsncEventListener();
-    for(int i=0; i<10 ;i++){
+    AsyncEventListener<QuerySuccess> ayncListener = new DummyAsncEventListener();
+    for(int i=0; i<10; i++){
       try {
-        //A pool thread is created each time an even is submitted until core pool size is reached which is 5
-        //for this test case @see org.apache.lens.server.api.events.AsyncEventListener.processor 
-        l.onEvent(null);
+        //A pool thread is created each time an event is submitted until core pool size is reached which is 5
+        //for this test case.  @see org.apache.lens.server.api.events.AsyncEventListener.processor
+        ayncListener.onEvent(null);
       } catch (LensException e) {
-        assert(false);//Not Expected
+        assert(false); //Not Expected
       }
     }
 
@@ -525,27 +526,26 @@ public class TestEventService {
     currentTG.enumerate(threads);
     Set<String> aysncThreadNames = new HashSet<String>();
     for(Thread t : threads){
-      if(t.getName().contains("DummyAsncEventListener_AsyncThread")){
+      if (t.getName().contains("DummyAsncEventListener_AsyncThread")){
         aysncThreadNames.add(t.getName());
       }
     }
-    assertTrue(aysncThreadNames.containsAll(Arrays.asList(new String[]
-        {"DummyAsncEventListener_AsyncThread-1",
-        "DummyAsncEventListener_AsyncThread-2",
-        "DummyAsncEventListener_AsyncThread-3",
-        "DummyAsncEventListener_AsyncThread-4",
-        "DummyAsncEventListener_AsyncThread-5"})));
+    assertTrue(aysncThreadNames.containsAll(Arrays.asList(
+      "DummyAsncEventListener_AsyncThread-1",
+      "DummyAsncEventListener_AsyncThread-2",
+      "DummyAsncEventListener_AsyncThread-3",
+      "DummyAsncEventListener_AsyncThread-4",
+      "DummyAsncEventListener_AsyncThread-5")));
   }
 
-  private static class DummyAsncEventListener extends AsyncEventListener<QuerySuccess>{
+  private static class DummyAsncEventListener extends AsyncEventListener<QuerySuccess> {
     public DummyAsncEventListener(){
-      super(5,10); //core pool = 5 and max Pool size =10
+      super(5, 10); //core pool = 5 and max Pool size =10
     }
     @Override
     public void process(QuerySuccess event) {
       throw new RuntimeException("Simulated Exception");
     }
-    
   }
 
 }

@@ -123,7 +123,7 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
       return;
     }
     try{
-      //Create and Send EMAIL 
+      //Create and Send EMAIL
       String queryName = queryContext.getQueryName();
       String mailSubject = "Query " + (StringUtils.isBlank(queryName) ? "" : (queryName + " "))
         + queryContext.getStatus().getStatus() + ": " + event.getQueryHandle();
@@ -135,7 +135,8 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
       String cc = queryContext.getConf().get(QUERY_RESULT_EMAIL_CC, QUERY_RESULT_DEFAULT_EMAIL_CC);
 
       log.info("Sending completion email for query handle: {}", event.getQueryHandle());
-      sendMail(host, port, new Email(from, to, cc, mailSubject, mailMessage), mailSmtpTimeout, mailSmtpConnectionTimeout);
+      sendMail(host, port, new Email(from, to, cc, mailSubject, mailMessage), mailSmtpTimeout,
+          mailSmtpConnectionTimeout);
     }catch (Exception e) {
       MetricsService metricsService = LensServices.get().getService(MetricsService.NAME);
       metricsService.incrCounter(QueryEndNotifier.class, EMAIL_ERROR_COUNTER);

@@ -21,10 +21,11 @@ package org.apache.lens.server.api.events;
 import java.util.concurrent.*;
 
 import org.apache.lens.server.api.error.LensException;
+
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
-import lombok.Getter;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 /**
  * Event listeners should implement this class if they wish to process events asynchronously. This should be used when

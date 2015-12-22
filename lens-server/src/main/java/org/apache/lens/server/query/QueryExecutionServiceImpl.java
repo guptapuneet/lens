@@ -532,6 +532,8 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       try {
         if (getCtx().getStatus().getStatus().equals(SUCCESSFUL)) {
           if (getCtx().getStatus().isResultSetAvailable()) {
+            //TODO check if query can be purged based on in memory persistence window also. 
+            //TODO context.InMemoryPersistence == true and (current time - submission time) > window  
             LensResultSet rs = getResultset();
             log.info("Resultset for {} is {}", getQueryHandle(), rs);
             return rs.canBePurged();
@@ -1919,8 +1921,11 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    */
   private QueryHandleWithResultSet executeTimeoutInternal(LensSessionHandle sessionHandle, QueryContext ctx,
     long timeoutMillis, Configuration conf) throws LensException {
+    //TODO check if persist in  memory is enabled. If yes set the same in context
+    //TODO property name to check = lens.query.store.persistent.resultset.inmemory (false by default)
+    //TODO other properties lens.query.max.inmemory.persistent.resultset.rows, lens.query.inmemory.persistence.window.secs
     QueryHandle handle = submitQuery(ctx);
-    QueryHandleWithResultSet result = new QueryHandleWithResultSet(handle);
+    QueryHandleWithResultSet result = new QueryHandleWithResultSet(handle);//TODO Set Metadata also.
     // getQueryContext calls updateStatus, which fires query events if there's a change in status
 
     while (isQueued(sessionHandle, handle)) {
@@ -1930,6 +1935,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         log.error("Encountered Interrupted exception.", e);
       }
     }
+
     QueryCompletionListener listener = new QueryCompletionListenerImpl(handle);
     if (getQueryContext(sessionHandle, handle).getSelectedDriver() == null) {
       result.setStatus(getQueryContext(sessionHandle, handle).getStatus());
@@ -1948,6 +1954,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         }
       }
     }
+    //TODO wait for ResultFormatter to create In Memory Result. How ?
 
     if (getQueryContext(sessionHandle, handle).getStatus().finished()) {
       if (getQueryContext(sessionHandle, handle).getStatus().isResultSetAvailable()) {

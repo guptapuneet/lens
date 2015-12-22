@@ -996,4 +996,9 @@ public final class LensConfConstants {
    * The Constant DEFAULT_HDFS_OUTPUT_RETENTION.
    */
   public static final String DEFAULT_HDFS_OUTPUT_RETENTION = "1 day";
+
+  public static final String PREFETCH_INMEMORY_RESULTSET = QUERY_PFX + "prefetch.inmemory.resultset";
+  public static final boolean DEFAULT_PREFETCH_INMEMORY_RESULTSET = false;
+  public static final String PREFETCH_INMEMORY_RESULTSET_ROWS = QUERY_PFX + "prefetch.inmemory.resultset.rows";
+  public static final int DEFAULT_PREFETCH_INMEMORY_RESULTSET_ROWS = 100;
 }

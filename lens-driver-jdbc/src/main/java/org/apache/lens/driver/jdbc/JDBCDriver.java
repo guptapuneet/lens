@@ -20,11 +20,9 @@ package org.apache.lens.driver.jdbc;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
-
 import static org.apache.lens.driver.jdbc.JDBCDriverConfConstants.*;
 import static org.apache.lens.driver.jdbc.JDBCDriverConfConstants.ConnectionPoolProperties.*;
 import static org.apache.lens.server.api.util.LensUtil.getImplementations;
-
 import static com.google.common.base.Preconditions.checkState;
 
 import java.io.IOException;
@@ -58,9 +56,7 @@ import org.apache.lens.server.api.query.cost.QueryCost;
 import org.apache.lens.server.api.query.rewrite.QueryRewriter;
 import org.apache.lens.server.model.LogSegregationContext;
 import org.apache.lens.server.model.MappedDiagnosticLogSegregationContext;
-
 import org.apache.commons.lang3.StringUtils;
-
  import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
@@ -233,7 +229,13 @@ public class JDBCDriver extends AbstractLensDriver {
     private boolean isClosed;
 
     /** The lens result set. */
-    private JDBCResultSet lensResultSet;
+    private InMemoryResultSet lensResultSet;
+
+    private JdbcQueryContext queryContext;
+
+    public QueryResult(JdbcQueryContext queryContext) {
+      this.queryContext = queryContext;
+    }
 
     /**
      * Close.
@@ -275,7 +277,15 @@ public class JDBCDriver extends AbstractLensDriver {
         throw new LensException("Query failed!", error);
       }
       if (lensResultSet == null) {
-        lensResultSet = new JDBCResultSet(this, resultSet, closeAfterFetch);
+
+        JDBCResultSet jdbcResultSet = new JDBCResultSet(this, resultSet, closeAfterFetch);
+
+        if (queryContext.getLensContext().isPreFetchInMemoryResultEnabled()) {
+          lensResultSet = new PartiallyFetchedInMemoryResultSet(jdbcResultSet, queryContext.getLensContext().
+              getPreFetchInMemoryResultRows());
+        } else {
+          lensResultSet = jdbcResultSet;
+        }
       }
       return lensResultSet;
     }
@@ -313,7 +323,7 @@ public class JDBCDriver extends AbstractLensDriver {
 
       Statement stmt;
       Connection conn = null;
-      QueryResult result = new QueryResult();
+      QueryResult result = new QueryResult(queryContext);
       try {
         queryContext.setQueryResult(result);
 

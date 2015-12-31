@@ -32,6 +32,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import org.apache.lens.cube.error.LensCubeErrorCode;
+import org.apache.lens.cube.error.NoCandidateDimAvailableException;
 import org.apache.lens.cube.error.NoCandidateFactAvailableException;
 import org.apache.lens.cube.metadata.*;
 import org.apache.lens.cube.parse.CandidateTablePruneCause.SkipStorageCause;
@@ -40,12 +41,12 @@ import org.apache.lens.server.api.LensServerAPITestUtil;
 import org.apache.lens.server.api.error.LensException;
 
 import org.apache.commons.lang.time.DateUtils;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.Driver;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.ql.parse.ParseException;
 import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
 
@@ -56,7 +57,6 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -408,7 +408,7 @@ public class TestCubeRewriter extends TestQueryRewrite {
           return getWhereForMonthlyDailyAndHourly2monthsUnionQuery(storage);
         }
       };
-      try{
+      try {
         rewrite("select cityid as `City ID`, msr8, msr7 as `Third measure` "
           + "from testCube where " + TWO_MONTHS_RANGE_UPTO_HOURS, conf);
         fail("Union feature is disabled, should have failed");
@@ -496,6 +496,35 @@ public class TestCubeRewriter extends TestQueryRewrite {
       getStorageToUpdatePeriodMap().clear();
     }
 
+  }
+
+  @Test
+  public void testMultiFactMultiStorage() throws ParseException, LensException {
+    Configuration conf = LensServerAPITestUtil.getConfiguration(
+      CubeQueryConfUtil.ENABLE_STORAGES_UNION, true,
+      CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C1,C2",
+      getValidStorageTablesKey("testfact"), "C1_testFact,C2_testFact",
+      getValidUpdatePeriodsKey("testfact", "C1"), "HOURLY",
+      getValidUpdatePeriodsKey("testfact", "C2"), "DAILY",
+      getValidUpdatePeriodsKey("testfact2_raw", "C1"), "YEARLY",
+      getValidUpdatePeriodsKey("testfact2_raw", "C2"), "YEARLY");
+    CubeTestSetup.getStorageToUpdatePeriodMap().put("c1_testfact", Lists.newArrayList(HOURLY));
+    CubeTestSetup.getStorageToUpdatePeriodMap().put("c2_testfact", Lists.newArrayList(DAILY));
+    String whereCond = "zipcode = 'a' and cityid = 'b' and (" + TWO_DAYS_RANGE_SPLIT_OVER_UPDATE_PERIODS + ")";
+    String hqlQuery = rewrite("cube select zipcode, count(msr4), sum(msr15) from testCube where " + whereCond, conf);
+    System.out.println(hqlQuery);
+    String possibleStart1 = "SELECT COALESCE(mq1.zipcode, mq2.zipcode) zipcode, mq1.msr4 msr4, mq2.msr15 msr15 FROM ";
+    String possibleStart2 = "SELECT COALESCE(mq1.zipcode, mq2.zipcode) zipcode, mq2.msr4 msr4, mq1.msr15 msr15 FROM ";
+
+    assertTrue(hqlQuery.startsWith(possibleStart1) || hqlQuery.startsWith(possibleStart2));
+    compareContains(rewrite("cube select zipcode as `zipcode`, sum(msr15) as `msr15` from testcube where " + whereCond,
+      conf), hqlQuery);
+    compareContains(rewrite("cube select zipcode as `zipcode`, count(msr4) as `msr4` from testcube where " + whereCond,
+      conf), hqlQuery);
+    assertTrue(hqlQuery.endsWith("on mq1.zipcode <=> mq2.zipcode"));
+    // No time_range_in should be remaining
+    assertFalse(hqlQuery.contains("time_range_in"));
+    //TODO: handle having after LENS-813, also handle for order by and limit
   }
 
   @Test
@@ -1078,6 +1107,23 @@ public class TestCubeRewriter extends TestQueryRewrite {
   }
 
   @Test
+  public void testNoCandidateDimAvailableExceptionCompare() throws Exception {
+
+    //Max cause COLUMN_NOT_FOUND, Ordinal 9
+    PruneCauses<CubeDimensionTable> pr1 = new PruneCauses<CubeDimensionTable>();
+    pr1.addPruningMsg(new CubeDimensionTable(new Table("test", "citydim")),
+            CandidateTablePruneCause.columnNotFound("test1", "test2", "test3"));
+    NoCandidateDimAvailableException ne1 = new NoCandidateDimAvailableException(pr1);
+
+    //Max cause EXPRESSION_NOT_EVALUABLE, Ordinal 6
+    PruneCauses<CubeDimensionTable> pr2 = new PruneCauses<CubeDimensionTable>();
+    pr2.addPruningMsg(new CubeDimensionTable(new Table("test", "citydim")),
+            CandidateTablePruneCause.expressionNotEvaluable("testexp1", "testexp2"));
+    NoCandidateDimAvailableException ne2 = new NoCandidateDimAvailableException(pr2);
+    assertEquals(ne1.compareTo(ne2), 3);
+  }
+
+  @Test
   public void testDimensionQueryWithMultipleStorages() throws Exception {
     String hqlQuery = rewrite("select name, stateid from" + " citydim", getConf());
     String expected =
@@ -1095,23 +1141,24 @@ public class TestCubeRewriter extends TestQueryRewrite {
     // state table is present on c1 with partition dumps and partitions added
     LensException e = getLensExceptionInRewrite("select name, capital from statedim ", conf);
     assertEquals(e.getErrorCode(), LensCubeErrorCode.NO_CANDIDATE_DIM_AVAILABLE.getLensErrorInfo().getErrorCode());
-    assertEquals(extractPruneCause(e), new PruneCauses.BriefAndDetailedError(
+    NoCandidateDimAvailableException ne = (NoCandidateDimAvailableException) e;
+    assertEquals(ne.getJsonMessage(), new PruneCauses.BriefAndDetailedError(
       NO_CANDIDATE_STORAGES.errorFormat,
       new HashMap<String, List<CandidateTablePruneCause>>() {
         {
           put("statetable", Arrays.asList(CandidateTablePruneCause.noCandidateStorages(
-              new HashMap<String, SkipStorageCause>() {
-                {
-                  put("c1_statetable", new SkipStorageCause(SkipStorageCode.NO_PARTITIONS));
-                }
-              }))
+            new HashMap<String, SkipStorageCause>() {
+              {
+                put("c1_statetable", new SkipStorageCause(SkipStorageCode.NO_PARTITIONS));
+              }
+            }))
           );
           put("statetable_partitioned", Arrays.asList(CandidateTablePruneCause.noCandidateStorages(
-              new HashMap<String, SkipStorageCause>() {
-                {
-                  put("C3_statetable_partitioned", new SkipStorageCause(SkipStorageCode.UNSUPPORTED));
-                }
-              }))
+            new HashMap<String, SkipStorageCause>() {
+              {
+                put("C3_statetable_partitioned", new SkipStorageCause(SkipStorageCode.UNSUPPORTED));
+              }
+            }))
           );
         }
       }

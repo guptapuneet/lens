@@ -171,6 +171,8 @@ public class QueryContext extends AbstractQueryContext {
   @Getter
   private transient int preFetchInMemoryResultRows;
 
+  @Getter
+  private transient long preFetchInMemoryResultTTL;
   /**
    * Creates context from query
    *
@@ -237,11 +239,13 @@ public class QueryContext extends AbstractQueryContext {
       LensConfConstants.DEFAULT_PERSISTENT_RESULT_SET);
     this.isDriverPersistent = conf.getBoolean(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER,
       LensConfConstants.DEFAULT_DRIVER_PERSISTENT_RESULT_SET);
-    this.preFetchInMemoryResult = conf.getBoolean(LensConfConstants.PREFETCH_INMEMORY_RESULTSET,
+    this.preFetchInMemoryResultEnabled = conf.getBoolean(LensConfConstants.PREFETCH_INMEMORY_RESULTSET,
         LensConfConstants.DEFAULT_PREFETCH_INMEMORY_RESULTSET);
-    if (this.preFetchInMemoryResult) {
+    if (this.preFetchInMemoryResultEnabled) {
       this.preFetchInMemoryResultRows = conf.getInt(LensConfConstants.PREFETCH_INMEMORY_RESULTSET_ROWS,
           LensConfConstants.DEFAULT_PREFETCH_INMEMORY_RESULTSET_ROWS);
+      this.preFetchInMemoryResultTTL  = conf.getLong(LensConfConstants.PREFETCH_INMEMORY_RESULTSET_TTL_MILLIS,
+          LensConfConstants.DEFAULT_PREFETCH_INMEMORY_RESULTSET_TTL_MILLIS);
     }
     this.userQuery = userQuery;
     if (selectedDriver != null) {

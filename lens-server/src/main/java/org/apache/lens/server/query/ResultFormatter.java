@@ -119,9 +119,6 @@ public class ResultFormatter extends AsyncEventListener<QueryExecuted> {
             // write all files from persistent directory
             ((PersistedOutputFormatter) formatter).addRowsFromPersistedPath(persistedDirectory);
           } else {
-            //TODO  decide if InMemory persistence is required. If yes, Keep max 100 rows in memory List<ResultRows>
-            //Create and add InMemoryQueryResult out of these 100 rows (or less) to context.
-            //If rows >100 , do not create InMemoryQueryResult, Use the 100 rows for formatting, followed by rest of the rows
             log.info("Result formatter for {} in inmemory result", queryHandle);
             InMemoryResultSet inmemory = (InMemoryResultSet) resultSet;
             while (inmemory.hasNext()) {

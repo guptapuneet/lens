@@ -71,17 +71,14 @@ import org.apache.lens.server.session.LensSessionImpl;
 import org.apache.lens.server.stats.StatisticsService;
 import org.apache.lens.server.util.FairPriorityBlockingQueue;
 import org.apache.lens.server.util.UtilityMethods;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hive.service.cli.CLIService;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1764,7 +1761,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     try {
       log.info("UpdateQueryConf: session:{} queryHandle: {}", sessionHandle, queryHandle);
       acquire(sessionHandle);
-      QueryContext ctx = getQueryContext(sessionHandle, queryHandle);
+      QueryContext ctx = getUpdatedQueryContext(sessionHandle, queryHandle);
       if (ctx != null && (ctx.queued())) {
         ctx.updateConf(newconf.getProperties());
         // TODO COnf changed event tobe raised
@@ -1798,14 +1795,14 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
   }
 
   /**
-   * Gets the query context.
+   *  Gets the query context. For non-purged queries the status is updated before returning the context 
    *
    * @param sessionHandle the session handle
    * @param queryHandle   the query handle
    * @return the query context
    * @throws LensException the lens exception
    */
-  QueryContext getQueryContext(LensSessionHandle sessionHandle, QueryHandle queryHandle) throws LensException {
+  QueryContext getUpdatedQueryContext(LensSessionHandle sessionHandle, QueryHandle queryHandle) throws LensException {
     try {
       acquire(sessionHandle);
       QueryContext ctx = allQueries.get(queryHandle);
@@ -1847,7 +1844,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    */
   @Override
   public LensQuery getQuery(LensSessionHandle sessionHandle, QueryHandle queryHandle) throws LensException {
-    return getQueryContext(sessionHandle, queryHandle).toLensQuery();
+    return getUpdatedQueryContext(sessionHandle, queryHandle).toLensQuery();
   }
 
   /**
@@ -1921,9 +1918,6 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    */
   private QueryHandleWithResultSet executeTimeoutInternal(LensSessionHandle sessionHandle, QueryContext ctx,
     long timeoutMillis, Configuration conf) throws LensException {
-    //TODO check if persist in  memory is enabled. If yes set the same in context
-    //TODO property name to check = lens.query.store.persistent.resultset.inmemory (false by default)
-    //TODO other properties lens.query.max.inmemory.persistent.resultset.rows, lens.query.inmemory.persistence.window.secs
     QueryHandle handle = submitQuery(ctx);
     QueryHandleWithResultSet result = new QueryHandleWithResultSet(handle);//TODO Set Metadata also.
     // getQueryContext calls updateStatus, which fires query events if there's a change in status
@@ -1936,15 +1930,17 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       }
     }
 
-    QueryCompletionListener listener = new QueryCompletionListenerImpl(handle);
-    if (getQueryContext(sessionHandle, handle).getSelectedDriver() == null) {
-      result.setStatus(getQueryContext(sessionHandle, handle).getStatus());
+    QueryContext queryCtx = getUpdatedQueryContext(sessionHandle, handle);
+
+    if (queryCtx.getSelectedDriver() == null) {
+      result.setStatus(queryCtx.getStatus());
       return result;
     }
-    synchronized (ctx) {
-      if (!ctx.getStatus().finished()) {
-        getQueryContext(sessionHandle, handle).getSelectedDriver()
-          .registerForCompletionNotification(handle, timeoutMillis, listener);
+
+    QueryCompletionListenerImpl listener = new QueryCompletionListenerImpl(handle);
+    synchronized (queryCtx) {
+      if (!queryCtx.getStatus().finished()) {
+        queryCtx.getSelectedDriver().registerForCompletionNotification(handle, timeoutMillis, listener);
         try {
           synchronized (listener) {
             listener.wait(timeoutMillis);
@@ -1954,23 +1950,37 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         }
       }
     }
-    //TODO wait for ResultFormatter to create In Memory Result. How ?
 
-    if (getQueryContext(sessionHandle, handle).getStatus().finished()) {
-      if (getQueryContext(sessionHandle, handle).getStatus().isResultSetAvailable()) {
-        result.setResult(getResultset(handle).toQueryResult());
+    LensResultSet resultSet = null ;
+    boolean resultInitailized = false;
+    queryCtx = getUpdatedQueryContext(sessionHandle, handle);
+    //TODO check how Non Persistence case is handled.
+    if (listener.querySuccessful && queryCtx.isPreFetchInMemoryResultEnabled()) {
+      resultSet = queryCtx.getSelectedDriver().fetchResultSet(queryCtx);
+      if (resultSet instanceof PartiallyFetchedInMemoryResultSet) {
+        PartiallyFetchedInMemoryResultSet partialnMemoryResult = (PartiallyFetchedInMemoryResultSet) resultSet;
+        if (partialnMemoryResult.isComplteleyFetched()) {
+          result.setResult(new InMemoryQueryResult(partialnMemoryResult.getPreFetchedRows()));
+          result.setQueryResultSetMetadata(partialnMemoryResult.getMetadata().toQueryResultSetMetadata());
+          resultInitailized = true;
+        } 
       }
     }
 
-    result.setStatus(getQueryContext(sessionHandle, handle).getStatus());
-
+    queryCtx = getUpdatedQueryContext(sessionHandle, handle);
+    if (!resultInitailized && queryCtx.finished() && queryCtx.getStatus().isResultSetAvailable()) {
+      resultSet = getResultset(handle);
+      result.setQueryResultSetMetadata(resultSet.getMetadata().toQueryResultSetMetadata());
+      result.setResult(resultSet.toQueryResult());
+    }
+    result.setStatus(queryCtx.getStatus());
     return result;
   }
 
   private boolean isQueued(final LensSessionHandle sessionHandle, final QueryHandle handle)
     throws LensException {
     // getQueryContext calls updateStatus, which fires query events if there's a change in status
-    QueryContext query = getQueryContext(sessionHandle, handle);
+    QueryContext query = getUpdatedQueryContext(sessionHandle, handle);
     synchronized (query) {
       return query.queued();
     }
@@ -1984,7 +1994,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     /**
      * The succeeded.
      */
-    boolean succeeded = false;
+    boolean querySuccessful = false;
 
     /**
      * The handle.
@@ -2009,7 +2019,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     @Override
     public void onCompletion(QueryHandle handle) {
       synchronized (this) {
-        succeeded = true;
+        querySuccessful = true;
         log.info("Query {} with time out succeeded", handle);
         this.notify();
       }
@@ -2024,7 +2034,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     @Override
     public void onError(QueryHandle handle, String error) {
       synchronized (this) {
-        succeeded = false;
+        querySuccessful = false;
         log.info("Query {} with time out failed", handle);
         this.notify();
       }
@@ -2105,7 +2115,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     try {
       log.info("CancelQuery: session:{} query:{}", sessionHandle, queryHandle);
       acquire(sessionHandle);
-      QueryContext ctx = getQueryContext(sessionHandle, queryHandle);
+      QueryContext ctx = getUpdatedQueryContext(sessionHandle, queryHandle);
 
       synchronized (ctx) {
 
@@ -2577,7 +2587,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     } catch (IOException e) {
       throw new LensException(e);
     }
-    final QueryContext ctx = getQueryContext(sessionHandle, queryHandle);
+    final QueryContext ctx = getUpdatedQueryContext(sessionHandle, queryHandle);
     String resultFSReadUrl = conf.get(RESULT_FS_READ_URL);
     if (resultFSReadUrl != null) {
       try {

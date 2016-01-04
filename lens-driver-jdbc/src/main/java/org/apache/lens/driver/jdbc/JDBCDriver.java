@@ -233,10 +233,10 @@ public class JDBCDriver extends AbstractLensDriver {
     /** The lens result set. */
     private InMemoryResultSet lensResultSet;
 
-    private JdbcQueryContext queryContext;
+    private JdbcQueryContext jdbcQueryContext;
 
     public QueryResult(JdbcQueryContext queryContext) {
-      this.queryContext = queryContext;
+      this.jdbcQueryContext = queryContext;
     }
 
     /**
@@ -279,12 +279,12 @@ public class JDBCDriver extends AbstractLensDriver {
         throw new LensException("Query failed!", error);
       }
       if (lensResultSet == null) {
-
         JDBCResultSet jdbcResultSet = new JDBCResultSet(this, resultSet, closeAfterFetch);
-
-        if (queryContext.getLensContext().isPreFetchInMemoryResultEnabled()) {
-          lensResultSet = new PartiallyFetchedInMemoryResultSet(jdbcResultSet, queryContext.getLensContext().
-              getPreFetchInMemoryResultRows());
+        QueryContext queryCtx = jdbcQueryContext.getLensContext();
+        if (queryCtx.isPreFetchInMemoryResultEnabled()) {
+          lensResultSet = new PartiallyFetchedInMemoryResultSet(jdbcResultSet,
+              queryCtx.getPreFetchInMemoryResultRows(),
+              queryCtx.getSubmissionTime() + queryCtx.getPreFetchInMemoryResultTTL());
         } else {
           lensResultSet = jdbcResultSet;
         }

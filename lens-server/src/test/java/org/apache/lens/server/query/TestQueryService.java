@@ -687,7 +687,7 @@ public class TestQueryService extends LensJerseyTest {
     assertTrue(lensQuery.getDriverStartTime() > 0);
     assertTrue(lensQuery.getDriverFinishTime() > 0);
     assertTrue(lensQuery.getFinishTime() > 0);
-    QueryContext ctx = queryService.getQueryContext(lensSessionId, lensQuery.getQueryHandle());
+    QueryContext ctx = queryService.getUpdatedQueryContext(lensSessionId, lensQuery.getQueryHandle());
     assertNotNull(ctx.getPhase1RewrittenQuery());
     assertEquals(ctx.getPhase1RewrittenQuery(), ctx.getUserQuery()); //Since there is no rewriter in this test
     assertEquals(lensQuery.getStatus().getStatus(), QueryStatus.Status.SUCCESSFUL);

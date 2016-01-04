@@ -22,11 +22,11 @@ package org.apache.lens.server.api.driver;
 import java.util.ArrayList;
 import java.util.List;
 
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-
 import org.apache.lens.api.query.ResultRow;
 import org.apache.lens.server.api.error.LensException;
+
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * This is a wrapper over InMemoryResultSet which pre-fetches requested number of rows in memory. All calls are 
@@ -41,60 +41,106 @@ import org.apache.lens.server.api.error.LensException;
  */
 @Slf4j
 public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
-
+  /**
+   * Underlying in-memory result set
+   */
   private InMemoryResultSet inMemoryRS;
-  private int reqPreFetchSize;
-  private int actualPreFetchSize;
+
+  /**
+   *Number for rows pre-fetched and kept in memory.
+   */
+  private int numOfPreFetchedRows;
+
+  /**
+   *Cursor for the pre-fetched in memory result.
+   */
   private int cursor;
+
+  /**
+   * Indicates whether the underlying in-memory result has been completely pre-fetched and kept in memory.
+   */
   @Getter
   private boolean isComplteleyFetched;
+
+  /**
+   * The pre-fteched in memory result cache.
+   */
   @Getter
   private List<ResultRow> preFetchedRows;
 
-  public PartiallyFetchedInMemoryResultSet(InMemoryResultSet inMemoryRS, int reqPreFetchSize) throws LensException {
+  private long cacheValidUnitlTimeMillis;
+  /**
+   * Constructor
+   * @param inMemoryRS : Underlying in-memory result set
+   * @param reqPreFetchSize : requested number of rows to be pre-fetched and cached.
+   * @throws LensException
+   */
+  public PartiallyFetchedInMemoryResultSet(InMemoryResultSet inMemoryRS, int reqPreFetchSize ,
+      long cacheValidUnitlTimeMillis) throws LensException {
     this.inMemoryRS = inMemoryRS;
-    this.reqPreFetchSize = reqPreFetchSize;
+    this.cacheValidUnitlTimeMillis = cacheValidUnitlTimeMillis;
     if (reqPreFetchSize <= 0) {
       throw new IllegalArgumentException("Invalid pre fetch size " + reqPreFetchSize);
     }
-    preFetchRows();
+    preFetchRows(reqPreFetchSize);
   }
 
-  private void preFetchRows() throws LensException {
-    preFetchedRows = new ArrayList<ResultRow>(reqPreFetchSize);
-    while(inMemoryRS.hasNext()) {
-      preFetchedRows.add(inMemoryRS.next());
-      if (++actualPreFetchSize >= reqPreFetchSize) {
+  private void preFetchRows(int reqPreFetchSize) throws LensException {
+    preFetchedRows = new ArrayList<ResultRow>(reqPreFetchSize + 1); //+1 for extra row to decide on isComplteleyFetched
+    boolean hasNext;
+    while ((hasNext = inMemoryRS.hasNext()) == true) {
+      if (numOfPreFetchedRows >= reqPreFetchSize) {
         break;
       }
+      preFetchedRows.add(inMemoryRS.next());
+      numOfPreFetchedRows++;
     }
-    if (actualPreFetchSize < reqPreFetchSize) {
-      isComplteleyFetched = true;
+
+    if (!hasNext) {
+      isComplteleyFetched = true; // No more rows to be read form inMemory result.
     }
-    log.info("Pre Fetched {} rows of requested {} rows", actualPreFetchSize, reqPreFetchSize);
+    else {
+      isComplteleyFetched = false;
+      //we have accessed ( hasNext() for ) one extra row. Lets cache it too.
+      preFetchedRows.add(inMemoryRS.next());
+      }
+
+    log.info("Pre-Fetched {} rows of requested {} rows of InMemory Result and isComplteleyFetched = {}",
+        numOfPreFetchedRows, reqPreFetchSize, isComplteleyFetched);
   }
 
   @Override
   public boolean seekToStart() throws LensException {
     cursor = 0;
-    return inMemoryRS.seekToStart();
+    if (!isComplteleyFetched) {
+      return inMemoryRS.seekToStart();
+    }
+    else {
+      return true;
+    }
   }
 
   @Override
   public boolean hasNext() throws LensException {
+    boolean hasNext;
     cursor++;
-    if (cursor <= actualPreFetchSize) {
-      return true;
+    if (cursor <= numOfPreFetchedRows) {
+      hasNext = true;
+    } else if (isComplteleyFetched) {
+      hasNext = false;
+    } else {
+      hasNext = inMemoryRS.hasNext();
     }
-    return inMemoryRS.hasNext();
+    return hasNext; //TODO return directly . no need to have local variable
   }
 
   @Override
   public ResultRow next() throws LensException {
-    if (cursor <= actualPreFetchSize) {
+    if (cursor <= numOfPreFetchedRows) {
       return preFetchedRows.get(cursor-1);
+    } else {
+      return inMemoryRS.next();
     }
-    return inMemoryRS.next();
   }
 
   @Override
@@ -104,12 +150,25 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
 
   @Override
   public Integer size() throws LensException {
-    return inMemoryRS.size();
+    if (isComplteleyFetched) {
+      return numOfPreFetchedRows;
+    } else {
+      return inMemoryRS.size();
+    }
   }
 
   @Override
   public LensResultSetMetadata getMetadata() throws LensException {
     return inMemoryRS.getMetadata();
+  }
+
+  @Override
+  public boolean canBePurged() {
+   if (System.currentTimeMillis() < this.cacheValidUnitlTimeMillis) {
+       return false;
+    } else {
+      return super.canBePurged();
+    }
   }
 
 }

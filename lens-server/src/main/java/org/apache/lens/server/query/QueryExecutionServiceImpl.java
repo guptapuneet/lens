@@ -529,8 +529,6 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       try {
         if (getCtx().getStatus().getStatus().equals(SUCCESSFUL)) {
           if (getCtx().getStatus().isResultSetAvailable()) {
-            //TODO check if query can be purged based on in memory persistence window also. 
-            //TODO context.InMemoryPersistence == true and (current time - submission time) > window  
             LensResultSet rs = getResultset();
             log.info("Resultset for {} is {}", getQueryHandle(), rs);
             return rs.canBePurged();
@@ -1919,7 +1917,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
   private QueryHandleWithResultSet executeTimeoutInternal(LensSessionHandle sessionHandle, QueryContext ctx,
     long timeoutMillis, Configuration conf) throws LensException {
     QueryHandle handle = submitQuery(ctx);
-    QueryHandleWithResultSet result = new QueryHandleWithResultSet(handle);//TODO Set Metadata also.
+    QueryHandleWithResultSet result = new QueryHandleWithResultSet(handle);
     // getQueryContext calls updateStatus, which fires query events if there's a change in status
 
     while (isQueued(sessionHandle, handle)) {

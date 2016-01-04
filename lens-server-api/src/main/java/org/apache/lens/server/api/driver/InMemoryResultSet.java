@@ -81,7 +81,7 @@ public abstract class InMemoryResultSet extends LensResultSet {
       rows.add(next());
     }
     fullyAccessed = true;
-    return new InMemoryQueryResult(rows);//TODO . Should pass metadata also and use it for creating result 
+    return new InMemoryQueryResult(rows); 
   }
   public boolean isHttpResultAvailable() throws LensException {
     return false;

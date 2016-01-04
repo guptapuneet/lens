@@ -55,6 +55,7 @@ public class QueryHandleWithResultSet extends QuerySubmitResult {
 
   @Getter
   @Setter
+  //TODO update documentation
   private QueryResultSetMetadata queryResultSetMetadata;
 
   /**
@@ -63,8 +64,6 @@ public class QueryHandleWithResultSet extends QuerySubmitResult {
   @Getter
   @Setter
   private QueryStatus status;
-
-  //TODO private QueryResultSetMetadata metadata;
 
   /**
    * Instantiates a new query handle with result set.

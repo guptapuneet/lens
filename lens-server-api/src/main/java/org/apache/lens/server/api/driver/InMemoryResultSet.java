@@ -81,7 +81,7 @@ public abstract class InMemoryResultSet extends LensResultSet {
       rows.add(next());
     }
     fullyAccessed = true;
-    return new InMemoryQueryResult(rows); 
+    return new InMemoryQueryResult(rows);
   }
   public boolean isHttpResultAvailable() throws LensException {
     return false;

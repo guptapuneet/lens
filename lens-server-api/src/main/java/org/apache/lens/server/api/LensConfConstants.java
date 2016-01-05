@@ -998,7 +998,7 @@ public final class LensConfConstants {
   public static final String DEFAULT_HDFS_OUTPUT_RETENTION = "1 day";
 
   /**
-   * Pre Fetch results in case of in memory result sets. 
+   * Pre Fetch results in case of in memory result sets.
    */
   public static final String PREFETCH_INMEMORY_RESULTSET = QUERY_PFX + "prefetch.inmemory.resultset";
 
@@ -1018,13 +1018,13 @@ public final class LensConfConstants {
   public static final int DEFAULT_PREFETCH_INMEMORY_RESULTSET_ROWS = 100;
 
   /**
-   * Time to Live for Pre Fetched results 
+   * Time to Live for Pre Fetched results
    */
   public static final String PREFETCH_INMEMORY_RESULTSET_TTL_MILLIS = QUERY_PFX
       +"prefetch.inmemory.resultset.ttl.millis";
 
   /**
-   * Default Time to Live for Pre Fetched results is 60 secs from query submission time 
+   * Default Time to Live for Pre Fetched results is 60 secs from query submission time
    */
   public static final long DEFAULT_PREFETCH_INMEMORY_RESULTSET_TTL_MILLIS = 60000;
 

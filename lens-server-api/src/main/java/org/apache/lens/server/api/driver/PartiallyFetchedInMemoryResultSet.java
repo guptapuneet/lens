@@ -29,14 +29,14 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * This is a wrapper over InMemoryResultSet which pre-fetches requested number of rows in memory. All calls are 
+ * This is a wrapper over InMemoryResultSet which pre-fetches requested number of rows in memory. All calls are
  * delegated to the underlying InMemoryResultSet except for the calls that access pre-fetched rows.
- * 
+ *
  * This wrapper was created to support partial streaming of big result sets and complete streaming of SMALL result sets
- * along with persistence. The pre-fetched result available via {@link #getPreFetchedRows()} can be used for streaming 
+ * along with persistence. The pre-fetched result available via {@link #getPreFetchedRows()} can be used for streaming
  * while the persistence logic can iterate over complete result set using {@link #hasNext()} and {@link #next()}.
- * 
- * Please note that streaming and persistence can occur concurrently irrespective of the underlying InMemoryResultSet 
+ *
+ * Please note that streaming and persistence can occur concurrently irrespective of the underlying InMemoryResultSet
  * implementation.
  */
 @Slf4j
@@ -86,27 +86,27 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
   }
 
   private void preFetchRows(int reqPreFetchSize) throws LensException {
-    preFetchedRows = new ArrayList<ResultRow>(reqPreFetchSize + 1); //+1 for extra row to decide on isComplteleyFetched
-    boolean hasNext;
-    while ((hasNext = inMemoryRS.hasNext()) == true) {
+    preFetchedRows = new ArrayList<ResultRow>(reqPreFetchSize + 1); //+1 as one extra row is read
+    boolean hasNext = inMemoryRS.hasNext();
+    while (hasNext) {
       if (numOfPreFetchedRows >= reqPreFetchSize) {
         break;
       }
       preFetchedRows.add(inMemoryRS.next());
       numOfPreFetchedRows++;
+      hasNext = inMemoryRS.hasNext();
     }
 
     if (!hasNext) {
       isComplteleyFetched = true; // No more rows to be read form inMemory result.
-    }
-    else {
+    } else {
       isComplteleyFetched = false;
       //we have accessed ( hasNext() for ) one extra row. Lets cache it too.
       preFetchedRows.add(inMemoryRS.next());
-      }
+      numOfPreFetchedRows++;
+    }
 
-    log.info("Pre-Fetched {} rows of requested {} rows of InMemory Result and isComplteleyFetched = {}",
-        numOfPreFetchedRows, reqPreFetchSize, isComplteleyFetched);
+    log.info("Pre-Fetched {} rows and isComplteleyFetched = {}", numOfPreFetchedRows, isComplteleyFetched);
   }
 
   @Override
@@ -114,24 +114,21 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
     cursor = 0;
     if (!isComplteleyFetched) {
       return inMemoryRS.seekToStart();
-    }
-    else {
+    } else {
       return true;
     }
   }
 
   @Override
   public boolean hasNext() throws LensException {
-    boolean hasNext;
     cursor++;
     if (cursor <= numOfPreFetchedRows) {
-      hasNext = true;
+      return true;
     } else if (isComplteleyFetched) {
-      hasNext = false;
+      return false;
     } else {
-      hasNext = inMemoryRS.hasNext();
+      return inMemoryRS.hasNext();
     }
-    return hasNext; //TODO return directly . no need to have local variable
   }
 
   @Override
@@ -164,11 +161,15 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
 
   @Override
   public boolean canBePurged() {
-   if (System.currentTimeMillis() < this.cacheValidUnitlTimeMillis) {
-       return false;
+    if (System.currentTimeMillis() < this.cacheValidUnitlTimeMillis) {
+      return false;
     } else {
-      return super.canBePurged();
+      return inMemoryRS.canBePurged();
     }
   }
 
+  @Override
+  public void setFullyAccessed(boolean fullyAccessed) {
+    inMemoryRS.setFullyAccessed(fullyAccessed);
+  }
 }

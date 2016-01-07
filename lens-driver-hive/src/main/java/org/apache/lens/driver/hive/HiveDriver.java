@@ -125,8 +125,8 @@ public class HiveDriver extends AbstractLensDriver {
   /** The opHandle to hive session map. */
   private Map<OperationHandle, SessionHandle> opHandleToSession;
 
-  /** The query handle to InMemory result map. */
-  private Map<QueryHandle, InMemoryResultSet> queryToInMemoryResultMap = new HashMap<QueryHandle, InMemoryResultSet>();
+  /** The query handle String to InMemory result map. */
+  private Map<String, InMemoryResultSet> queryToInMemoryResultMap = new HashMap<String, InMemoryResultSet>();
 
   /** The session lock. */
   private final Lock sessionLock;
@@ -715,7 +715,7 @@ public class HiveDriver extends AbstractLensDriver {
   @Override
   public LensResultSet fetchResultSet(QueryContext ctx) throws LensException {
     log.info("FetchResultSet: {}", ctx.getQueryHandle());
-    LensResultSet result = queryToInMemoryResultMap.get(ctx.getQueryHandle()); // check in the cache first 
+    LensResultSet result = queryToInMemoryResultMap.get(ctx.getQueryHandle().getHandleIdString()); // check in the cache first 
     if (result != null) {
       return result;
     } else {
@@ -746,7 +746,7 @@ public class HiveDriver extends AbstractLensDriver {
       return;
     }
     log.info("CloseQuery: {}", handle);
-    queryToInMemoryResultMap.remove(handle);
+    queryToInMemoryResultMap.remove(handle.getHandleIdString());
     OperationHandle opHandle = hiveHandles.remove(handle);
     if (opHandle != null) {
       log.info("CloseQuery hiveHandle: {}", opHandle);
@@ -905,7 +905,7 @@ public class HiveDriver extends AbstractLensDriver {
               hiveInMemoryRS , context.getPreFetchInMemoryResultRows() ,
               context.getSubmissionTime() + context.getPreFetchInMemoryResultTTL());
           //PartiallyFetchedInMemoryResultSet may be accesed more than one . So cache it.
-          queryToInMemoryResultMap.put(context.getQueryHandle(), partiallyFetchedInMemoryRS);
+          queryToInMemoryResultMap.put(context.getQueryHandle().getHandleIdString(), partiallyFetchedInMemoryRS);
           return partiallyFetchedInMemoryRS;
         } else {
           return hiveInMemoryRS;

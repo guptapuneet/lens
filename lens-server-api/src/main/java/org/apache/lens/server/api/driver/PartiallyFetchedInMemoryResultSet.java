@@ -22,6 +22,8 @@ package org.apache.lens.server.api.driver;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.print.attribute.standard.NumberOfDocuments;
+
 import org.apache.lens.api.query.ResultRow;
 import org.apache.lens.server.api.error.LensException;
 
@@ -105,15 +107,15 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
       preFetchedRows.add(inMemoryRS.next());
       numOfPreFetchedRows++;
     }
-
     log.info("Pre-Fetched {} rows and isComplteleyFetched = {}", numOfPreFetchedRows, isComplteleyFetched);
   }
 
   @Override
   public boolean seekToStart() throws LensException {
     cursor = 0;
-    if (!isComplteleyFetched) {
-      return inMemoryRS.seekToStart();
+    if (!isComplteleyFetched && cursor > numOfPreFetchedRows ) {
+      boolean seekedToStart = inMemoryRS.seekToStart();
+      return seekedToStart;
     } else {
       return true;
     }
@@ -161,7 +163,7 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
 
   @Override
   public boolean canBePurged() {
-    if (System.currentTimeMillis() < this.cacheValidUnitlTimeMillis) {
+    if (isComplteleyFetched && System.currentTimeMillis() < this.cacheValidUnitlTimeMillis) {
       return false;
     } else {
       return inMemoryRS.canBePurged();

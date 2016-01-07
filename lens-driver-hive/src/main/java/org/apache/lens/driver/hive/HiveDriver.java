@@ -715,14 +715,8 @@ public class HiveDriver extends AbstractLensDriver {
   @Override
   public LensResultSet fetchResultSet(QueryContext ctx) throws LensException {
     log.info("FetchResultSet: {}", ctx.getQueryHandle());
-    LensResultSet result = queryToInMemoryResultMap.get(ctx.getQueryHandle().getHandleIdString()); // check in the cache first 
-    if (result != null) {
-      return result;
-    } else {
-      // This should be applicable only for a async query
-      return createResultSet(ctx, false);
-    }
-    
+    // This should be applicable only for a async query
+    return createResultSet(ctx, false);
   }
 
   /*
@@ -901,12 +895,21 @@ public class HiveDriver extends AbstractLensDriver {
       } else if (op.hasResultSet()) {
         HiveInMemoryResultSet hiveInMemoryRS = new HiveInMemoryResultSet(op, getClient(), closeAfterFetch);
         if (context.isPreFetchInMemoryResultEnabled() && context.getPreFetchInMemoryResultRows() > 0) {
-          PartiallyFetchedInMemoryResultSet partiallyFetchedInMemoryRS = new PartiallyFetchedInMemoryResultSet(
-              hiveInMemoryRS , context.getPreFetchInMemoryResultRows() ,
-              context.getSubmissionTime() + context.getPreFetchInMemoryResultTTL());
-          //PartiallyFetchedInMemoryResultSet may be accesed more than one . So cache it.
-          queryToInMemoryResultMap.put(context.getQueryHandle().getHandleIdString(), partiallyFetchedInMemoryRS);
-          return partiallyFetchedInMemoryRS;
+          synchronized (context) {
+            // check in the cache first
+            LensResultSet result = queryToInMemoryResultMap.get(context.getQueryHandle().getHandleIdString());  
+            if (result != null) {
+              return result;
+            } else {
+              //else create a new one and cache it.
+              PartiallyFetchedInMemoryResultSet partiallyFetchedInMemoryRS = new PartiallyFetchedInMemoryResultSet(
+                  hiveInMemoryRS , context.getPreFetchInMemoryResultRows() ,
+                  context.getSubmissionTime() + context.getPreFetchInMemoryResultTTL());
+              //PartiallyFetchedInMemoryResultSet may be accessed more than one . So cache it.
+              queryToInMemoryResultMap.put(context.getQueryHandle().getHandleIdString(), partiallyFetchedInMemoryRS);
+              return partiallyFetchedInMemoryRS;
+            }
+          }
         } else {
           return hiveInMemoryRS;
         }

@@ -125,6 +125,9 @@ public class HiveDriver extends AbstractLensDriver {
   /** The opHandle to hive session map. */
   private Map<OperationHandle, SessionHandle> opHandleToSession;
 
+  /** The query handle to InMemory result map. */
+  private Map<QueryHandle, InMemoryResultSet> queryToInMemoryResultMap = new HashMap<QueryHandle, InMemoryResultSet>();
+
   /** The session lock. */
   private final Lock sessionLock;
 
@@ -445,7 +448,7 @@ public class HiveDriver extends AbstractLensDriver {
       explainCtx.getSubmittedUser(), new LensConf(), explainConf, this, explainCtx.getLensSessionIdentifier(), false);
 
     // Get result set of explain
-    HiveInMemoryResultSet inMemoryResultSet = (HiveInMemoryResultSet) execute(explainQueryCtx);
+    InMemoryResultSet inMemoryResultSet = (InMemoryResultSet) execute(explainQueryCtx);
     List<String> explainOutput = new ArrayList<>();
     while (inMemoryResultSet.hasNext()) {
       explainOutput.add((String) inMemoryResultSet.next().getValues().get(0));
@@ -529,7 +532,7 @@ public class HiveDriver extends AbstractLensDriver {
       }
       result = createResultSet(ctx, true);
       // close the query immediately if the result is not inmemory result set
-      if (result == null || !(result instanceof HiveInMemoryResultSet)) {
+      if (result == null || !(result instanceof InMemoryResultSet)) {
         closeQuery(ctx.getQueryHandle());
       }
       // remove query handle from hiveHandles even in case of inmemory result set
@@ -712,8 +715,14 @@ public class HiveDriver extends AbstractLensDriver {
   @Override
   public LensResultSet fetchResultSet(QueryContext ctx) throws LensException {
     log.info("FetchResultSet: {}", ctx.getQueryHandle());
-    // This should be applicable only for a async query
-    return createResultSet(ctx, false);
+    LensResultSet result = queryToInMemoryResultMap.get(ctx.getQueryHandle()); // check in the cache first 
+    if (result != null) {
+      return result;
+    } else {
+      // This should be applicable only for a async query
+      return createResultSet(ctx, false);
+    }
+    
   }
 
   /*
@@ -737,6 +746,7 @@ public class HiveDriver extends AbstractLensDriver {
       return;
     }
     log.info("CloseQuery: {}", handle);
+    queryToInMemoryResultMap.remove(handle);
     OperationHandle opHandle = hiveHandles.remove(handle);
     if (opHandle != null) {
       log.info("CloseQuery hiveHandle: {}", opHandle);
@@ -889,7 +899,17 @@ public class HiveDriver extends AbstractLensDriver {
       if (context.isDriverPersistent()) {
         return new HivePersistentResultSet(new Path(context.getDriverResultPath()), op, getClient());
       } else if (op.hasResultSet()) {
-        return new HiveInMemoryResultSet(op, getClient(), closeAfterFetch);
+        HiveInMemoryResultSet hiveInMemoryRS = new HiveInMemoryResultSet(op, getClient(), closeAfterFetch);
+        if (context.isPreFetchInMemoryResultEnabled() && context.getPreFetchInMemoryResultRows() > 0) {
+          PartiallyFetchedInMemoryResultSet partiallyFetchedInMemoryRS = new PartiallyFetchedInMemoryResultSet(
+              hiveInMemoryRS , context.getPreFetchInMemoryResultRows() ,
+              context.getSubmissionTime() + context.getPreFetchInMemoryResultTTL());
+          //PartiallyFetchedInMemoryResultSet may be accesed more than one . So cache it.
+          queryToInMemoryResultMap.put(context.getQueryHandle(), partiallyFetchedInMemoryRS);
+          return partiallyFetchedInMemoryRS;
+        } else {
+          return hiveInMemoryRS;
+        }
       } else {
         // queries that do not have result
         return null;

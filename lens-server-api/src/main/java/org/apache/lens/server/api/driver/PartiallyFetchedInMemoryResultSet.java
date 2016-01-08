@@ -22,8 +22,6 @@ package org.apache.lens.server.api.driver;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.print.attribute.standard.NumberOfDocuments;
-
 import org.apache.lens.api.query.ResultRow;
 import org.apache.lens.server.api.error.LensException;
 
@@ -113,7 +111,7 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
   @Override
   public boolean seekToStart() throws LensException {
     cursor = 0;
-    if (!isComplteleyFetched && cursor > numOfPreFetchedRows ) {
+    if (!isComplteleyFetched && cursor > numOfPreFetchedRows) {
       boolean seekedToStart = inMemoryRS.seekToStart();
       return seekedToStart;
     } else {

@@ -20,6 +20,7 @@ package org.apache.lens.driver.jdbc;
 
 import static org.apache.lens.driver.jdbc.JDBCDriverConfConstants.*;
 import static org.apache.lens.driver.jdbc.JDBCDriverConfConstants.ConnectionPoolProperties.*;
+
 import static org.testng.Assert.*;
 
 import java.sql.*;
@@ -41,10 +42,13 @@ import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.cost.QueryCost;
 import org.apache.lens.server.api.user.MockDriverQueryHook;
 import org.apache.lens.server.api.util.LensUtil;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.session.SessionState;
+
 import org.apache.hive.service.cli.ColumnDescriptor;
+
 import org.testng.Assert;
 import org.testng.annotations.*;
 
@@ -416,10 +420,10 @@ public class TestJdbcDriver {
   @DataProvider
   public Object[][] executeWithPreFetchDP() {
     return new Object[][]{
-        //int rowsToPreFecth, boolean isComplteleyFetched, int rowsPreFetched, boolean createTable
-        {10, true, 10, true}, //result has 10 rows and all 10 rows are pre fetched
-        {5, false, 6, false}, //result has 10 rows and 5 rows are pre fetched. (Extra row is  fetched = 5+1 = 6)
-        {15, true, 10, false} //result has 10 rows and 15 rows are requested to be pre fetched
+        //int rowsToPreFecth, boolean isComplteleyFetched, int rowsPreFetched, boolean createTable, long ttlWindow
+        {10, true, 10, true, 20000}, //result has 10 rows and all 10 rows are pre fetched
+        {5, false, 6, false, 8000}, //result has 10 rows and 5 rows are pre fetched. (Extra row is  fetched = 5+1 = 6)
+        {15, true, 10, false, 8000} //result has 10 rows and 15 rows are requested to be pre fetched
       };
   }
 
@@ -429,17 +433,17 @@ public class TestJdbcDriver {
    * @param isComplteleyFetched : whether the wrapped in memory result has been completely accessed due to pre fetch
    * @param rowsPreFetched : actual rows pre-fetched
    * @param createTable : whether to create a table before the test case is run
+   * @param ttlWindow :window from submission time for pre fetched results to not get purged
    * @throws Exception
    */
   @Test(dataProvider = "executeWithPreFetchDP")
   public void testExecuteWithPreFetch(int rowsToPreFecth, boolean isComplteleyFetched, int rowsPreFetched,
-      boolean createTable) throws Exception {
+      boolean createTable, long ttlWindow) throws Exception {
     if (createTable) {
       createTable("execute_prefetch_test");
       insertData("execute_prefetch_test");
     }
 
-    long ttlWindow = 8000; //8 secs 
     // Query
     final String query = "SELECT * FROM execute_prefetch_test";
     Configuration conf = new Configuration(baseConf);
@@ -469,12 +473,17 @@ public class TestJdbcDriver {
     rs.setFullyAccessed(true);
 
     //Check TTL
-    if (rs.isComplteleyFetched()) { //The results that are only partially fetched, do not honor TTL
+    if (rs.isComplteleyFetched()) { //The results that are partially fetched, do not honor TTL
       long expiryTime = context.getSubmissionTime() + ttlWindow; // 8 secs form submission time.
       long timeLimit = expiryTime - 2500; // checking until expiry time - 2.5 secs
+      int checkCount = 0 ;
       while(System.currentTimeMillis() < timeLimit) {
         assertEquals(rs.canBePurged() , false); //TTL has not reached though wrapped in memory result is accessed fully
+        checkCount++;
         Thread.sleep(1000);
+      }
+      if (ttlWindow > 15000) {
+        assertTrue(checkCount > 0); // TTl window condition should be checked at least once if TTl window is big enough
       }
       Thread.sleep(3000);
     }

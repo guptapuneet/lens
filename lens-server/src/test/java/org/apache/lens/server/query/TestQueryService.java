@@ -870,7 +870,7 @@ public class TestQueryService extends LensJerseyTest {
     String[] expected1 =null;
     String [] expected2 =null;
     if (!isDir) {
-      //This case will be hit when the result is persisted by the server
+      //This case will be hit when the result is persisted by the server (CSV result)
       expected1 = new String[]{
           "\"1\",\"one\"",
           "\"NULL\",\"two\"",
@@ -1251,15 +1251,6 @@ public class TestQueryService extends LensJerseyTest {
     waitForQueryToFinish(target(), lensSessionId, handle, Status.SUCCESSFUL);
     validatePersistedResult(handle, target(), lensSessionId, new String[][]{{"ID", "INT"}, {"IDSTR", "STRING"}}, false);
 
-    //Test Purging - once query result has been persisted, it should be be a candidate for purging
-    FinishedQuery finished = null;
-    finished = queryService.finishedQueries.peek();
-    int checkCount = 0;
-    while (finished != null && !finished.canBePurged() && checkCount < 5) {
-      checkCount++;
-      Thread.sleep(5000); // check again after 5 secs
-    }
-    assertTrue(checkCount <= 5, "Query was not purged even after 5 checks each at 5 sec interval");
   }
 
   /**
@@ -1313,7 +1304,8 @@ public class TestQueryService extends LensJerseyTest {
     QueryContext ctx = queryService.getUpdatedQueryContext(lensSessionId, handle);
     assertEquals(queryService.getFinishedQueriesCount(), 1);
     FinishedQuery query = queryService.finishedQueries.peek();
-    if (preFetchRows >=5) { //TTL will be honored only when all rows have been pre fetched.
+    //TTL will be honored only when all rows have been pre fetched.
+    if (((PartiallyFetchedInMemoryResultSet)resultSet).isComplteleyFetched()) { 
       long expiryTime = ctx.getSubmissionTime() + ttlMillis - 2000; // keeping buffer of 2 secs for the check to pass
       int checkCount = 0 ; 
       while (System.currentTimeMillis() < expiryTime) {
@@ -1325,7 +1317,6 @@ public class TestQueryService extends LensJerseyTest {
         assertTrue(checkCount > 0); //at least on check should succeed in this case.
       }
     }
-
     Thread.sleep(2000);
     assertTrue(query.canBePurged());
   }
@@ -1690,6 +1681,6 @@ public class TestQueryService extends LensJerseyTest {
 
   @AfterMethod
   private void waitForPurge() throws InterruptedException {
-    //waitForPurge(0, queryService.finishedQueries);
+    waitForPurge(0, queryService.finishedQueries);
   }
 }

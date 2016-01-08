@@ -1952,12 +1952,11 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     LensResultSet resultSet = null ;
     boolean resultInitailized = false;
     queryCtx = getUpdatedQueryContext(sessionHandle, handle);
-    //TODO check how Non Persistence case is handled.
     if (listener.querySuccessful && queryCtx.isPreFetchInMemoryResultEnabled()) {
       resultSet = queryCtx.getSelectedDriver().fetchResultSet(queryCtx);
       if (resultSet instanceof PartiallyFetchedInMemoryResultSet) {
         PartiallyFetchedInMemoryResultSet partialnMemoryResult = (PartiallyFetchedInMemoryResultSet) resultSet;
-        if (partialnMemoryResult.isComplteleyFetched()) {
+        if (partialnMemoryResult.isComplteleyFetched()) { //DO not stream the result if its not completely fetched
           result.setResult(new InMemoryQueryResult(partialnMemoryResult.getPreFetchedRows()));
           result.setQueryResultSetMetadata(partialnMemoryResult.getMetadata().toQueryResultSetMetadata());
           resultInitailized = true;

@@ -893,25 +893,25 @@ public class HiveDriver extends AbstractLensDriver {
       if (context.isDriverPersistent()) {
         return new HivePersistentResultSet(new Path(context.getDriverResultPath()), op, getClient());
       } else if (op.hasResultSet()) {
-        HiveInMemoryResultSet hiveInMemoryRS = new HiveInMemoryResultSet(op, getClient(), closeAfterFetch);
+        //Decide if candidate for pre fetching
         if (context.isPreFetchInMemoryResultEnabled() && context.getPreFetchInMemoryResultRows() > 0) {
           synchronized (context) {
-            // check in the cache first
-            LensResultSet result = queryToInMemoryResultMap.get(context.getQueryHandle().getHandleIdString());  
+            // check in the cache first. PartiallyFetchedInMemoryResultSet is cached as it may be accessed many times
+            LensResultSet result = queryToInMemoryResultMap.get(context.getQueryHandle().getHandleIdString());
             if (result != null) {
               return result;
             } else {
-              //else create a new one and cache it.
+              //else create a new PartiallyFetchedInMemoryResultSet and cache it.
+              HiveInMemoryResultSet hiveInMemoryRS = new HiveInMemoryResultSet(op, getClient(), closeAfterFetch);
               PartiallyFetchedInMemoryResultSet partiallyFetchedInMemoryRS = new PartiallyFetchedInMemoryResultSet(
                   hiveInMemoryRS , context.getPreFetchInMemoryResultRows() ,
                   context.getSubmissionTime() + context.getPreFetchInMemoryResultTTL());
-              //PartiallyFetchedInMemoryResultSet may be accessed more than one . So cache it.
               queryToInMemoryResultMap.put(context.getQueryHandle().getHandleIdString(), partiallyFetchedInMemoryRS);
               return partiallyFetchedInMemoryRS;
             }
           }
         } else {
-          return hiveInMemoryRS;
+          return new HiveInMemoryResultSet(op, getClient(), closeAfterFetch);
         }
       } else {
         // queries that do not have result

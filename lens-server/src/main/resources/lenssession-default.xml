@@ -230,7 +230,7 @@
   <property>
     <name>lens.query.prefetch.inmemory.resultset.ttl.millis</name>
     <value>60000</value>
-    <description>Specified the time in milli seconds starting from query submission time for which the pre-fetched
+    <description>Specifies the time in milli seconds starting from query submission time for which the pre-fetched
       in-memory result set will not be purged. This property is put to action only when
       lens.query.prefetch.inmemory.resultset is set to true and all rows of the in memory result set have been
       pre-fetched. The default value of this property is 60 secs.

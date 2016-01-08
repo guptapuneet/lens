@@ -416,6 +416,7 @@ public class TestJdbcDriver {
   @DataProvider
   public Object[][] executeWithPreFetchDP() {
     return new Object[][]{
+        //int rowsToPreFecth, boolean isComplteleyFetched, int rowsPreFetched, boolean createTable
         {10, true, 10, true}, //result has 10 rows and all 10 rows are pre fetched
         {5, false, 6, false}, //result has 10 rows and 5 rows are pre fetched. (Extra row is  fetched = 5+1 = 6)
         {15, true, 10, false} //result has 10 rows and 15 rows are requested to be pre fetched
@@ -467,15 +468,18 @@ public class TestJdbcDriver {
     assertEquals(rowCount, 10);
     rs.setFullyAccessed(true);
 
-    //Check TTL and can Purge
-    long expiryTime = context.getSubmissionTime() + ttlWindow; // 8 secs form submission time.
-    long timeLimit = expiryTime - 2500;// checking until expiry time - 2.5 secs
-    while(System.currentTimeMillis() < timeLimit) {
-      assertEquals(rs.canBePurged() , false); //TTL has not reached though wrapped inmemory results is accessed fully
-      Thread.sleep(1000);
+    //Check TTL
+    if (rs.isComplteleyFetched()) { //The results that are only partially fetched, do not honor TTL
+      long expiryTime = context.getSubmissionTime() + ttlWindow; // 8 secs form submission time.
+      long timeLimit = expiryTime - 2500; // checking until expiry time - 2.5 secs
+      while(System.currentTimeMillis() < timeLimit) {
+        assertEquals(rs.canBePurged() , false); //TTL has not reached though wrapped in memory result is accessed fully
+        Thread.sleep(1000);
+      }
+      Thread.sleep(3000);
     }
-    Thread.sleep(3000);
-    assertEquals(rs.canBePurged() , true); //TTL has reached & wrapped inmemory result is accessed fully
+    //Check Purge
+    assertEquals(rs.canBePurged() , true);
   }
 
   @Test

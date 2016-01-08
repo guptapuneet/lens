@@ -1245,7 +1245,7 @@ public class TestQueryService extends LensJerseyTest {
       assertTrue(result.getStatus().getStatus() == QueryStatus.Status.EXECUTED
           || result.getStatus().getStatus() == QueryStatus.Status.SUCCESSFUL,
           "Check if timeoutmillis need to be increased based on query status - "+result.getStatus());
-      assertEquals(result.getQueryResultSetMetadata().getColumns().size(), 2);
+      assertEquals(result.getResultMetadata().getColumns().size(), 2);
       assertNotNull(result.getResult());
       validateInmemoryResult((InMemoryQueryResult) result.getResult());
     } else {

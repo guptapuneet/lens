@@ -53,10 +53,12 @@ public class QueryHandleWithResultSet extends QuerySubmitResult {
   @Setter
   private QueryResult result;
 
+  /**
+   * The result metadata
+   */
   @Getter
   @Setter
-  //TODO update documentation
-  private QueryResultSetMetadata queryResultSetMetadata;
+  private QueryResultSetMetadata resultMetadata;
 
   /**
    * The status.

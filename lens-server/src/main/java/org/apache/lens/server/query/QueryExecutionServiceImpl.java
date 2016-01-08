@@ -1961,7 +1961,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         PartiallyFetchedInMemoryResultSet partialnMemoryResult = (PartiallyFetchedInMemoryResultSet) resultSet;
         if (partialnMemoryResult.isComplteleyFetched()) { //DO not stream the result if its not completely fetched
           result.setResult(new InMemoryQueryResult(partialnMemoryResult.getPreFetchedRows()));
-          result.setQueryResultSetMetadata(partialnMemoryResult.getMetadata().toQueryResultSetMetadata());
+          result.setResultMetadata(partialnMemoryResult.getMetadata().toQueryResultSetMetadata());
           resultInitailized = true;
         }
       }
@@ -1970,7 +1970,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     queryCtx = getUpdatedQueryContext(sessionHandle, handle);
     if (!resultInitailized && queryCtx.finished() && queryCtx.getStatus().isResultSetAvailable()) {
       resultSet = getResultset(handle);
-      result.setQueryResultSetMetadata(resultSet.getMetadata().toQueryResultSetMetadata());
+      result.setResultMetadata(resultSet.getMetadata().toQueryResultSetMetadata());
       result.setResult(resultSet.toQueryResult());
     }
     result.setStatus(queryCtx.getStatus());

@@ -699,7 +699,8 @@ public class TestQueryService extends LensJerseyTest {
     assertEquals(ctx.getPhase1RewrittenQuery(), ctx.getUserQuery()); //Since there is no rewriter in this test
     assertEquals(lensQuery.getStatus().getStatus(), QueryStatus.Status.SUCCESSFUL);
 
-    validatePersistedResult(handle, target(), lensSessionId, new String[][]{{"ID", "INT"}, {"IDSTR", "STRING"}}, true);
+    validatePersistedResult(handle, target(), lensSessionId, new String[][]{{"ID", "INT"}, {"IDSTR", "STRING"}}, true,
+        false);
 
     // test cancel query
     final QueryHandle handle2 = target.request().post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE),
@@ -749,10 +750,11 @@ public class TestQueryService extends LensJerseyTest {
    * @param parent        the parent
    * @param lensSessionId the lens session id
    * @param isDir         the is dir
+   * @param isCSVFormat   the result format is csv.
    * @throws IOException Signals that an I/O exception has occurred.
    */
   static void validatePersistedResult(QueryHandle handle, WebTarget parent, LensSessionHandle lensSessionId,
-    String[][] schema, boolean isDir) throws IOException {
+    String[][] schema, boolean isDir, boolean isCSVFormat) throws IOException {
     final WebTarget target = parent.path("queryapi/queries");
     // fetch results
     validateResultSetMetadata(handle, "",
@@ -765,7 +767,7 @@ public class TestQueryService extends LensJerseyTest {
 
     PersistentQueryResult resultset = target.path(handle.toString()).path("resultset")
       .queryParam("sessionid", lensSessionId).request().get(PersistentQueryResult.class);
-    validatePersistentResult(resultset, handle, isDir);
+    validatePersistentResult(resultset, handle, isDir, isCSVFormat);
 
     if (isDir) {
       validNotFoundForHttpResult(parent, lensSessionId, handle);
@@ -858,12 +860,13 @@ public class TestQueryService extends LensJerseyTest {
    * @param resultset the resultset
    * @param handle    the handle
    * @param isDir     the is dir
+   * @param isCSVFormat   the result format is csv.
    * @throws IOException Signals that an I/O exception has occurred.
    */
-  static void validatePersistentResult(PersistentQueryResult resultset, QueryHandle handle, boolean isDir)
-    throws IOException {
+  static void validatePersistentResult(PersistentQueryResult resultset, QueryHandle handle, boolean isDir,
+      boolean isCSVFormat)throws IOException {
     List<String> actualRows = readResultSet(resultset, handle, isDir);
-    validatePersistentResult(actualRows, isDir);
+    validatePersistentResult(actualRows, isCSVFormat);
     if (!isDir) {
       assertEquals(resultset.getNumRows().intValue(), actualRows.size());
     }
@@ -871,10 +874,10 @@ public class TestQueryService extends LensJerseyTest {
     assertEquals(resultset.getFileSize(), fileSize);
   }
 
-  static void validatePersistentResult(List<String> actualRows,  boolean isDir) {
+  static void validatePersistentResult(List<String> actualRows,  boolean isCSVFormat) {
     String[] expected1 =null;
     String [] expected2 =null;
-    if (!isDir) {
+    if (isCSVFormat) {
       //This case will be hit when the result is persisted by the server (CSV result)
       expected1 = new String[]{
         "\"1\",\"one\"",
@@ -933,7 +936,7 @@ public class TestQueryService extends LensJerseyTest {
 
       String result = new String(bos.toByteArray());
       List<String> actualRows = Arrays.asList(result.split("\n"));
-      validatePersistentResult(actualRows, true);
+      validatePersistentResult(actualRows, false);
     } else {
       assertEquals(SEE_OTHER.getStatusCode(), response.getStatus());
       assertTrue(response.getHeaderString("Location").contains(redirectUrl));
@@ -1165,7 +1168,7 @@ public class TestQueryService extends LensJerseyTest {
       new GenericType<LensAPIResult<QueryHandleWithResultSet>>() {}).getData();
     assertNotNull(result.getQueryHandle());
     assertNotNull(result.getResult());
-    validatePersistentResult((PersistentQueryResult) result.getResult(), result.getQueryHandle(), true);
+    validatePersistentResult((PersistentQueryResult) result.getResult(), result.getQueryHandle(), true, false);
 
     final FormDataMultiPart mp2 = new FormDataMultiPart();
     LensConf conf = new LensConf();
@@ -1252,7 +1255,8 @@ public class TestQueryService extends LensJerseyTest {
 
     //Test Persistent Result
     waitForQueryToFinish(target(), lensSessionId, handle, Status.SUCCESSFUL);
-    validatePersistedResult(handle, target(), lensSessionId, new String[][]{{"ID", "INT"}, {"IDSTR", "STRING"}}, false);
+    validatePersistedResult(handle, target(), lensSessionId, new String[][]{{"ID", "INT"}, {"IDSTR", "STRING"}}, false,
+        true);
 
   }
 

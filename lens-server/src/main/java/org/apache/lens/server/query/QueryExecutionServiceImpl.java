@@ -71,14 +71,17 @@ import org.apache.lens.server.session.LensSessionImpl;
 import org.apache.lens.server.stats.StatisticsService;
 import org.apache.lens.server.util.FairPriorityBlockingQueue;
 import org.apache.lens.server.util.UtilityMethods;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hive.service.cli.CLIService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1793,7 +1796,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
   }
 
   /**
-   *  Gets the query context. For non-purged queries the status is updated before returning the context 
+   *  Gets the query context. For non-purged queries the status is updated before returning the context
    *
    * @param sessionHandle the session handle
    * @param queryHandle   the query handle
@@ -1949,7 +1952,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       }
     }
 
-    LensResultSet resultSet = null ;
+    LensResultSet resultSet = null;
     boolean resultInitailized = false;
     queryCtx = getUpdatedQueryContext(sessionHandle, handle);
     if (listener.querySuccessful && queryCtx.isPreFetchInMemoryResultEnabled()) {
@@ -1960,7 +1963,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
           result.setResult(new InMemoryQueryResult(partialnMemoryResult.getPreFetchedRows()));
           result.setQueryResultSetMetadata(partialnMemoryResult.getMetadata().toQueryResultSetMetadata());
           resultInitailized = true;
-        } 
+        }
       }
     }
 

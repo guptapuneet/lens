@@ -286,7 +286,7 @@ public class JDBCDriver extends AbstractLensDriver {
         JDBCResultSet jdbcResultSet = new JDBCResultSet(this, resultSet, closeAfterFetch);
         QueryContext queryCtx = jdbcQueryContext.getLensContext();
         //Decide if candidate for pre fetching
-        if (queryCtx.isPreFetchInMemoryResultEnabled() && queryCtx.getPreFetchInMemoryResultRows() > 0 ) {
+        if (queryCtx.isPreFetchInMemoryResultEnabled() && queryCtx.getPreFetchInMemoryResultRows() > 0) {
           lensResultSet = new PartiallyFetchedInMemoryResultSet(jdbcResultSet,
               queryCtx.getPreFetchInMemoryResultRows(),
               queryCtx.getSubmissionTime() + queryCtx.getPreFetchInMemoryResultTTL());

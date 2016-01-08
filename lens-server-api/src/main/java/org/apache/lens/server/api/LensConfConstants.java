@@ -1020,14 +1020,14 @@ public final class LensConfConstants {
   /**
    * Time to Live for Pre Fetched results (from submission time).
    * A Pre Fetched results set is eligible for purging after this time window.
-   * Note : Time window is honored only if 
+   * Note : Time window is honored only if
    * {@link org.apache.lens.server.api.driver.PartiallyFetchedInMemoryResultSet#isComplteleyFetched} is true
    */
   public static final String PREFETCH_INMEMORY_RESULTSET_TTL_MILLIS = QUERY_PFX
       +"prefetch.inmemory.resultset.ttl.millis";
 
   /**
-   * Default Time to Live for Pre Fetched results is 60 secs from query submission time. 
+   * Default Time to Live for Pre Fetched results is 60 secs from query submission time.
    */
   public static final long DEFAULT_PREFETCH_INMEMORY_RESULTSET_TTL_MILLIS = 60000;
 

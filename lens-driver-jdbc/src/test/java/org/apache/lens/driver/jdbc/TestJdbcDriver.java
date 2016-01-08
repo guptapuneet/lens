@@ -419,16 +419,15 @@ public class TestJdbcDriver {
    */
   @DataProvider
   public Object[][] executeWithPreFetchDP() {
-    return new Object[][]{
-        //int rowsToPreFecth, boolean isComplteleyFetched, int rowsPreFetched, boolean createTable, long ttlWindow
-        {10, true, 10, true, 20000}, //result has 10 rows and all 10 rows are pre fetched
-        {5, false, 6, false, 8000}, //result has 10 rows and 5 rows are pre fetched. (Extra row is  fetched = 5+1 = 6)
-        {15, true, 10, false, 8000} //result has 10 rows and 15 rows are requested to be pre fetched
-      };
+    return new Object[][] {
+      //int rowsToPreFecth, boolean isComplteleyFetched, int rowsPreFetched, boolean createTable, long ttlWindow
+      {10, true, 10, true, 20000}, //result has 10 rows and all 10 rows are pre fetched
+      {5, false, 6, false, 8000}, //result has 10 rows and 5 rows are pre fetched. (Extra row is  fetched = 5+1 = 6)
+      {15, true, 10, false, 8000}, //result has 10 rows and 15 rows are requested to be pre fetched
+    };
   }
 
   /**
-   * 
    * @param rowsToPreFecth  : requested number of rows to be pre-fetched
    * @param isComplteleyFetched : whether the wrapped in memory result has been completely accessed due to pre fetch
    * @param rowsPreFetched : actual rows pre-fetched
@@ -457,17 +456,17 @@ public class TestJdbcDriver {
     assertTrue(resultSet instanceof PartiallyFetchedInMemoryResultSet);
 
     PartiallyFetchedInMemoryResultSet rs = (PartiallyFetchedInMemoryResultSet) resultSet;
-    assertEquals(rs.isComplteleyFetched(),isComplteleyFetched);
+    assertEquals(rs.isComplteleyFetched(), isComplteleyFetched);
 
     //Check Streaming flow
     assertEquals(rs.getPreFetchedRows().size(), rowsPreFetched);
 
     // Check Persistence flow
-    int rowCount = 0; 
+    int rowCount = 0;
     while (rs.hasNext()) {
       ResultRow row = rs.next();
       assertEquals(row.getValues().get(0), rowCount);
-      rowCount ++;
+      rowCount++;
     }
     assertEquals(rowCount, 10);
     rs.setFullyAccessed(true);
@@ -476,7 +475,7 @@ public class TestJdbcDriver {
     if (rs.isComplteleyFetched()) { //The results that are partially fetched, do not honor TTL
       long expiryTime = context.getSubmissionTime() + ttlWindow; // 8 secs form submission time.
       long timeLimit = expiryTime - 2500; // checking until expiry time - 2.5 secs
-      int checkCount = 0 ;
+      int checkCount = 0;
       while(System.currentTimeMillis() < timeLimit) {
         assertEquals(rs.canBePurged() , false); //TTL has not reached though wrapped in memory result is accessed fully
         checkCount++;

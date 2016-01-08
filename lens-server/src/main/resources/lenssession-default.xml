@@ -213,6 +213,30 @@
     </description>
   </property>
 
+  <property>
+    <name>lens.query.prefetch.inmemory.resultset</name>
+    <value>false</value>
+    <description>When set to true, specified number of rows of in-memory result set will be pre-fetched</description>
+  </property>
+
+  <property>
+    <name>lens.query.prefetch.inmemory.resultset.rows</name>
+    <value>100</value>
+    <description>Specifies the number of rows to pre-fetch for in-memory result set when
+      lens.query.prefetch.inmemory.resultset is set to true. Default value is 100 rows.
+    </description>
+  </property>
+
+  <property>
+    <name>lens.query.prefetch.inmemory.resultset.ttl.millis</name>
+    <value>60000</value>
+    <description>Specified the time in milli seconds starting from query submission time for which the pre-fetched
+      in-memory result set will not be purged. This property is put to action only when
+      lens.query.prefetch.inmemory.resultset is set to true and all rows of the in memory result set have been
+      pre-fetched. The default value of this property is 60 secs.
+    </description>
+  </property>
+
   <!--  properties for session -->
   <property>
     <name>lens.session.aux.jars</name>
@@ -310,5 +334,4 @@
     <value>true</value>
     <description>Whether to fail the query of data is partial</description>
   </property>
-
 </configuration>

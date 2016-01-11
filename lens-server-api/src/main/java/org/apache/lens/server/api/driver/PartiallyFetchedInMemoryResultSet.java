@@ -71,22 +71,22 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
   /**
    * If {@link #isComplteleyFetched()} is true, result can should not be purged
    * until current time is greater than doNotPurgeUnitlTimeMillis.
-   * 
+   *
    * Note: If {@link #isComplteleyFetched()} is false, result is purged based on 
    * purge logic of underlying in-memory result
    */
-  private long doNotPurgeUnitlTimeMillis;
+  private long doNotPurgeUntilTimeMillis;
   /**
    * Constructor
    * @param inMemoryRS : Underlying in-memory result set
    * @param reqPreFetchSize : requested number of rows to be pre-fetched and cached.
-   * @param doNotPurgeUnitlTimeMillis : do not purge result until this time is reached.
+   * @param doNotPurgeUntilTimeMillis : do not purge result until this time is reached.
    * @throws LensException
    */
   public PartiallyFetchedInMemoryResultSet(InMemoryResultSet inMemoryRS, int reqPreFetchSize ,
-      long doNotPurgeUnitlTimeMillis) throws LensException {
+      long doNotPurgeUntilTimeMillis) throws LensException {
     this.inMemoryRS = inMemoryRS;
-    this.doNotPurgeUnitlTimeMillis = doNotPurgeUnitlTimeMillis;
+    this.doNotPurgeUntilTimeMillis = doNotPurgeUntilTimeMillis;
     if (reqPreFetchSize <= 0) {
       throw new IllegalArgumentException("Invalid pre fetch size " + reqPreFetchSize);
     }
@@ -120,8 +120,7 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
   public boolean seekToStart() throws LensException {
     cursor = 0;
     if (!isComplteleyFetched && cursor > numOfPreFetchedRows) {
-      boolean seekedToStart = inMemoryRS.seekToStart();
-      return seekedToStart;
+      return inMemoryRS.seekToStart();
     } else {
       return true;
     }
@@ -169,7 +168,7 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
 
   @Override
   public boolean canBePurged() {
-    if (isComplteleyFetched && System.currentTimeMillis() < this.doNotPurgeUnitlTimeMillis) {
+    if (isComplteleyFetched && System.currentTimeMillis() < this.doNotPurgeUntilTimeMillis) {
       return false;
     } else {
       return inMemoryRS.canBePurged();

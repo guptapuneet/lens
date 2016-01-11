@@ -875,8 +875,8 @@ public class TestQueryService extends LensJerseyTest {
   }
 
   static void validatePersistentResult(List<String> actualRows,  boolean isCSVFormat) {
-    String[] expected1 =null;
-    String [] expected2 =null;
+    String[] expected1 = null;
+    String[] expected2 = null;
     if (isCSVFormat) {
       //This case will be hit when the result is persisted by the server (CSV result)
       expected1 = new String[]{
@@ -906,7 +906,7 @@ public class TestQueryService extends LensJerseyTest {
 
     for (int i = 0; i < actualRows.size(); i++) {
       assertEquals(expected1[i].indexOf(actualRows.get(i)) == 0
-          || (expected2 !=null && expected2[i].indexOf(actualRows.get(i)) == 0), true);
+          || (expected2 != null && expected2[i].indexOf(actualRows.get(i)) == 0), true);
     }
   }
 

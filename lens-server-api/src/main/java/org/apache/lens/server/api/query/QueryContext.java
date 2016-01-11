@@ -30,17 +30,19 @@ import org.apache.lens.api.query.QueryStatus;
 import org.apache.lens.api.query.QueryStatus.Status;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.driver.DriverQueryStatus;
+import org.apache.lens.server.api.driver.InMemoryResultSet;
 import org.apache.lens.server.api.driver.LensDriver;
+import org.apache.lens.server.api.driver.PartiallyFetchedInMemoryResultSet;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.query.collect.WaitingQueriesSelectionPolicy;
 import org.apache.lens.server.api.query.constraint.QueryLaunchingConstraint;
 import org.apache.lens.server.api.query.priority.QueryPriorityDecider;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -455,5 +457,13 @@ public class QueryContext extends AbstractQueryContext {
     if (getDriverQueryCost(driver) == null) {
       setDriverCost(driver, driver.estimate(this));
     }
+  }
+
+  protected InMemoryResultSet createAndCachePartiallyFetchedResultSetIfApplicable(InMemoryResultSet inMemoryRS) 
+      throws LensException {
+    if (context.isPreFetchInMemoryResultEnabled()) {
+      return new PartiallyFetchedInMemoryResultSet(inMemoryRS, context.getPreFetchInMemoryResultRows(), 0);
+    }
+    return inMemoryRS;
   }
 }

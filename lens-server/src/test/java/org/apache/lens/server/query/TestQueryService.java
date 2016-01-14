@@ -1263,8 +1263,8 @@ public class TestQueryService extends LensJerseyTest {
     assertNotNull(conf.get("lens.query.enable.persistent.resultset"));
     boolean isDriverPersistent = conf.getBoolean("lens.query.enable.persistent.resultset", false);
     conf.setBoolean("lens.query.enable.persistent.resultset", isDriverPersistent ? false : true);
-    conf.set("new_random_property","new_random_property");
-    
+    conf.set("new_random_property", "new_random_property");
+
     // Get the default conf again and verify its not modified by previous operations
     conf = LensSessionImpl.createDefaultConf();
     boolean isDriverPersistentNow = conf.getBoolean("lens.query.enable.persistent.resultset", false);

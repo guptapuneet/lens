@@ -1495,22 +1495,27 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         if (ctx.isFinishedQueryPersisted()) {
           return getResultsetFromDAO(queryHandle);
         }
-        LensResultSet resultSet = resultSets.get(queryHandle);
-        if (resultSet == null) {
-          if (ctx.isPersistent() && ctx.getQueryOutputFormatter() != null) {
-            resultSets.put(queryHandle, new LensPersistentResult(ctx, conf));
-          } else if (allQueries.get(queryHandle).isResultAvailableInDriver()) {
-            resultSet = getDriverResultset(queryHandle);
-            resultSets.put(queryHandle, resultSet);
-          } else {
-            throw new NotFoundException("Result set not available for query:" + queryHandle);
+        if (ctx.finished()) { // Do not return any result set for queries that have not finished.
+          LensResultSet resultSet = resultSets.get(queryHandle);
+          if (resultSet == null) {
+            if (ctx.isPersistent() && ctx.getQueryOutputFormatter() != null) {
+              resultSets.put(queryHandle, new LensPersistentResult(ctx, conf));
+            } else if (allQueries.get(queryHandle).isResultAvailableInDriver()) {
+              resultSet = getDriverResultset(queryHandle);
+              resultSets.put(queryHandle, resultSet);
+            } 
           }
         }
       }
-      if (resultSets.get(queryHandle) instanceof InMemoryResultSet) {
-        ((InMemoryResultSet) resultSets.get(queryHandle)).seekToStart();
+
+      LensResultSet result = resultSets.get(queryHandle);
+      if (result == null) {
+        throw new NotFoundException("Result set not available for query:" + queryHandle);
       }
-      return resultSets.get(queryHandle);
+      if (result instanceof InMemoryResultSet) {
+        ((InMemoryResultSet) result).seekToStart();
+      }
+      return result;
     }
   }
 
@@ -1626,7 +1631,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       PreparedQueryContext pctx = getPreparedQueryContext(sessionHandle, prepareHandle);
       Configuration qconf = getLensConf(sessionHandle, conf);
       accept(pctx.getUserQuery(), qconf, SubmitOp.EXECUTE);
-      QueryContext ctx = createContext(pctx, getSession(sessionHandle).getLoggedInUser(), conf, qconf);
+      QueryContext ctx = createContext(pctx, getSession(sessionHandle).getLoggedInUser(), conf, qconf, 0);
       if (StringUtils.isNotBlank(queryName)) {
         // Override previously set query name
         ctx.setQueryName(queryName);
@@ -1655,7 +1660,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       acquire(sessionHandle);
       PreparedQueryContext pctx = getPreparedQueryContext(sessionHandle, prepareHandle);
       Configuration qconf = getLensConf(sessionHandle, conf);
-      QueryContext ctx = createContext(pctx, getSession(sessionHandle).getLoggedInUser(), conf, qconf);
+      QueryContext ctx = createContext(pctx, getSession(sessionHandle).getLoggedInUser(), conf, qconf, timeoutMillis);
       if (StringUtils.isNotBlank(queryName)) {
         // Override previously set query name
         ctx.setQueryName(queryName);
@@ -1682,7 +1687,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       acquire(sessionHandle);
       Configuration qconf = getLensConf(sessionHandle, conf);
       accept(query, qconf, SubmitOp.EXECUTE);
-      QueryContext ctx = createContext(query, getSession(sessionHandle).getLoggedInUser(), conf, qconf);
+      QueryContext ctx = createContext(query, getSession(sessionHandle).getLoggedInUser(), conf, qconf, 0);
       ctx.setQueryName(queryName);
       return executeAsyncInternal(sessionHandle, ctx);
     } finally {
@@ -1700,9 +1705,10 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    * @return the query context
    * @throws LensException the lens exception
    */
-  protected QueryContext createContext(String query, String userName, LensConf conf, Configuration qconf)
-    throws LensException {
+  protected QueryContext createContext(String query, String userName, LensConf conf, Configuration qconf,
+      long timeOutMillis) throws LensException {
     QueryContext ctx = new QueryContext(query, userName, conf, qconf, drivers.values());
+    ctx.setTimeOutMillis(timeOutMillis);
     return ctx;
   }
 
@@ -1716,9 +1722,10 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    * @return the query context
    * @throws LensException the lens exception
    */
-  protected QueryContext createContext(PreparedQueryContext pctx, String userName, LensConf conf, Configuration qconf)
-    throws LensException {
+  protected QueryContext createContext(PreparedQueryContext pctx, String userName, LensConf conf, Configuration qconf,
+      long timeOutMillis) throws LensException {
     QueryContext ctx = new QueryContext(pctx, userName, conf, qconf);
+    ctx.setTimeOutMillis(timeOutMillis);
     return ctx;
   }
 
@@ -1897,7 +1904,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       acquire(sessionHandle);
       Configuration qconf = getLensConf(sessionHandle, conf);
       accept(query, qconf, SubmitOp.EXECUTE);
-      QueryContext ctx = createContext(query, getSession(sessionHandle).getLoggedInUser(), conf, qconf);
+      QueryContext ctx = createContext(query, getSession(sessionHandle).getLoggedInUser(), conf, qconf, timeoutMillis);
       ctx.setQueryName(queryName);
       ctx.setLensSessionIdentifier(sessionHandle.getPublicId().toString());
       rewriteAndSelect(ctx);
@@ -1952,10 +1959,11 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       }
     }
 
+    //TODO how to enable purging when execute with timeout and  driver and server persistence is off. 
     LensResultSet resultSet = null;
     boolean resultInitailized = false;
     queryCtx = getUpdatedQueryContext(sessionHandle, handle);
-    if (listener.querySuccessful && queryCtx.isPreFetchInMemoryResultEnabled()) {
+    if (listener.querySuccessful) {
       resultSet = queryCtx.getSelectedDriver().fetchResultSet(queryCtx);
       if (resultSet instanceof PartiallyFetchedInMemoryResultSet) {
         PartiallyFetchedInMemoryResultSet partialnMemoryResult = (PartiallyFetchedInMemoryResultSet) resultSet;

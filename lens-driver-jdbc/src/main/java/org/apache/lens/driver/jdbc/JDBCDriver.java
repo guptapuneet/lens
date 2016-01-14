@@ -20,11 +20,9 @@ package org.apache.lens.driver.jdbc;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
-
 import static org.apache.lens.driver.jdbc.JDBCDriverConfConstants.*;
 import static org.apache.lens.driver.jdbc.JDBCDriverConfConstants.ConnectionPoolProperties.*;
 import static org.apache.lens.server.api.util.LensUtil.getImplementations;
-
 import static com.google.common.base.Preconditions.checkState;
 
 import java.io.IOException;
@@ -60,9 +58,7 @@ import org.apache.lens.server.api.query.rewrite.QueryRewriter;
 import org.apache.lens.server.api.util.LensUtil;
 import org.apache.lens.server.model.LogSegregationContext;
 import org.apache.lens.server.model.MappedDiagnosticLogSegregationContext;
-
 import org.apache.commons.lang3.StringUtils;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
@@ -237,12 +233,6 @@ public class JDBCDriver extends AbstractLensDriver {
     /** The lens result set. */
     private InMemoryResultSet lensResultSet;
 
-    private JdbcQueryContext jdbcQueryContext;
-
-    public QueryResult(JdbcQueryContext queryContext) {
-      this.jdbcQueryContext = queryContext;
-    }
-
     /**
      * Close.
      */
@@ -283,16 +273,7 @@ public class JDBCDriver extends AbstractLensDriver {
         throw new LensException("Query failed!", error);
       }
       if (lensResultSet == null) {
-        JDBCResultSet jdbcResultSet = new JDBCResultSet(this, resultSet, closeAfterFetch);
-        QueryContext queryCtx = jdbcQueryContext.getLensContext();
-        //Decide if candidate for pre fetching
-        if (queryCtx.isPreFetchInMemoryResultEnabled() && queryCtx.getPreFetchInMemoryResultRows() > 0) {
-          lensResultSet = new PartiallyFetchedInMemoryResultSet(jdbcResultSet,
-              queryCtx.getPreFetchInMemoryResultRows(),
-              queryCtx.getSubmissionTime() + queryCtx.getPreFetchInMemoryResultTTL());
-        } else {
-          lensResultSet = jdbcResultSet;
-        }
+        lensResultSet = new JDBCResultSet(this, resultSet, closeAfterFetch);
       }
       return lensResultSet;
     }
@@ -330,7 +311,7 @@ public class JDBCDriver extends AbstractLensDriver {
 
       Statement stmt;
       Connection conn = null;
-      QueryResult result = new QueryResult(queryContext);
+      QueryResult result = new QueryResult();
       try {
         queryContext.setQueryResult(result);
 
@@ -1011,16 +992,13 @@ public class JDBCDriver extends AbstractLensDriver {
     }
   }
 
-  /**
-   * Fetch the results of the query, specified by the handle.
-   *
-   * @param context the context
-   * @return returns the {@link LensResultSet}.
-   * @throws LensException the lens exception
-   */
   @Override
-  public LensResultSet fetchResultSet(QueryContext context) throws LensException {
+  protected LensResultSet createResultSet(QueryContext ctx) throws LensException {
     checkConfigured();
+    return getDriverResult(ctx);
+  }
+
+  private LensResultSet getDriverResult(QueryContext context) throws LensException {
     JdbcQueryContext ctx = getQueryContext(context.getQueryHandle());
     if (ctx.isCancelled()) {
       throw new LensException("Result set not available for cancelled query " + context.getQueryHandle());
@@ -1162,6 +1140,5 @@ public class JDBCDriver extends AbstractLensDriver {
   @Override
   public void writeExternal(ObjectOutput arg0) throws IOException {
     // TODO Auto-generated method stub
-
   }
 }

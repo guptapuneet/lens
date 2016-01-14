@@ -80,13 +80,13 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
    * Constructor
    * @param inMemoryRS : Underlying in-memory result set
    * @param reqPreFetchSize : requested number of rows to be pre-fetched and cached.
-   * @param doNotPurgeUntilTimeMillis : do not purge result until this time is reached.
+   * @param timeOutMillis : do not purge result until this time is reached.
    * @throws LensException
    */
   public PartiallyFetchedInMemoryResultSet(InMemoryResultSet inMemoryRS, int reqPreFetchSize ,
-      long doNotPurgeUntilTimeMillis) throws LensException {
+      long timeOutMillis) throws LensException {
     this.inMemoryRS = inMemoryRS;
-    this.doNotPurgeUntilTimeMillis = doNotPurgeUntilTimeMillis;
+    this.doNotPurgeUntilTimeMillis = timeOutMillis;
     if (reqPreFetchSize <= 0) {
       throw new IllegalArgumentException("Invalid pre fetch size " + reqPreFetchSize);
     }

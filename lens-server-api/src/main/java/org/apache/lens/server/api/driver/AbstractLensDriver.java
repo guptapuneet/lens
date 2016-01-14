@@ -28,11 +28,13 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Abstract class for Lens Driver Implementations. Provides default
  * implementations and some utility methods for drivers
  */
+@Slf4j
 public abstract class AbstractLensDriver implements LensDriver {
   /**
    * Separator used for constructing fully qualified name and driver resource path
@@ -51,6 +53,33 @@ public abstract class AbstractLensDriver implements LensDriver {
       throw new LensException("Driver Type and Name can not be null or empty");
     }
     fullyQualifiedName = new StringBuilder(driverType).append(SEPARATOR).append(driverName).toString();
+  }
+
+  /**
+   * Default implementation for fetchResultSet for all drivers. Should hold good in most cases.
+   * Note : If a driver is sticking to this default implementation, it should
+   * override {@link #createResultSet(QueryContext)}
+   */
+  @Override
+  public LensResultSet fetchResultSet(QueryContext ctx) throws LensException {
+    log.info("FetchResultSet: {}", ctx.getQueryHandle());
+    synchronized (ctx) {
+      if (ctx.getResult() == null) {
+        ctx.registerResult(createResultSet(ctx));
+      }
+    }
+    return ctx.getResult();
+  }
+
+  /**
+   * This method should create ResultSet for the query represented by the context. Default Implementation is blank , but
+   * the driver implementation can override this method to return driver specific LensResultSet.
+   * {@see #fetchResultSet(QueryContext)}
+   * @param ctx
+   * @return
+   */
+  protected LensResultSet createResultSet(QueryContext ctx) throws LensException {
+    return null;
   }
 
   /**

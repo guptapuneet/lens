@@ -125,9 +125,6 @@ public class HiveDriver extends AbstractLensDriver {
   /** The opHandle to hive session map. */
   private Map<OperationHandle, SessionHandle> opHandleToSession;
 
-  /** The query handle String to InMemory result map. */
-  private Map<String, InMemoryResultSet> queryToInMemoryResultMap = new HashMap<String, InMemoryResultSet>();
-
   /** The session lock. */
   private final Lock sessionLock;
 
@@ -714,9 +711,14 @@ public class HiveDriver extends AbstractLensDriver {
    */
   @Override
   public LensResultSet fetchResultSet(QueryContext ctx) throws LensException {
-    log.info("FetchResultSet: {}", ctx.getQueryHandle());
     // This should be applicable only for a async query
-    return createResultSet(ctx, false);
+    log.info("FetchResultSet: {}", ctx.getQueryHandle());
+    synchronized (ctx) {
+      if (ctx.getResult() == null) {
+        ctx.registerResult(createResultSet(ctx, false));
+      }
+    }
+    return ctx.getResult();
   }
 
   /*
@@ -740,7 +742,6 @@ public class HiveDriver extends AbstractLensDriver {
       return;
     }
     log.info("CloseQuery: {}", handle);
-    queryToInMemoryResultMap.remove(handle.getHandleIdString());
     OperationHandle opHandle = hiveHandles.remove(handle);
     if (opHandle != null) {
       log.info("CloseQuery hiveHandle: {}", opHandle);
@@ -878,6 +879,11 @@ public class HiveDriver extends AbstractLensDriver {
     }
   }
 
+  @Override
+  protected LensResultSet createResultSet(QueryContext context) throws LensException {
+    return createResultSet(context, false);
+  }
+
   /**
    * Creates the result set.
    *
@@ -893,27 +899,8 @@ public class HiveDriver extends AbstractLensDriver {
       if (context.isDriverPersistent()) {
         return new HivePersistentResultSet(new Path(context.getDriverResultPath()), op, getClient());
       } else if (op.hasResultSet()) {
-        //Decide if candidate for pre fetching
-        if (context.isPreFetchInMemoryResultEnabled() && context.getPreFetchInMemoryResultRows() > 0) {
-          synchronized (context) {
-            // check in the cache first. PartiallyFetchedInMemoryResultSet is cached as it may be accessed many times
-            LensResultSet result = queryToInMemoryResultMap.get(context.getQueryHandle().getHandleIdString());
-            if (result != null) {
-              return result;
-            } else {
-              //else create a new PartiallyFetchedInMemoryResultSet and cache it.
-              HiveInMemoryResultSet hiveInMemoryRS = new HiveInMemoryResultSet(op, getClient(), closeAfterFetch);
-              PartiallyFetchedInMemoryResultSet partiallyFetchedInMemoryRS = new PartiallyFetchedInMemoryResultSet(
-                  hiveInMemoryRS , context.getPreFetchInMemoryResultRows() ,
-                  context.getSubmissionTime() + context.getPreFetchInMemoryResultTTL());
-              queryToInMemoryResultMap.put(context.getQueryHandle().getHandleIdString(), partiallyFetchedInMemoryRS);
-              return partiallyFetchedInMemoryRS;
-            }
-          }
-        } else {
           return new HiveInMemoryResultSet(op, getClient(), closeAfterFetch);
-        }
-      } else {
+        } else {
         // queries that do not have result
         return null;
       }

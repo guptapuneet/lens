@@ -18,6 +18,11 @@
  */
 package org.apache.lens.server.api.query;
 
+import static org.apache.lens.server.api.LensConfConstants.PREFETCH_INMEMORY_RESULTSET;
+import static org.apache.lens.server.api.LensConfConstants.PREFETCH_INMEMORY_RESULTSET_ROWS;
+import static org.apache.lens.server.api.LensConfConstants.DEFAULT_PREFETCH_INMEMORY_RESULTSET;
+import static org.apache.lens.server.api.LensConfConstants.DEFAULT_PREFETCH_INMEMORY_RESULTSET_ROWS;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -32,6 +37,7 @@ import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.driver.DriverQueryStatus;
 import org.apache.lens.server.api.driver.InMemoryResultSet;
 import org.apache.lens.server.api.driver.LensDriver;
+import org.apache.lens.server.api.driver.LensResultSet;
 import org.apache.lens.server.api.driver.PartiallyFetchedInMemoryResultSet;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.query.collect.WaitingQueriesSelectionPolicy;
@@ -167,14 +173,11 @@ public class QueryContext extends AbstractQueryContext {
   @Setter
   private String queryName;
 
-  @Getter
-  private transient boolean preFetchInMemoryResultEnabled;
+  @Setter
+  private transient long timeOutMillis;
 
   @Getter
-  private transient int preFetchInMemoryResultRows;
-
-  @Getter
-  private transient long preFetchInMemoryResultTTL;
+  private transient LensResultSet result;
   /**
    * Creates context from query
    *
@@ -197,7 +200,7 @@ public class QueryContext extends AbstractQueryContext {
    */
   public QueryContext(PreparedQueryContext prepared, String user, LensConf qconf, Configuration conf) {
     this(prepared.getUserQuery(), user, qconf, mergeConf(prepared.getConf(), conf), prepared.getDriverContext()
-      .getDriverQueryContextMap().keySet(), prepared.getDriverContext().getSelectedDriver(), true);
+        .getDriverQueryContextMap().keySet(), prepared.getDriverContext().getSelectedDriver(), true);
     setDriverContext(prepared.getDriverContext());
     setSelectedDriverQuery(prepared.getSelectedDriverQuery());
     setSelectedDriverQueryCost(prepared.getSelectedDriverQueryCost());
@@ -213,8 +216,8 @@ public class QueryContext extends AbstractQueryContext {
    * @param drivers All the drivers
    * @param selectedDriver SelectedDriver
    */
-  QueryContext(String userQuery, String user, LensConf qconf, Configuration conf,
-    Collection<LensDriver> drivers, LensDriver selectedDriver, boolean mergeDriverConf) {
+  QueryContext(String userQuery, String user, LensConf qconf, Configuration conf, Collection<LensDriver> drivers,
+      LensDriver selectedDriver, boolean mergeDriverConf) {
     this(userQuery, user, qconf, conf, drivers, selectedDriver, System.currentTimeMillis(), mergeDriverConf);
   }
 
@@ -229,8 +232,8 @@ public class QueryContext extends AbstractQueryContext {
    * @param selectedDriver the selected driver
    * @param submissionTime the submission time
    */
-  QueryContext(String userQuery, String user, LensConf qconf, Configuration conf,
-    Collection<LensDriver> drivers, LensDriver selectedDriver, long submissionTime, boolean mergeDriverConf) {
+  QueryContext(String userQuery, String user, LensConf qconf, Configuration conf, Collection<LensDriver> drivers,
+      LensDriver selectedDriver, long submissionTime, boolean mergeDriverConf) {
     super(userQuery, user, qconf, conf, drivers, mergeDriverConf);
     this.submissionTime = submissionTime;
     this.queryHandle = new QueryHandle(UUID.randomUUID());
@@ -238,17 +241,9 @@ public class QueryContext extends AbstractQueryContext {
     this.lensConf = qconf;
     this.conf = conf;
     this.isPersistent = conf.getBoolean(LensConfConstants.QUERY_PERSISTENT_RESULT_SET,
-      LensConfConstants.DEFAULT_PERSISTENT_RESULT_SET);
+        LensConfConstants.DEFAULT_PERSISTENT_RESULT_SET);
     this.isDriverPersistent = conf.getBoolean(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER,
-      LensConfConstants.DEFAULT_DRIVER_PERSISTENT_RESULT_SET);
-    this.preFetchInMemoryResultEnabled = conf.getBoolean(LensConfConstants.PREFETCH_INMEMORY_RESULTSET,
-        LensConfConstants.DEFAULT_PREFETCH_INMEMORY_RESULTSET);
-    if (this.preFetchInMemoryResultEnabled) {
-      this.preFetchInMemoryResultRows = conf.getInt(LensConfConstants.PREFETCH_INMEMORY_RESULTSET_ROWS,
-          LensConfConstants.DEFAULT_PREFETCH_INMEMORY_RESULTSET_ROWS);
-      this.preFetchInMemoryResultTTL  = conf.getLong(LensConfConstants.PREFETCH_INMEMORY_RESULTSET_TTL_MILLIS,
-          LensConfConstants.DEFAULT_PREFETCH_INMEMORY_RESULTSET_TTL_MILLIS);
-    }
+            LensConfConstants.DEFAULT_DRIVER_PERSISTENT_RESULT_SET);
     this.userQuery = userQuery;
     if (selectedDriver != null) {
       this.setSelectedDriver(selectedDriver);
@@ -354,7 +349,6 @@ public class QueryContext extends AbstractQueryContext {
   }
 
   public synchronized void setStatus(final QueryStatus newStatus) throws LensException {
-    validateTransition(newStatus);
     log.info("Updating status of {} from {} to {}", getQueryHandle(), this.status, newStatus);
     this.status = newStatus;
   }
@@ -459,11 +453,22 @@ public class QueryContext extends AbstractQueryContext {
     }
   }
 
-  protected InMemoryResultSet createAndCachePartiallyFetchedResultSetIfApplicable(InMemoryResultSet inMemoryRS) 
-      throws LensException {
-    if (context.isPreFetchInMemoryResultEnabled()) {
-      return new PartiallyFetchedInMemoryResultSet(inMemoryRS, context.getPreFetchInMemoryResultRows(), 0);
+  public void registerResult(LensResultSet result) throws LensException {
+    if (result instanceof InMemoryResultSet) {
+      // Check if pre-fetch for in memory result is applicable
+      if (conf.getBoolean(PREFETCH_INMEMORY_RESULTSET, DEFAULT_PREFETCH_INMEMORY_RESULTSET)) {
+        int rowsToPreFetch = conf.getInt(PREFETCH_INMEMORY_RESULTSET_ROWS, DEFAULT_PREFETCH_INMEMORY_RESULTSET_ROWS);
+        if (rowsToPreFetch > 0) {
+          //Keep few extra seconds (5 secs) for doNotPurgeUntilTimeMillis when timeout is set
+          long doNotPurgeUntilTimeMillis = timeOutMillis > 0 ? (submissionTime + timeOutMillis + 5000) : 0 ;
+          //Wrap the result in PartiallyFetchedInMemoryResultSet and register the wrapped result instead
+          this.result = new PartiallyFetchedInMemoryResultSet((InMemoryResultSet) result, rowsToPreFetch,
+              doNotPurgeUntilTimeMillis);
+          return;
+        }
+      }
     }
-    return inMemoryRS;
+    this.result = result;
   }
+
 }

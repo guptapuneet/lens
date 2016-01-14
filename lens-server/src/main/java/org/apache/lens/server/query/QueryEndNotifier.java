@@ -34,13 +34,13 @@ import javax.mail.internet.MimeMultipart;
 
 import org.apache.lens.api.query.QueryStatus;
 import org.apache.lens.server.LensServices;
+import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.events.AsyncEventListener;
 import org.apache.lens.server.api.metrics.MetricsService;
 import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.QueryEnded;
 import org.apache.lens.server.model.LogSegregationContext;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 
@@ -118,7 +118,8 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
 
     boolean whetherMailNotify = Boolean.parseBoolean(queryContext.getConf().get(QUERY_MAIL_NOTIFY,
       WHETHER_MAIL_NOTIFY_DEFAULT));
-    if (!whetherMailNotify) {
+    boolean isInMemory = !queryContext.isDriverPersistent() && !queryContext.isPersistent();
+    if (!whetherMailNotify || isInMemory) {
       return;
     }
 

@@ -19,12 +19,10 @@
 package org.apache.lens.server.query;
 
 import static javax.ws.rs.core.Response.Status.*;
-
 import static org.apache.lens.server.LensServerTestUtil.DB_WITH_JARS;
 import static org.apache.lens.server.LensServerTestUtil.DB_WITH_JARS_2;
 import static org.apache.lens.server.api.LensServerAPITestUtil.getLensConf;
 import static org.apache.lens.server.common.RestAPITestUtil.*;
-
 import static org.testng.Assert.*;
 
 import java.io.*;
@@ -49,6 +47,7 @@ import org.apache.lens.api.result.LensErrorTO;
 import org.apache.lens.api.result.QueryCostTO;
 import org.apache.lens.cube.error.LensCubeErrorCode;
 import org.apache.lens.driver.hive.HiveDriver;
+import org.apache.lens.lib.query.FileSerdeFormatter;
 import org.apache.lens.server.LensJerseyTest;
 import org.apache.lens.server.LensServerTestUtil;
 import org.apache.lens.server.LensServices;
@@ -56,6 +55,7 @@ import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.driver.InMemoryResultSet;
 import org.apache.lens.server.api.driver.LensDriver;
 import org.apache.lens.server.api.driver.LensResultSet;
+import org.apache.lens.server.api.driver.LensResultSetMetadata;
 import org.apache.lens.server.api.driver.PartiallyFetchedInMemoryResultSet;
 import org.apache.lens.server.api.error.LensDriverErrorCode;
 import org.apache.lens.server.api.error.LensException;
@@ -72,21 +72,18 @@ import org.apache.lens.server.error.LensExceptionMapper;
 import org.apache.lens.server.query.QueryExecutionServiceImpl.FinishedQuery;
 import org.apache.lens.server.session.HiveSessionService;
 import org.apache.lens.server.session.LensSessionImpl;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
-
 import org.glassfish.jersey.client.ClientConfig;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.test.TestProperties;
-
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
@@ -95,6 +92,7 @@ import org.testng.annotations.Test;
 
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Optional;
+import com.mchange.util.AssertException;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -1191,17 +1189,17 @@ public class TestQueryService extends LensJerseyTest {
   }
 
   /**
-   * Data provider for test case {@link #testExecuteWithTimeoutAndPreFetechResults()}
+   * Data provider for test case {@link #executeWithTimeoutAndPreFetechDP()}
    * @return
    */
   @DataProvider
-  public Object[][] executeWithTimeoutAndPreFetechResultsDP() {
-    //Columns: timeOutMillis, preFetchRows, isStreamingResultAvailable, ttlMillis
+  public Object[][] executeWithTimeoutAndPreFetechDP() {
+    //Columns: timeOutMillis, preFetchRows, isStreamingResultAvailable
     return new Object[][] {
-      {50000, 5, true, 50000}, //result has 5 rows & all 5 rows are pre fetched
-      {50000, 10, true, 5000}, //result has 5 rows & 5 rows are pre fetched.
-      {50000, 2, false, 5000}, //result has 5 rows & 2 rows are requested to be pre fetched. Will not stream
-      {10, 5, false, 500}, //result has 5 rows & 5 rows requested. Timeout is less (10ms). Will not stream
+      {50000, 5, true}, //result has 5 rows & all 5 rows are pre fetched
+      {50000, 10, true}, //result has 5 rows & 5 rows are pre fetched.
+      {50000, 2, false}, //result has 5 rows & 2 rows are requested to be pre fetched. Will not stream
+      {10, 5, false}, //result has 5 rows & 5 rows requested. Timeout is less (10ms). Will not stream
     };
   }
 
@@ -1213,9 +1211,9 @@ public class TestQueryService extends LensJerseyTest {
    * @throws IOException
    * @throws InterruptedException
    */
-  @Test(dataProvider = "executeWithTimeoutAndPreFetechResultsDP")
-  public void testExecuteWithTimeoutAndPreFetechResults(long timeOutMillis, int preFetchRows,
-      boolean isStreamingResultAvailable, long ttlMillis) throws Exception {
+  @Test(dataProvider = "executeWithTimeoutAndPreFetechDP")
+  public void testExecuteWithTimeoutAndPreFetech(long timeOutMillis, int preFetchRows,
+      boolean isStreamingResultAvailable) throws Exception {
     final WebTarget target = target().path("queryapi/queries");
 
     final FormDataMultiPart mp = new FormDataMultiPart();
@@ -1231,7 +1229,87 @@ public class TestQueryService extends LensJerseyTest {
     conf.addProperty(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER, "false");
     conf.addProperty(LensConfConstants.PREFETCH_INMEMORY_RESULTSET, "true");
     conf.addProperty(LensConfConstants.PREFETCH_INMEMORY_RESULTSET_ROWS, preFetchRows);
-    conf.addProperty(LensConfConstants.PREFETCH_INMEMORY_RESULTSET_TTL_MILLIS, ttlMillis); //TTL for pre-fetched result
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), conf,
+      MediaType.APPLICATION_XML_TYPE));
+    QueryHandleWithResultSet result = target.request().post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE),
+      new GenericType<LensAPIResult<QueryHandleWithResultSet>>() {}).getData();
+    QueryHandle handle = result.getQueryHandle();
+    assertNotNull(handle);
+    assertNotEquals(result.getStatus().getStatus(), QueryStatus.Status.FAILED);
+    InMemoryQueryResult inMemoryQueryResult = (InMemoryQueryResult)result.getResult();
+    if (isStreamingResultAvailable) {
+    //TEST streamed result
+      assertTrue(result.getStatus().getStatus() == QueryStatus.Status.EXECUTED
+          || result.getStatus().getStatus() == QueryStatus.Status.SUCCESSFUL,
+          "Check if timeoutmillis need to be increased based on query status - "+result.getStatus());
+      assertEquals(result.getResultMetadata().getColumns().size(), 2);
+      assertNotNull(inMemoryQueryResult);
+    }
+
+    waitForQueryToFinish(target(), lensSessionId, handle, Status.SUCCESSFUL);
+    inMemoryQueryResult = (InMemoryQueryResult)queryService.getResultset(handle).toQueryResult();
+
+    validateInmemoryResult(inMemoryQueryResult);
+
+    //Test TTL window enforced by PartiallyFetchedInMemoryResultSet
+    assertEquals(queryService.getFinishedQueriesCount(), 1);
+    FinishedQuery query = queryService.finishedQueries.peek();
+    QueryContext ctx = queryService.getUpdatedQueryContext(lensSessionId, handle);
+    if (isStreamingResultAvailable) {
+      long expiryTime = ctx.getSubmissionTime() + timeOutMillis - 2000; //keeping buffer of 2 secs for the check to pass
+      while (System.currentTimeMillis() < expiryTime) {
+        assertFalse(query.canBePurged());
+        Thread.sleep(5000);
+      }
+    }
+    Thread.sleep(2000);
+    assertTrue(query.canBePurged());
+
+    //Test Persistent Result
+
+  }
+
+  /**
+   * Data provider for test case {@link #testExecuteWithTimeoutAndPreFetechAndServerPersistence()}
+   * @return
+   */
+  @DataProvider
+  public Object[][] executeWithTimeoutAndPreFetechAndServerPersistenceDP() {
+    //Columns: timeOutMillis, preFetchRows, isStreamingResultAvailable
+    return new Object[][] {
+      {50000, 5, true}, //result has 5 rows & all 5 rows are pre fetched
+      {50000, 10, true}, //result has 5 rows & 5 rows are pre fetched.
+      {50000, 2, false}, //result has 5 rows & 2 rows are requested to be pre fetched. Will not stream
+      {10, 5, false}, //result has 5 rows & 5 rows requested. Timeout is less (10ms). Will not stream
+    };
+  }
+
+  /**
+   * @param timeOutMillis : wait time for execute with timeout api
+   * @param preFetchRows : number of rows to pre-fetch in case of InMemoryResultSet
+   * @param isStreamingResultAvailable : whether the execute call is expected to return InMemoryQueryResult
+   * @param ttlMillis : The time window for which pre-fetched InMemoryResultSet will be available for sure.
+   * @throws IOException
+   * @throws InterruptedException
+   */
+  @Test(dataProvider = "executeWithTimeoutAndPreFetechAndServerPersistenceDP")
+  public void testExecuteWithTimeoutAndPreFetechAndServerPersistence(long timeOutMillis, int preFetchRows,
+      boolean isStreamingResultAvailable) throws Exception {
+    final WebTarget target = target().path("queryapi/queries");
+
+    final FormDataMultiPart mp = new FormDataMultiPart();
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), lensSessionId,
+      MediaType.APPLICATION_XML_TYPE));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("query").build(), "select ID, IDSTR from "
+      + TEST_TABLE));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("operation").build(), "execute_with_timeout"));
+    // set a timeout value enough for tests
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("timeoutmillis").build(), timeOutMillis + ""));
+    LensConf conf = new LensConf();
+    conf.addProperty(LensConfConstants.QUERY_PERSISTENT_RESULT_SET, "true");
+    conf.addProperty(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER, "false");
+    conf.addProperty(LensConfConstants.PREFETCH_INMEMORY_RESULTSET, "true");
+    conf.addProperty(LensConfConstants.PREFETCH_INMEMORY_RESULTSET_ROWS, preFetchRows);
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), conf,
       MediaType.APPLICATION_XML_TYPE));
     QueryHandleWithResultSet result = target.request().post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE),
@@ -1253,11 +1331,25 @@ public class TestQueryService extends LensJerseyTest {
       assertTrue(result.getResult() == null || result.getResult() instanceof PersistentQueryResult);
     }
 
-    //Test Persistent Result
     waitForQueryToFinish(target(), lensSessionId, handle, Status.SUCCESSFUL);
+
+    //Test TTL window enforced by PartiallyFetchedInMemoryResultSet
+    assertEquals(queryService.getFinishedQueriesCount(), 1);
+    FinishedQuery query = queryService.finishedQueries.peek();
+    QueryContext ctx = queryService.getUpdatedQueryContext(lensSessionId, handle);
+    if (isStreamingResultAvailable) {
+      long expiryTime = ctx.getSubmissionTime() + timeOutMillis - 2000; //keeping buffer of 2 secs for the check to pass
+      while (System.currentTimeMillis() < expiryTime) {
+        assertFalse(query.canBePurged());
+        Thread.sleep(5000);
+      }
+    }
+    Thread.sleep(2000);
+    assertTrue(query.canBePurged());
+
+    //Test Persistent Result
     validatePersistedResult(handle, target(), lensSessionId, new String[][]{{"ID", "INT"}, {"IDSTR", "STRING"}}, false,
         true);
-
   }
 
   /**
@@ -1265,17 +1357,15 @@ public class TestQueryService extends LensJerseyTest {
    * @return
    */
   @DataProvider
-  public Object[][] executeWithPreFetechResultsDP() {
-    //Columns: preFetchRows, isStreamingResultAvailable, ttlMillis, isTTlSufficient, queryNumber
+  public Object[][] executeAndPreFetechDP() {
+    //Columns: preFetchRows, isStreamingResultAvailable
     return new Object[][]{
-      {5, true, 50000, true}, //result has 5 rows & all 5 rows are pre fetched
-      {10, true, 5000, false}, //result has 5 rows & 5 rows are pre fetched.
-      {2, false, 5000, false}, //result has 5 rows & 2 rows are requested to be pre fetched. Will not stream
+      {5, true}, //result has 5 rows & all 5 rows are pre fetched. Will Stream
+      {2, false}, //result has 5 rows & 2 rows are requested to be pre fetched. Will not stream
     };
   }
-  @Test(dataProvider = "executeWithPreFetechResultsDP")
-  public void testExecuteWithPreFetechResults(int preFetchRows, boolean isStreamingResultAvailable, long ttlMillis,
-      boolean isTTlSufficient) throws Exception {
+  @Test(dataProvider = "executeAndPreFetechDP")
+  public void testExecuteAndPreFetech(int preFetchRows, boolean isStreamingResultAvailable) throws Exception {
     final WebTarget target = target().path("queryapi/queries");
 
     final FormDataMultiPart mp = new FormDataMultiPart();
@@ -1289,7 +1379,6 @@ public class TestQueryService extends LensJerseyTest {
     conf.addProperty(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER, "false");
     conf.addProperty(LensConfConstants.PREFETCH_INMEMORY_RESULTSET, "true");
     conf.addProperty(LensConfConstants.PREFETCH_INMEMORY_RESULTSET_ROWS, preFetchRows);
-    conf.addProperty(LensConfConstants.PREFETCH_INMEMORY_RESULTSET_TTL_MILLIS, ttlMillis); //TTL for pre-fetched result
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), conf,
       MediaType.APPLICATION_XML_TYPE));
     QueryHandle handle = target.request().post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE),
@@ -1297,37 +1386,92 @@ public class TestQueryService extends LensJerseyTest {
     assertNotNull(handle);
 
     waitForQueryToFinish(target(), lensSessionId, handle, Status.SUCCESSFUL);
+
     LensResultSet resultSet = queryService.getResultset(handle);
+    assertNotNull(resultSet); //InMemory result should be available as it not accessed even once
     assertTrue(resultSet instanceof PartiallyFetchedInMemoryResultSet);
     if (isStreamingResultAvailable) {
       assertEquals(((PartiallyFetchedInMemoryResultSet)resultSet).getPreFetchedRows().size(), 5);
-      assertEquals(((InMemoryResultSet)resultSet).toQueryResult().getRows().size(), 5);
+      assertEquals(((InMemoryResultSet)resultSet).toQueryResult().getRows().size(), 5); //Eligible for purging now
     } else {
       assertEquals(((PartiallyFetchedInMemoryResultSet)resultSet).getPreFetchedRows().size(), preFetchRows+1);
-      assertEquals(((InMemoryResultSet)resultSet).toQueryResult().getRows().size(), 5);
+      assertEquals(((InMemoryResultSet)resultSet).toQueryResult().getRows().size(), 5); //Eligible for purging now
+    }
+  }
+
+  /**
+   * Data provider for test case {@link #testExecuteWithPreFetechResultsAndServerPersistence()}
+   * @return
+   */
+  @DataProvider
+  public Object[][] executeWithPreFetechResultsAndServerPersistence() {
+    //Columns: preFetchRows, isStreamingResultAvailable, deferPersistenceByMillis
+    return new Object[][]{
+      {5, true, 30000}, //result has 5 rows & all 5 rows are pre fetched. Will Stream
+      {2, false, 0}, //result has 5 rows & 2 rows are requested to be pre fetched. Will not stream
+    };
+  }
+
+  @Test(dataProvider = "executeWithPreFetechResultsAndServerPersistence")
+  public void testExecuteWithPreFetechResultsAndServerPersistence(int preFetchRows, boolean isStreamingResultAvailable,
+      long deferPersistenceByMillis) throws Exception {
+    final WebTarget target = target().path("queryapi/queries");
+
+    final FormDataMultiPart mp = new FormDataMultiPart();
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), lensSessionId,
+      MediaType.APPLICATION_XML_TYPE));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("query").build(), "select ID, IDSTR from "
+      + TEST_TABLE));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("operation").build(), "execute"));
+    LensConf conf = new LensConf();
+    conf.addProperty(LensConfConstants.QUERY_PERSISTENT_RESULT_SET, "true");
+    conf.addProperty(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER, "false");
+    conf.addProperty(LensConfConstants.PREFETCH_INMEMORY_RESULTSET, "true");
+    conf.addProperty(LensConfConstants.PREFETCH_INMEMORY_RESULTSET_ROWS, preFetchRows);
+    conf.addProperty(LensConfConstants.QUERY_OUTPUT_FORMATTER, DeferredFileSerdeFormatter.class.getName());
+    conf.addProperty("deferPersistenceByMillis", deferPersistenceByMillis); // property used for test only
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), conf,
+      MediaType.APPLICATION_XML_TYPE));
+    QueryHandle handle = target.request().post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE),
+      new GenericType<LensAPIResult<QueryHandle>>() {}).getData();
+    assertNotNull(handle);
+
+    //Check Resultset should not be available until query is finished.
+    if(deferPersistenceByMillis > 10000) { // enough time to check this condition
+      try {
+        queryService.getResultset(handle);
+        assert(false); 
+      } catch (NotFoundException e) {
+        assert(true); //Expecting NotFoundException since query has not finished yet.
+      }
     }
 
-    //Test TTL window enforced by PartiallyFetchedInMemoryResultSet
-    QueryContext ctx = queryService.getUpdatedQueryContext(lensSessionId, handle);
-    assertEquals(queryService.getFinishedQueriesCount(), 1);
-    FinishedQuery query = queryService.finishedQueries.peek();
-    //TTL will be honored only when all rows have been pre fetched.
-    if (((PartiallyFetchedInMemoryResultSet)resultSet).isComplteleyFetched()) {
-      long expiryTime = ctx.getSubmissionTime() + ttlMillis - 2000; // keeping buffer of 2 secs for the check to pass
-      int checkCount = 0;
-      while (System.currentTimeMillis() < expiryTime) {
-        assertFalse(query.canBePurged());
-        checkCount++;
-        Thread.sleep(5000);
-      }
-      if (isTTlSufficient) {
-        assertTrue(checkCount > 0); //at least on check should succeed in this case.
+    waitForQueryToFinish(target(), lensSessionId, handle, Status.SUCCESSFUL);
+
+    LensResultSet resultSet = queryService.getResultset(handle);
+    assertNotNull(resultSet); 
+    assertTrue(resultSet instanceof LensPersistentResult);
+    validatePersistentResult((PersistentQueryResult)resultSet.toQueryResult(), handle, false, true);
+  }
+
+  private static class DeferredFileSerdeFormatter extends FileSerdeFormatter {
+    /**
+     *  Defer init so that this output formatter takes significant time.
+     */
+    @Override
+    public void init(QueryContext ctx, LensResultSetMetadata metadata) throws IOException {
+      super.init(ctx, metadata);
+      long deferPersistenceByMillis = ctx.getConf().getLong("deferPersistenceByMillis", 5000);
+      if(deferPersistenceByMillis > 0) {
+        try {
+          Thread.sleep(deferPersistenceByMillis);
+        } catch (InterruptedException e) {
+          // Ignore
+        }
       }
     }
-    Thread.sleep(2000);
-    assertTrue(query.canBePurged());
   }
-  /**
+  /** 
    * Test execute with timeout query.
    *
    * @throws IOException          Signals that an I/O exception has occurred.

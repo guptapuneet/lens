@@ -123,7 +123,8 @@ public class LensSessionImpl extends HiveSessionImpl {
         }
       }
     }
-    return sessionDefaultConfig;
+    //Not exposing sessionDefaultConfig directly to insulate it form modifications
+    return new Configuration(sessionDefaultConfig);
   }
 
   /** The default hive session conf. */

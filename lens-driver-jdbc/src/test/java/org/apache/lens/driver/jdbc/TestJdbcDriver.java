@@ -446,12 +446,14 @@ public class TestJdbcDriver {
     // Query
     final String query = "SELECT * FROM execute_prefetch_test";
     Configuration conf = new Configuration(baseConf);
+    conf.setBoolean(LensConfConstants.QUERY_PERSISTENT_RESULT_SET, true);
     conf.setBoolean(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER, false);
     conf.setBoolean(LensConfConstants.PREFETCH_INMEMORY_RESULTSET, true);
     conf.setInt(LensConfConstants.PREFETCH_INMEMORY_RESULTSET_ROWS, rowsToPreFecth);
-    conf.setLong(LensConfConstants.PREFETCH_INMEMORY_RESULTSET_TTL_MILLIS, ttlWindow);
     QueryContext context = createQueryContext(query, conf);
-    LensResultSet resultSet = driver.execute(context);
+    context.setTimeOutMillis(ttlWindow);
+    driver.executeAsync(context);
+    LensResultSet resultSet = driver.fetchResultSet(context);
     assertNotNull(resultSet);
     assertTrue(resultSet instanceof PartiallyFetchedInMemoryResultSet);
 
@@ -484,7 +486,7 @@ public class TestJdbcDriver {
       if (ttlWindow > 15000) {
         assertTrue(checkCount > 0); // TTl window condition should be checked at least once if TTl window is big enough
       }
-      Thread.sleep(3000);
+      Thread.sleep(10000);
     }
     //Check Purge
     assertEquals(rs.canBePurged() , true);

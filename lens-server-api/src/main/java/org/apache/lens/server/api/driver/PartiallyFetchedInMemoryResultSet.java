@@ -72,7 +72,7 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
    * If {@link #isComplteleyFetched()} is true, result can should not be purged
    * until current time is greater than doNotPurgeUnitlTimeMillis.
    *
-   * Note: If {@link #isComplteleyFetched()} is false, result is purged based on 
+   * Note: If {@link #isComplteleyFetched()} is false, result is purged based on
    * purge logic of underlying in-memory result
    */
   private long doNotPurgeUntilTimeMillis;
@@ -80,17 +80,19 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
    * Constructor
    * @param inMemoryRS : Underlying in-memory result set
    * @param reqPreFetchSize : requested number of rows to be pre-fetched and cached.
-   * @param timeOutMillis : do not purge result until this time is reached.
+   * @param doNotPurgeUntilTimeMillis : do not purge result until this time is reached.
    * @throws LensException
    */
   public PartiallyFetchedInMemoryResultSet(InMemoryResultSet inMemoryRS, int reqPreFetchSize ,
-      long timeOutMillis) throws LensException {
+      long doNotPurgeUntilTimeMillis) throws LensException {
     this.inMemoryRS = inMemoryRS;
-    this.doNotPurgeUntilTimeMillis = timeOutMillis;
+    this.doNotPurgeUntilTimeMillis = doNotPurgeUntilTimeMillis;
     if (reqPreFetchSize <= 0) {
       throw new IllegalArgumentException("Invalid pre fetch size " + reqPreFetchSize);
     }
     preFetchRows(reqPreFetchSize);
+    log.info("Pre-Fetched {} rows of result and isComplteleyFetched = {} and doNotPurgeUntilTimeMillis ={}",
+        numOfPreFetchedRows, isComplteleyFetched, doNotPurgeUntilTimeMillis);
   }
 
   private void preFetchRows(int reqPreFetchSize) throws LensException {
@@ -113,7 +115,6 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
       preFetchedRows.add(inMemoryRS.next());
       numOfPreFetchedRows++;
     }
-    log.info("Pre-Fetched {} rows and isComplteleyFetched = {}", numOfPreFetchedRows, isComplteleyFetched);
   }
 
   @Override

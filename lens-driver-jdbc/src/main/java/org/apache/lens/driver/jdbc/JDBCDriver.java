@@ -20,9 +20,11 @@ package org.apache.lens.driver.jdbc;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
+
 import static org.apache.lens.driver.jdbc.JDBCDriverConfConstants.*;
 import static org.apache.lens.driver.jdbc.JDBCDriverConfConstants.ConnectionPoolProperties.*;
 import static org.apache.lens.server.api.util.LensUtil.getImplementations;
+
 import static com.google.common.base.Preconditions.checkState;
 
 import java.io.IOException;
@@ -58,7 +60,9 @@ import org.apache.lens.server.api.query.rewrite.QueryRewriter;
 import org.apache.lens.server.api.util.LensUtil;
 import org.apache.lens.server.model.LogSegregationContext;
 import org.apache.lens.server.model.MappedDiagnosticLogSegregationContext;
+
 import org.apache.commons.lang3.StringUtils;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.parse.ASTNode;

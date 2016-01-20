@@ -707,23 +707,6 @@ public class HiveDriver extends AbstractLensDriver {
   /*
    * (non-Javadoc)
    *
-   * @see org.apache.lens.server.api.driver.LensDriver#fetchResultSet(org.apache.lens.server.api.query.QueryContext)
-   */
-  @Override
-  public LensResultSet fetchResultSet(QueryContext ctx) throws LensException {
-    // This should be applicable only for a async query
-    log.info("FetchResultSet: {}", ctx.getQueryHandle());
-    synchronized (ctx) {
-      if (ctx.getResult() == null) {
-        ctx.registerResult(createResultSet(ctx, false));
-      }
-    }
-    return ctx.getResult();
-  }
-
-  /*
-   * (non-Javadoc)
-   *
    * @see org.apache.lens.server.api.driver.LensDriver#closeResultSet(org.apache.lens.api.query.QueryHandle)
    */
   @Override
@@ -899,8 +882,8 @@ public class HiveDriver extends AbstractLensDriver {
       if (context.isDriverPersistent()) {
         return new HivePersistentResultSet(new Path(context.getDriverResultPath()), op, getClient());
       } else if (op.hasResultSet()) {
-          return new HiveInMemoryResultSet(op, getClient(), closeAfterFetch);
-        } else {
+        return new HiveInMemoryResultSet(op, getClient(), closeAfterFetch);
+      } else {
         // queries that do not have result
         return null;
       }

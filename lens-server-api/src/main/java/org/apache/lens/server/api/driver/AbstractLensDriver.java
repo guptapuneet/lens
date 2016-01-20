@@ -18,13 +18,13 @@
  */
 package org.apache.lens.server.api.driver;
 
-
 import org.apache.lens.api.Priority;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.query.QueryContext;
 
 import org.apache.commons.lang.StringUtils;
+
 import org.apache.hadoop.conf.Configuration;
 
 import lombok.Getter;
@@ -64,21 +64,22 @@ public abstract class AbstractLensDriver implements LensDriver {
   public LensResultSet fetchResultSet(QueryContext ctx) throws LensException {
     log.info("FetchResultSet: {}", ctx.getQueryHandle());
     synchronized (ctx) {
-      if (ctx.getResult() == null) {
-        ctx.registerResult(createResultSet(ctx));
+      if (!ctx.isDriverResultRegistered()) {
+        ctx.registerDriverResult(createResultSet(ctx));
       }
     }
-    return ctx.getResult();
+    return ctx.getDriverResult();
   }
 
   /**
    * This method should create ResultSet for the query represented by the context. Default Implementation is blank , but
    * the driver implementation can override this method to return driver specific LensResultSet.
-   * {@see #fetchResultSet(QueryContext)}
+   * See {@link #fetchResultSet(QueryContext)}
    * @param ctx
    * @return
    */
   protected LensResultSet createResultSet(QueryContext ctx) throws LensException {
+    // no-op by default
     return null;
   }
 

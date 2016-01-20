@@ -18,10 +18,10 @@
  */
 package org.apache.lens.server.api.query;
 
-import static org.apache.lens.server.api.LensConfConstants.PREFETCH_INMEMORY_RESULTSET;
-import static org.apache.lens.server.api.LensConfConstants.PREFETCH_INMEMORY_RESULTSET_ROWS;
 import static org.apache.lens.server.api.LensConfConstants.DEFAULT_PREFETCH_INMEMORY_RESULTSET;
 import static org.apache.lens.server.api.LensConfConstants.DEFAULT_PREFETCH_INMEMORY_RESULTSET_ROWS;
+import static org.apache.lens.server.api.LensConfConstants.PREFETCH_INMEMORY_RESULTSET;
+import static org.apache.lens.server.api.LensConfConstants.PREFETCH_INMEMORY_RESULTSET_ROWS;
 
 import java.util.Collection;
 import java.util.Map;
@@ -43,6 +43,7 @@ import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.query.collect.WaitingQueriesSelectionPolicy;
 import org.apache.lens.server.api.query.constraint.QueryLaunchingConstraint;
 import org.apache.lens.server.api.query.priority.QueryPriorityDecider;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
@@ -51,13 +52,11 @@ import com.google.common.collect.Lists;
 
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * The Class QueryContext.
  */
-@ToString
 @Slf4j
 public class QueryContext extends AbstractQueryContext {
 
@@ -174,10 +173,21 @@ public class QueryContext extends AbstractQueryContext {
   private String queryName;
 
   @Setter
+  @Getter
   private transient long timeOutMillis;
 
+  /**
+   * Query result registered by driver
+   */
   @Getter
-  private transient LensResultSet result;
+  private transient LensResultSet driverResult;
+
+  /**
+   * True if driver has registered the result
+   */
+  @Getter
+  private transient boolean isDriverResultRegistered;
+
   /**
    * Creates context from query
    *
@@ -453,22 +463,39 @@ public class QueryContext extends AbstractQueryContext {
     }
   }
 
-  public void registerResult(LensResultSet result) throws LensException {
-    if (result instanceof InMemoryResultSet) {
-      // Check if pre-fetch for in memory result is applicable
-      if (conf.getBoolean(PREFETCH_INMEMORY_RESULTSET, DEFAULT_PREFETCH_INMEMORY_RESULTSET)) {
-        int rowsToPreFetch = conf.getInt(PREFETCH_INMEMORY_RESULTSET_ROWS, DEFAULT_PREFETCH_INMEMORY_RESULTSET_ROWS);
-        if (rowsToPreFetch > 0) {
-          //Keep few extra seconds (5 secs) for doNotPurgeUntilTimeMillis when timeout is set
-          long doNotPurgeUntilTimeMillis = timeOutMillis > 0 ? (submissionTime + timeOutMillis + 5000) : 0 ;
-          //Wrap the result in PartiallyFetchedInMemoryResultSet and register the wrapped result instead
-          this.result = new PartiallyFetchedInMemoryResultSet((InMemoryResultSet) result, rowsToPreFetch,
-              doNotPurgeUntilTimeMillis);
+  public synchronized void registerDriverResult(LensResultSet result) throws LensException {
+    if (isDriverResultRegistered) {
+      return; //already registered
+    }
+    this.isDriverResultRegistered = true;
+    /*
+     *  Check if results needs to be streamed to client in which case driver result needs to be wrapped in
+     *  PartiallyFetchedInMemoryResultSet
+     *
+     *  1. Driver Result should be of type InMemory (for streaming) as only such results can be streamed fast
+     *  2. Query result should be server persistent. Only in this case, an early streaming is required by client
+     *  that starts even before server level result persistence finishes.
+     *  2. When timeout is 0, it refers to an asynchronous query. In this case streaming result does not make sense
+     *  3. PREFETCH_INMEMORY_RESULTSET = true, implies client intent to get early streamed result
+     *  4. rowsToPreFetch should be >0
+     */
+    if (isPersistent && timeOutMillis > 0
+        && result instanceof InMemoryResultSet
+        && conf.getBoolean(PREFETCH_INMEMORY_RESULTSET, DEFAULT_PREFETCH_INMEMORY_RESULTSET)) {
+      int rowsToPreFetch = conf.getInt(PREFETCH_INMEMORY_RESULTSET_ROWS, DEFAULT_PREFETCH_INMEMORY_RESULTSET_ROWS);
+      if (rowsToPreFetch > 0) {
+        long timeOutTime = submissionTime + timeOutMillis;
+        if (System.currentTimeMillis() < timeOutTime) {
+          //keeping a buffer of 5 ses for doNotPurgeUntilTimeMillis. This gives enough time to
+          //{@link org.apache.lens.server.query.QueryExecutionServiceImpl#executeTimeoutInternal()} to read the
+          //pre fetched result by deferring the purging until (doNotPurgeUntilTimeMillis + 5 secs)
+          this.driverResult = new PartiallyFetchedInMemoryResultSet((InMemoryResultSet) result, rowsToPreFetch,
+              timeOutTime + 5000);
           return;
         }
       }
     }
-    this.result = result;
+    this.driverResult = result;
   }
 
 }

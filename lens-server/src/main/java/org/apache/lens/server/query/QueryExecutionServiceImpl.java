@@ -74,7 +74,6 @@ import org.apache.lens.server.util.UtilityMethods;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -513,6 +512,8 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
      */
     private final Date finishTime;
 
+    private LensResultSet driverRS;
+
     /**
      * Instantiates a new finished query.
      *
@@ -526,15 +527,29 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       } else {
         this.finishTime = new Date(ctx.getEndTime());
       }
+      if (ctx.isResultAvailableInDriver()) {
+        try {
+          driverRS = ctx.getSelectedDriver().fetchResultSet(getCtx());
+        } catch (LensException e) {
+          log.error(
+              "Error while getting result ser form driver {}. Driver result set based purging logic will be ignored",
+              ctx.getSelectedDriver(), e);
+        }
+      }
     }
 
     public boolean canBePurged() {
       try {
-        if (getCtx().getStatus().getStatus().equals(SUCCESSFUL)) {
-          if (getCtx().getStatus().isResultSetAvailable()) {
-            LensResultSet rs = getResultset();
-            log.info("Resultset for {} is {}", getQueryHandle(), rs);
-            return rs.canBePurged();
+        if (getCtx().getStatus().getStatus().equals(SUCCESSFUL) && getCtx().getStatus().isResultSetAvailable()) {
+          LensResultSet serverRS = getResultset();
+          log.info("Server Resultset for {} is {}", getQueryHandle(), serverRS.getClass().getSimpleName());
+          // driverRS and serverRS will not match when server persistence is enabled. Check for both
+          // result sets purgability in that case
+          if (driverRS != null && driverRS != serverRS) {
+            log.info("Driver Resultset for {} is {}", getQueryHandle(), driverRS.getClass().getSimpleName());
+            return serverRS.canBePurged() && driverRS.canBePurged();
+          } else {
+            return serverRS.canBePurged();
           }
         }
         return true;
@@ -1503,7 +1518,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
             } else if (allQueries.get(queryHandle).isResultAvailableInDriver()) {
               resultSet = getDriverResultset(queryHandle);
               resultSets.put(queryHandle, resultSet);
-            } 
+            }
           }
         }
       }
@@ -1803,7 +1818,8 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
   }
 
   /**
-   *  Gets the query context. For non-purged queries the status is updated before returning the context
+   *  Gets the query context either form memory or from DB (after query is purged)
+   *  Note: For non-purged queries the status is updated before returning the context
    *
    * @param sessionHandle the session handle
    * @param queryHandle   the query handle
@@ -1811,11 +1827,26 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    * @throws LensException the lens exception
    */
   QueryContext getUpdatedQueryContext(LensSessionHandle sessionHandle, QueryHandle queryHandle) throws LensException {
+    return getUpdatedQueryContext(sessionHandle, queryHandle, false);
+  }
+
+  /**
+   * Gets the query context. If the query has been purged, null context is returned if returnNullIfPurged is true, else
+   * context is read form DB Note: For non-purged queries the status is updated before returning the context
+   *
+   * @param sessionHandle
+   * @param queryHandle
+   * @param returnNullIfPurged
+   * @return
+   * @throws LensException
+   */
+  QueryContext getUpdatedQueryContext(LensSessionHandle sessionHandle, QueryHandle queryHandle,
+      boolean returnNullIfPurged) throws LensException {
     try {
       acquire(sessionHandle);
       QueryContext ctx = allQueries.get(queryHandle);
       if (ctx == null) {
-        return getQueryContextOfFinishedQuery(queryHandle);
+        return (returnNullIfPurged ? null : getQueryContextOfFinishedQuery(queryHandle));
       }
       updateStatus(queryHandle);
       return ctx;
@@ -1927,8 +1958,8 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
   private QueryHandleWithResultSet executeTimeoutInternal(LensSessionHandle sessionHandle, QueryContext ctx,
     long timeoutMillis, Configuration conf) throws LensException {
     QueryHandle handle = submitQuery(ctx);
+    long timeOutTime = System.currentTimeMillis() + timeoutMillis;
     QueryHandleWithResultSet result = new QueryHandleWithResultSet(handle);
-    // getQueryContext calls updateStatus, which fires query events if there's a change in status
 
     while (isQueued(sessionHandle, handle)) {
       try {
@@ -1939,7 +1970,6 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     }
 
     QueryContext queryCtx = getUpdatedQueryContext(sessionHandle, handle);
-
     if (queryCtx.getSelectedDriver() == null) {
       result.setStatus(queryCtx.getStatus());
       return result;
@@ -1959,28 +1989,45 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       }
     }
 
-    //TODO how to enable purging when execute with timeout and  driver and server persistence is off. 
+    // At this stage (since the listener waits only for driver completion and not server that may include result
+    // formatting and persistence) the query status can be RUNNING or EXECUTED or FAILED or SUCCESSFUL
     LensResultSet resultSet = null;
-    boolean resultInitailized = false;
-    queryCtx = getUpdatedQueryContext(sessionHandle, handle);
-    if (listener.querySuccessful) {
+    queryCtx = getUpdatedQueryContext(sessionHandle, handle, true); // If the query is already purged queryCtx = null
+    if (queryCtx != null && listener.querySuccessful && queryCtx.getStatus().isResultSetAvailable()) {
       resultSet = queryCtx.getSelectedDriver().fetchResultSet(queryCtx);
       if (resultSet instanceof PartiallyFetchedInMemoryResultSet) {
         PartiallyFetchedInMemoryResultSet partialnMemoryResult = (PartiallyFetchedInMemoryResultSet) resultSet;
-        if (partialnMemoryResult.isComplteleyFetched()) { //DO not stream the result if its not completely fetched
+        if (partialnMemoryResult.isComplteleyFetched()) { // DO not stream the result if its not completely fetched
           result.setResult(new InMemoryQueryResult(partialnMemoryResult.getPreFetchedRows()));
           result.setResultMetadata(partialnMemoryResult.getMetadata().toQueryResultSetMetadata());
-          resultInitailized = true;
+          result.setStatus(queryCtx.getStatus());
+          return result;
         }
       }
     }
 
+    // Until timeOutTime, give this query a chance to reach FINISHED status if not already there.
     queryCtx = getUpdatedQueryContext(sessionHandle, handle);
-    if (!resultInitailized && queryCtx.finished() && queryCtx.getStatus().isResultSetAvailable()) {
+    while (!queryCtx.finished() && System.currentTimeMillis() < timeOutTime) {
+      queryCtx = getUpdatedQueryContext(sessionHandle, handle);
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        // Ignore
+      }
+    }
+
+    if (queryCtx.finished() && queryCtx.getStatus().isResultSetAvailable()) {
       resultSet = getResultset(handle);
       result.setResultMetadata(resultSet.getMetadata().toQueryResultSetMetadata());
       result.setResult(resultSet.toQueryResult());
+      result.setStatus(queryCtx.getStatus());
+      return result;
     }
+
+    // Result is not available. (Explicitly setting values to null for readability)
+    result.setResult(null);
+    result.setResultMetadata(null);
     result.setStatus(queryCtx.getStatus());
     return result;
   }

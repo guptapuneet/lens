@@ -118,8 +118,7 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
 
     boolean whetherMailNotify = Boolean.parseBoolean(queryContext.getConf().get(QUERY_MAIL_NOTIFY,
       WHETHER_MAIL_NOTIFY_DEFAULT));
-    boolean isInMemory = !queryContext.isDriverPersistent() && !queryContext.isPersistent();
-    if (!whetherMailNotify || isInMemory) {
+    if (!whetherMailNotify) {
       return;
     }
 

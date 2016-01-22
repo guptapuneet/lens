@@ -36,8 +36,10 @@ import lombok.extern.slf4j.Slf4j;
  * along with persistence. The pre-fetched result available via {@link #getPreFetchedRows()} can be used for streaming
  * while the persistence logic can iterate over complete result set using {@link #hasNext()} and {@link #next()}.
  *
- * Please note that streaming and persistence can occur concurrently irrespective of the underlying InMemoryResultSet
+ * Note
+ * Streaming and persistence can occur concurrently irrespective of the underlying InMemoryResultSet
  * implementation.
+ * Streaming of partial results is not supported at server level as of now.
  */
 @Slf4j
 public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
@@ -169,6 +171,8 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
 
   @Override
   public boolean canBePurged() {
+    //If the result is completely pre-fetched, defer the purging decision until doNotPurgeUntilTimeMillis to allow
+    //the server to finish streaming the results.
     if (isComplteleyFetched && System.currentTimeMillis() < this.doNotPurgeUntilTimeMillis) {
       return false;
     } else {

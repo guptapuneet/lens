@@ -1527,9 +1527,6 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       if (result == null) {
         throw new NotFoundException("Result set not available for query:" + queryHandle);
       }
-      if (result instanceof InMemoryResultSet) {
-        ((InMemoryResultSet) result).seekToStart();
-      }
       return result;
     }
   }

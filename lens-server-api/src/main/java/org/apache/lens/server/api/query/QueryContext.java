@@ -475,9 +475,9 @@ public class QueryContext extends AbstractQueryContext {
      *  1. Driver Result should be of type InMemory (for streaming) as only such results can be streamed fast
      *  2. Query result should be server persistent. Only in this case, an early streaming is required by client
      *  that starts even before server level result persistence finishes.
-     *  2. When timeout is 0, it refers to an asynchronous query. In this case streaming result does not make sense
-     *  3. PREFETCH_INMEMORY_RESULTSET = true, implies client intent to get early streamed result
-     *  4. rowsToPreFetch should be >0
+     *  3. When timeout is 0, it refers to an asynchronous query. In this case streaming result does not make sense
+     *  4. PREFETCH_INMEMORY_RESULTSET = true, implies client intent to get early streamed result
+     *  5. rowsToPreFetch should be >0
      */
     if (isPersistent && timeOutMillis > 0
         && result instanceof InMemoryResultSet

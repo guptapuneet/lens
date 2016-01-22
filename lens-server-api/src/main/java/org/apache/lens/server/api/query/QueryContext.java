@@ -253,7 +253,7 @@ public class QueryContext extends AbstractQueryContext {
     this.isPersistent = conf.getBoolean(LensConfConstants.QUERY_PERSISTENT_RESULT_SET,
         LensConfConstants.DEFAULT_PERSISTENT_RESULT_SET);
     this.isDriverPersistent = conf.getBoolean(LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER,
-            LensConfConstants.DEFAULT_DRIVER_PERSISTENT_RESULT_SET);
+        LensConfConstants.DEFAULT_DRIVER_PERSISTENT_RESULT_SET);
     this.userQuery = userQuery;
     if (selectedDriver != null) {
       this.setSelectedDriver(selectedDriver);
@@ -275,7 +275,7 @@ public class QueryContext extends AbstractQueryContext {
    * @return QueryContext object
    */
   public static QueryContext createContextWithSingleDriver(String query, String user, LensConf qconf,
-    Configuration conf, LensDriver driver, String lensSessionPublicId, boolean mergeDriverConf) {
+      Configuration conf, LensDriver driver, String lensSessionPublicId, boolean mergeDriverConf) {
     QueryContext ctx = new QueryContext(query, user, qconf, conf, Lists.newArrayList(driver), driver, mergeDriverConf);
     ctx.setLensSessionIdentifier(lensSessionPublicId);
     return ctx;

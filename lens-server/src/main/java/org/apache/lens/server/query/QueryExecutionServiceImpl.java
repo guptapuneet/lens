@@ -274,7 +274,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
 
   /**
    * This is the TTL millis for all result sets of type {@link org.apache.lens.server.api.driver.InMemoryResultSet}
-   * Note : this field is non final and has a Getter and Setter for testcase
+   * Note : this field is non final and has a Getter and Setter for test cases
    */
   @Getter
   @Setter

@@ -1019,9 +1019,8 @@ public class TestQueryService extends LensJerseyTest {
 
       // Check TTL
       QueryContext ctx = queryService.getQueryContext(lensSessionId, handle);
-      //Keeping buffer of -3 secs
-      long softExpiryTime =
-          ctx.getDriverStatus().getDriverFinishTime() + QueryExecutionServiceImpl.inMemoryresultsetTTLMillis - 3000;
+      long softExpiryTime = ctx.getDriverStatus().getDriverFinishTime()
+          + QueryExecutionServiceImpl.getInMemoryresultsetTTLMillis() - 3000; //Keeping buffer of -3 secs
       int checkCount = 0;
       while (System.currentTimeMillis() < softExpiryTime) {
         assertEquals(queryService.getFinishedQueriesCount(), 1);

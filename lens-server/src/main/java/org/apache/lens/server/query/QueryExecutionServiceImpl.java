@@ -273,6 +273,15 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
   private final ExecutorService waitingQueriesSelectionSvc = Executors.newSingleThreadExecutor();
 
   /**
+   * This is the TTL millis for all result sets of type {@link org.apache.lens.server.api.driver.InMemoryResultSet}
+   * Note : this field is non final and has a Getter and Setter for testcase
+   */
+  @Getter
+  @Setter
+  private static long inMemoryresultsetTTLMillis = (long) LensServerConf.getHiveConf().getInt(
+      LensConfConstants.INMEMORY_RESULT_SET_TTL_SECS, LensConfConstants.DEFAULT_INMEMORY_RESULT_SET_TTL_SECS) * 1000;
+
+  /**
    * The driver event listener.
    */
   final LensEventListener<DriverEvent> driverEventListener = new LensEventListener<DriverEvent>() {
@@ -533,7 +542,14 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         if (getCtx().getStatus().getStatus().equals(SUCCESSFUL)) {
           if (getCtx().getStatus().isResultSetAvailable()) {
             LensResultSet rs = getResultset();
-            log.info("Resultset for {} is {}", getQueryHandle(), rs);
+            log.info("Resultset for {} is {}", getQueryHandle(), rs.getClass().getSimpleName());
+            if (rs instanceof InMemoryResultSet
+                && System.currentTimeMillis()
+                > ((InMemoryResultSet) rs).getCreationTime() +inMemoryresultsetTTLMillis) {
+              log.info("InMemoryResultSet for query {} has exceeded its TTL and is eligible for purging now",
+                  getQueryHandle());
+              return true;
+            }
             return rs.canBePurged();
           }
         }

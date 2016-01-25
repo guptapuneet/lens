@@ -545,7 +545,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
             log.info("Resultset for {} is {}", getQueryHandle(), rs.getClass().getSimpleName());
             if (rs instanceof InMemoryResultSet
                 && System.currentTimeMillis()
-                > ((InMemoryResultSet) rs).getCreationTime() +inMemoryResultsetTTLMillis) {
+                > ((InMemoryResultSet) rs).getCreationTime() + inMemoryResultsetTTLMillis) {
               log.info("InMemoryResultSet for query {} has exceeded its TTL and is eligible for purging now",
                   getQueryHandle());
               return true;

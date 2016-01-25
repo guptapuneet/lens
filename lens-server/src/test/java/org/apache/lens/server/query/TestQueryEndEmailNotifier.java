@@ -35,7 +35,6 @@ import javax.ws.rs.core.Response;
 
 import org.apache.lens.api.LensConf;
 import org.apache.lens.api.LensSessionHandle;
-import org.apache.lens.api.query.InMemoryQueryResult;
 import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.QueryResult;
 import org.apache.lens.api.query.QueryStatus.Status;
@@ -254,7 +253,7 @@ public class TestQueryEndEmailNotifier extends LensJerseyTest {
       QueryResult result = getLensQueryResult(target(), lensSessionId, handle);
       expectedKeywords = result.toPrettyString();
     } else {
-      expectedKeywords = InMemoryQueryResult.DECLARATION;
+      expectedKeywords = QueryEndNotifier.RESULT_AVAILABLE_UNTIL_MSG;
     }
     WiserMessage message = getMessage();
     assertKeywordsContains(message, handle, "Query SUCCESSFUL", expectedKeywords);

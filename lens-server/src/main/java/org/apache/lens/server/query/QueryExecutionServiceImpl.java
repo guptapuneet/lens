@@ -278,7 +278,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    */
   @Getter
   @Setter
-  private static long inMemoryresultsetTTLMillis = (long) LensServerConf.getHiveConf().getInt(
+  private static long inMemoryResultsetTTLMillis = (long) LensServerConf.getHiveConf().getInt(
       LensConfConstants.INMEMORY_RESULT_SET_TTL_SECS, LensConfConstants.DEFAULT_INMEMORY_RESULT_SET_TTL_SECS) * 1000;
 
   /**
@@ -545,7 +545,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
             log.info("Resultset for {} is {}", getQueryHandle(), rs.getClass().getSimpleName());
             if (rs instanceof InMemoryResultSet
                 && System.currentTimeMillis()
-                > ((InMemoryResultSet) rs).getCreationTime() +inMemoryresultsetTTLMillis) {
+                > ((InMemoryResultSet) rs).getCreationTime() +inMemoryResultsetTTLMillis) {
               log.info("InMemoryResultSet for query {} has exceeded its TTL and is eligible for purging now",
                   getQueryHandle());
               return true;

@@ -54,7 +54,6 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
     conf.setBoolean(CubeQueryConfUtil.DISABLE_AGGREGATE_RESOLVER, false);
   }
 
-  @Test
   public void testDenormsAsDirectFields() throws ParseException, LensException, HiveException {
     // denorm fields directly available
     String hqlQuery = rewrite("select dim2big1, max(msr3)," + " msr2 from testCube" + " where " + TWO_DAYS_RANGE_IT,

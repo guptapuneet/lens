@@ -1510,7 +1510,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         if (ctx.isFinishedQueryPersisted()) {
           return getResultsetFromDAO(queryHandle);
         }
-        if (ctx.finished()) { // Do not return any result set for queries that have not finished.
+        if (ctx.successful()) { // Do not return any result set for queries that have not finished successfully.
           LensResultSet resultSet = resultSets.get(queryHandle);
           if (resultSet == null) {
             if (ctx.isPersistent() && ctx.getQueryOutputFormatter() != null) {

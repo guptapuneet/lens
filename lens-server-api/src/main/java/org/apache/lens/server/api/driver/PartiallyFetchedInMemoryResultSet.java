@@ -71,7 +71,7 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
   private List<ResultRow> preFetchedRows;
 
   /**
-   * If {@link #isComplteleyFetched()} is true, result can should not be purged
+   * If {@link #isComplteleyFetched()} is true, result can not be purged
    * until current time is greater than doNotPurgeUnitlTimeMillis.
    *
    * Note: If {@link #isComplteleyFetched()} is false, result is purged based on

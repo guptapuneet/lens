@@ -428,6 +428,10 @@ public class QueryContext extends AbstractQueryContext {
     return this.status.finished();
   }
 
+  public boolean successful() {
+    return this.status.successful();
+  }
+
   public boolean launched() {
     return this.status.launched();
   }

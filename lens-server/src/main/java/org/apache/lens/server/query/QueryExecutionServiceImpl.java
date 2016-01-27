@@ -278,7 +278,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    */
   @Getter
   @Setter
-  private static long inMemoryResultsetTTLMillis = (long) LensServerConf.getHiveConf().getInt(
+  private long inMemoryResultsetTTLMillis = (long) LensServerConf.getHiveConf().getInt(
       LensConfConstants.INMEMORY_RESULT_SET_TTL_SECS, LensConfConstants.DEFAULT_INMEMORY_RESULT_SET_TTL_SECS) * 1000;
 
   /**

@@ -988,8 +988,8 @@ public class TestQueryService extends LensJerseyTest {
 
   @Test
   public void testTTLForInMemoryResult() throws InterruptedException, IOException, LensException {
-    long inMemoryresultsetTTLMillisBackup = QueryExecutionServiceImpl.getInMemoryResultsetTTLMillis();
-    QueryExecutionServiceImpl.setInMemoryResultsetTTLMillis(15000); // 15 secs
+    long inMemoryresultsetTTLMillisBackup = queryService.getInMemoryResultsetTTLMillis();
+    queryService.setInMemoryResultsetTTLMillis(15000); // 15 secs
     try {
       // test post execute op
       final WebTarget target = target().path("queryapi/queries");
@@ -1020,7 +1020,7 @@ public class TestQueryService extends LensJerseyTest {
       // Check TTL
       QueryContext ctx = queryService.getQueryContext(lensSessionId, handle);
       long softExpiryTime = ctx.getDriverStatus().getDriverFinishTime()
-          + QueryExecutionServiceImpl.getInMemoryResultsetTTLMillis() - 3000; //Keeping buffer of -3 secs
+          + queryService.getInMemoryResultsetTTLMillis() - 3000; //Keeping buffer of -3 secs
       int checkCount = 0;
       while (System.currentTimeMillis() < softExpiryTime) {
         assertEquals(queryService.getFinishedQueriesCount(), 1);
@@ -1034,7 +1034,7 @@ public class TestQueryService extends LensJerseyTest {
       Thread.sleep(12000); // should be past TTL after this sleep . purge thread runs every 10 secs
       assertEquals(queryService.getFinishedQueriesCount(), 0);
     } finally {
-      QueryExecutionServiceImpl.setInMemoryResultsetTTLMillis(inMemoryresultsetTTLMillisBackup);
+      queryService.setInMemoryResultsetTTLMillis(inMemoryresultsetTTLMillisBackup);
     }
   }
 

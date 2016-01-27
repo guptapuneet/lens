@@ -249,8 +249,8 @@ public class TestQueryEndEmailNotifier extends LensJerseyTest {
       LensConfConstants.QUERY_PERSISTENT_RESULT_INDRIVER, driverPersistence);
     QueryHandle handle = launchAndWaitForQuery(conf, "select ID, IDSTR from " + TEST_TABLE, Status.SUCCESSFUL);
     String expectedKeywords;
+    QueryResult result = getLensQueryResult(target(), lensSessionId, handle);
     if (lensPersistence || driverPersistence) {
-      QueryResult result = getLensQueryResult(target(), lensSessionId, handle);
       expectedKeywords = result.toPrettyString();
     } else {
       expectedKeywords = QueryEndNotifier.RESULT_AVAILABLE_UNTIL_MSG;

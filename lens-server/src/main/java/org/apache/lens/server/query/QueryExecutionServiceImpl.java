@@ -278,8 +278,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    */
   @Getter
   @Setter
-  private long inMemoryResultsetTTLMillis = (long) LensServerConf.getHiveConf().getInt(
-      LensConfConstants.INMEMORY_RESULT_SET_TTL_SECS, LensConfConstants.DEFAULT_INMEMORY_RESULT_SET_TTL_SECS) * 1000;
+  private long inMemoryResultsetTTLMillis;
 
   /**
    * The driver event listener.
@@ -1124,6 +1123,10 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     }
     purgeInterval = conf.getInt(PURGE_INTERVAL, DEFAULT_PURGE_INTERVAL);
     initalizeFinishedQueryStore(conf);
+
+    inMemoryResultsetTTLMillis = conf.getInt(
+        LensConfConstants.INMEMORY_RESULT_SET_TTL_SECS, LensConfConstants.DEFAULT_INMEMORY_RESULT_SET_TTL_SECS) * 1000;
+
     log.info("Query execution service initialized");
   }
 

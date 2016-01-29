@@ -78,7 +78,7 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
 
   /** Mail message corresponding to InMemoryResultset*/
   static final String RESULT_AVAILABLE_UNTIL_MSG =
-      "Query Result is availabe in server and can be accessed until ";
+      "Query result is temporarily cached in the server and will be available until ";
 
   /** The from. */
   private final String from;

@@ -68,8 +68,7 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
   public static final String EMAIL_ERROR_COUNTER = "email-send-errors";
 
   /** The time in seconds for which in memory result is available */
-  private final int inMemoryResultsetTTLSecs = LensServerConf.getHiveConf().getInt(
-      LensConfConstants.INMEMORY_RESULT_SET_TTL_SECS, LensConfConstants.DEFAULT_INMEMORY_RESULT_SET_TTL_SECS);
+  private final int inMemoryResultsetTTLSecs;
 
   /** Time formatter for email message corresponding to InMemoryResultset
    *  Example : 2016-01-25 07:05:46 PM, IST
@@ -117,6 +116,8 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
     mailSmtpConnectionTimeout = Integer.parseInt(conf.get(MAIL_SMTP_CONNECTIONTIMEOUT,
       MAIL_DEFAULT_SMTP_CONNECTIONTIMEOUT));
     this.logSegregationContext = logSegregationContext;
+    this.inMemoryResultsetTTLSecs = LensServerConf.getHiveConf().getInt(
+        LensConfConstants.INMEMORY_RESULT_SET_TTL_SECS, LensConfConstants.DEFAULT_INMEMORY_RESULT_SET_TTL_SECS);
   }
 
   /*

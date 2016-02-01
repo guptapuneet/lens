@@ -1003,9 +1003,9 @@ public final class LensConfConstants {
   public static final String PREFETCH_INMEMORY_RESULTSET = QUERY_PFX + "prefetch.inmemory.resultset";
 
   /**
-   * Pre Fetch results in case of in memory result sets is disabled by default
+   * Pre Fetch results in case of in memory result sets is enabled by default
    */
-  public static final boolean DEFAULT_PREFETCH_INMEMORY_RESULTSET = false;
+  public static final boolean DEFAULT_PREFETCH_INMEMORY_RESULTSET = true;
 
   /**
    * Pre-Fetch size for in memory results. Makes sense only if {@link #PREFETCH_INMEMORY_RESULTSET} set to true

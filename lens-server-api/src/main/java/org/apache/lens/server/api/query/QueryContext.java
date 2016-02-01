@@ -172,6 +172,13 @@ public class QueryContext extends AbstractQueryContext {
   @Setter
   private String queryName;
 
+  /**
+   * This is the timeout that the client may have provided while initiating query execution
+   * This value is used for pre fetching in-memory result if applicable
+   *
+   * Note: in case the timeout is not provided, this value will not be set.
+   * 
+   */
   @Setter
   @Getter
   private transient long timeOutMillis;

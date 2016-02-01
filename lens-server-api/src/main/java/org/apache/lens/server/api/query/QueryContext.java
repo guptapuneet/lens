@@ -177,7 +177,6 @@ public class QueryContext extends AbstractQueryContext {
    * This value is used for pre fetching in-memory result if applicable
    *
    * Note: in case the timeout is not provided, this value will not be set.
-   * 
    */
   @Setter
   @Getter

@@ -1258,19 +1258,6 @@ public class TestQueryService extends LensJerseyTest {
 
     waitForQueryToFinish(target(), lensSessionId, handle, Status.SUCCESSFUL);
 
-    int checkCounter = 0;
-    if (isStreamingResultAvailable) { // Test for purge and TTL window enforced by PartiallyFetchedInMemoryResultSet
-      QueryContext ctx = queryService.getQueryContext(handle);
-      FinishedQuery query = queryService.finishedQueries.peek();
-      long expiryTime = ctx.getSubmissionTime() + timeOutMillis + 20000; // +20 secs allowance for purging
-      while (System.currentTimeMillis() < expiryTime && query != null) {
-        checkCounter++;
-        assertTrue(!query.canBePurged() || checkCounter > 3); // TTL checked done at least twice
-        Thread.sleep(3000);
-        query = queryService.finishedQueries.peek(); // if null, the query is purged
-      }
-      assertNull(query); //Query should be purged by this time.
-    }
     // Test Persistent Result
     validatePersistedResult(handle, target(), lensSessionId, new String[][] { { "ID", "INT" }, { "IDSTR", "STRING" } },
         false, true);

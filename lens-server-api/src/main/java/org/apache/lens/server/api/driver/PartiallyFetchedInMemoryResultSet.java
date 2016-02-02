@@ -67,8 +67,12 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
   /**
    * The pre-fteched in memory result cache.
    */
-  @Getter
   private List<ResultRow> preFetchedRows;
+
+  /**
+   * This is set to true once preFetchedRows have been consumed.
+   */
+  private boolean preFetchedRowsConsumed;
 
   /**
    * If {@link #isComplteleyFetched()} is true, result can not be purged
@@ -82,13 +86,10 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
    * Constructor
    * @param inMemoryRS : Underlying in-memory result set
    * @param reqPreFetchSize : requested number of rows to be pre-fetched and cached.
-   * @param doNotPurgeUntilTimeMillis : do not purge result until this time is reached.
    * @throws LensException
    */
-  public PartiallyFetchedInMemoryResultSet(InMemoryResultSet inMemoryRS, int reqPreFetchSize ,
-      long doNotPurgeUntilTimeMillis) throws LensException {
+  public PartiallyFetchedInMemoryResultSet(InMemoryResultSet inMemoryRS, int reqPreFetchSize) throws LensException {
     this.inMemoryRS = inMemoryRS;
-    this.doNotPurgeUntilTimeMillis = doNotPurgeUntilTimeMillis;
     if (reqPreFetchSize <= 0) {
       throw new IllegalArgumentException("Invalid pre fetch size " + reqPreFetchSize);
     }
@@ -171,9 +172,9 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
 
   @Override
   public boolean canBePurged() {
-    //If the result is completely pre-fetched, defer the purging decision until doNotPurgeUntilTimeMillis to allow
-    //the server to finish streaming the results.
-    if (isComplteleyFetched && System.currentTimeMillis() < this.doNotPurgeUntilTimeMillis) {
+    //If the result is completely pre-fetched, defer the purging until preFetchedRows have been consumed.
+    //In Case not consumed, it should be cleared based on lens.server.inmemory.resultset.ttl.secs
+    if (isComplteleyFetched && !preFetchedRowsConsumed) {
       return false;
     } else {
       return inMemoryRS.canBePurged();
@@ -183,5 +184,10 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
   @Override
   public void setFullyAccessed(boolean fullyAccessed) {
     inMemoryRS.setFullyAccessed(fullyAccessed);
+  }
+
+  public List<ResultRow> getPreFetchedRows() {
+    preFetchedRowsConsumed = true;
+    return preFetchedRows;
   }
 }

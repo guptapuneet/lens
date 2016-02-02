@@ -72,15 +72,17 @@ public abstract class AbstractLensDriver implements LensDriver {
   }
 
   /**
-   * This method should create ResultSet for the query represented by the context. Default Implementation is blank.
+   * This method should create ResultSet for the query represented by the context.
    * Specific driver should override this method to return driver specific LensResultSet whenever the
    * driver relies on default implementation of {@link #fetchResultSet(QueryContext)}
+   *
+   * Note: Default Implementation throw exception.
+   *
    * @param ctx
    * @return
    */
   protected LensResultSet createResultSet(QueryContext ctx) throws LensException {
-    // no-op by default
-    return null;
+    throw new LensException(this.getClass().getSimpleName() + " should override method createResultSet(QueryContext)");
   }
 
   /**

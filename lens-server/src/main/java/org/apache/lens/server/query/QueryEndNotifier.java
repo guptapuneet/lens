@@ -73,7 +73,7 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
   /** Time formatter for email message corresponding to InMemoryResultset
    *  Example : 2016-01-25 07:05:46 PM, IST
    */
-  private final DateTimeFormatter messageDateFormatter = DateTimeFormat.forPattern("yyyy-MM-dd hh:mm:SS aaa, z");
+  private static final DateTimeFormatter messageDateFormatter = DateTimeFormat.forPattern("yyyy-MM-dd hh:mm:SS aaa, z");
 
   /** Mail message corresponding to InMemoryResultset*/
   static final String RESULT_AVAILABLE_UNTIL_MSG =

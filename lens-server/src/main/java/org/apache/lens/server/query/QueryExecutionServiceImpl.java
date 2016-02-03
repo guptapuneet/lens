@@ -272,6 +272,14 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
   private final ExecutorService waitingQueriesSelectionSvc = Executors.newSingleThreadExecutor();
 
   /**
+   * This is the TTL millis for all result sets of type {@link org.apache.lens.server.api.driver.InMemoryResultSet}
+   * Note : this field is non final and has a Getter and Setter for test cases
+   */
+  @Getter
+  @Setter
+  private long inMemoryResultsetTTLMillis;
+
+  /**
    * The driver event listener.
    */
   final LensEventListener<DriverEvent> driverEventListener = new LensEventListener<DriverEvent>() {
@@ -543,13 +551,13 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         if (getCtx().getStatus().getStatus().equals(SUCCESSFUL) && getCtx().getStatus().isResultSetAvailable()) {
           LensResultSet serverRS = getResultset();
           log.info("Server Resultset for {} is {}", getQueryHandle(), serverRS.getClass().getSimpleName());
-          // driverRS and serverRS will not match when server persistence is enabled. Check for both
-          // result sets purgability in that case
+          // driverRS and serverRS will not match when server persistence is enabled. Check for purgability of both
+          // result sets in this case
           if (driverRS != null && driverRS != serverRS) {
             log.info("Driver Resultset for {} is {}", getQueryHandle(), driverRS.getClass().getSimpleName());
-            return serverRS.canBePurged() && driverRS.canBePurged();
+            return serverRS.canBePurged() && (driverRS.canBePurged() || hasResultSetExceededTTL(driverRS));
           } else {
-            return serverRS.canBePurged();
+            return serverRS.canBePurged() || hasResultSetExceededTTL(serverRS);
           }
         }
         return true;
@@ -558,6 +566,23 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
           + " Hence, going ahead with purge", getQueryHandle(), e);
         return true;
       }
+    }
+
+    /**
+     * Checks the TTL for ResultSet. TTL is applicable to In Memory ResultSets only.
+     * 
+     * @param resultSet
+     * @return
+     */
+    private boolean hasResultSetExceededTTL(LensResultSet resultSet) {
+      if (resultSet instanceof InMemoryResultSet
+          && System.currentTimeMillis() > ((InMemoryResultSet) resultSet).getCreationTime()
+              + inMemoryResultsetTTLMillis) {
+        log.info("InMemoryResultSet for query {} has exceeded its TTL and is eligible for purging now",
+            getQueryHandle());
+        return true;
+      }
+      return false;
     }
 
     private LensResultSet getResultset() throws LensException {
@@ -1123,6 +1148,10 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     }
     purgeInterval = conf.getInt(PURGE_INTERVAL, DEFAULT_PURGE_INTERVAL);
     initalizeFinishedQueryStore(conf);
+
+    inMemoryResultsetTTLMillis = conf.getInt(
+        LensConfConstants.INMEMORY_RESULT_SET_TTL_SECS, LensConfConstants.DEFAULT_INMEMORY_RESULT_SET_TTL_SECS) * 1000;
+
     log.info("Query execution service initialized");
   }
 
@@ -1720,7 +1749,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
   protected QueryContext createContext(String query, String userName, LensConf conf, Configuration qconf,
       long timeOutMillis) throws LensException {
     QueryContext ctx = new QueryContext(query, userName, conf, qconf, drivers.values());
-    ctx.setTimeOutMillis(timeOutMillis);
+    ctx.setExecuteTimeoutMillis(timeOutMillis);
     return ctx;
   }
 
@@ -1737,7 +1766,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
   protected QueryContext createContext(PreparedQueryContext pctx, String userName, LensConf conf, Configuration qconf,
       long timeOutMillis) throws LensException {
     QueryContext ctx = new QueryContext(pctx, userName, conf, qconf);
-    ctx.setTimeOutMillis(timeOutMillis);
+    ctx.setExecuteTimeoutMillis(timeOutMillis);
     return ctx;
   }
 
@@ -2150,7 +2179,10 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       acquire(sessionHandle);
       resultSets.remove(queryHandle);
       // Ask driver to close result set
-      getQueryContext(queryHandle).getSelectedDriver().closeResultSet(queryHandle);
+      QueryContext ctx=getQueryContext(queryHandle);
+      if (null != ctx) {
+        ctx.getSelectedDriver().closeResultSet(queryHandle);
+      }
     } finally {
       release(sessionHandle);
     }

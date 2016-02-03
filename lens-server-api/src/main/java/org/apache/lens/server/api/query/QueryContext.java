@@ -180,7 +180,7 @@ public class QueryContext extends AbstractQueryContext {
    */
   @Setter
   @Getter
-  private transient long execiteTimeoutMillis;
+  private transient long executeTimeoutMillis;
 
   /**
    * Query result registered by driver
@@ -484,18 +484,18 @@ public class QueryContext extends AbstractQueryContext {
      *
      *  1. Driver Result should be of type InMemory (for streaming) as only such results can be streamed fast
      *  2. Query result should be server persistent. Only in this case, an early streaming is required by client
-     *  that starts even before server level result persistence finishes.
-     *  3. When timeout is 0, it refers to an asynchronous query. In this case streaming result does not make sense
-     *  4. PREFETCH_INMEMORY_RESULTSET = true, implies client intent to get early streamed result
-     *  5. rowsToPreFetch should be >0
+     *  that starts even before server level result persistence/formatting finishes.
+     *  3. When execiteTimeout is 0, it refers to an async query. In this case streaming result does not make sense
+     *  4. PREFETCH_INMEMORY_RESULTSET = true, implies client intends to get early streamed result
+     *  5. rowsToPreFetch should be > 0
      */
-    if (isPersistent && execiteTimeoutMillis > 0
+    if (isPersistent && executeTimeoutMillis > 0
         && result instanceof InMemoryResultSet
         && conf.getBoolean(PREFETCH_INMEMORY_RESULTSET, DEFAULT_PREFETCH_INMEMORY_RESULTSET)) {
       int rowsToPreFetch = conf.getInt(PREFETCH_INMEMORY_RESULTSET_ROWS, DEFAULT_PREFETCH_INMEMORY_RESULTSET_ROWS);
       if (rowsToPreFetch > 0) {
-        long timeOutTime = submissionTime + execiteTimeoutMillis;
-        if (System.currentTimeMillis() < timeOutTime) {
+        long executeTimeOutTime = submissionTime + executeTimeoutMillis;
+        if (System.currentTimeMillis() < executeTimeOutTime) {
           this.driverResult = new PartiallyFetchedInMemoryResultSet((InMemoryResultSet) result, rowsToPreFetch);
           return;
         }

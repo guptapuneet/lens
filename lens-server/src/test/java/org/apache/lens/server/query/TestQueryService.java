@@ -63,7 +63,6 @@ import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.QueryExecutionService;
 import org.apache.lens.server.api.session.SessionService;
 import org.apache.lens.server.common.ErrorResponseExpectedData;
-import org.apache.lens.server.common.RestAPITestUtil;
 import org.apache.lens.server.common.TestDataUtils;
 import org.apache.lens.server.common.TestResourceFile;
 import org.apache.lens.server.error.LensExceptionMapper;

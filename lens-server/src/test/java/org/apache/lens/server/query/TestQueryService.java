@@ -74,7 +74,6 @@ import org.apache.lens.server.common.ErrorResponseExpectedData;
 import org.apache.lens.server.common.TestDataUtils;
 import org.apache.lens.server.common.TestResourceFile;
 import org.apache.lens.server.error.LensExceptionMapper;
-import org.apache.lens.server.query.QueryExecutionServiceImpl.FinishedQuery;
 import org.apache.lens.server.session.HiveSessionService;
 import org.apache.lens.server.session.LensSessionImpl;
 

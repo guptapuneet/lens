@@ -570,7 +570,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
 
     /**
      * Checks the TTL for ResultSet. TTL is applicable to In Memory ResultSets only.
-     * 
+     *
      * @param resultSet
      * @return
      */

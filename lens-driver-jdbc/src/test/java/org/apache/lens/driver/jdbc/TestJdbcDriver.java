@@ -458,11 +458,9 @@ public class TestJdbcDriver {
     assertNotNull(resultSet);
 
     //Check Type
-    if(executeTimeoutMillis > 1000) { //enough time to execute the query
+    if (executeTimeoutMillis > 1000) { //enough time to execute the query
       assertTrue(resultSet instanceof PartiallyFetchedInMemoryResultSet);
-    }
-    else
-    {
+    } else {
       assertFalse(resultSet instanceof PartiallyFetchedInMemoryResultSet);
       return; // NO need to check further in this  case
     }

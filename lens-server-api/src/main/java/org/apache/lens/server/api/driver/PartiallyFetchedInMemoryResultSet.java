@@ -75,14 +75,6 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
   private boolean preFetchedRowsConsumed;
 
   /**
-   * If {@link #isComplteleyFetched()} is true, result can not be purged
-   * until current time is greater than doNotPurgeUnitlTimeMillis.
-   *
-   * Note: If {@link #isComplteleyFetched()} is false, result is purged based on
-   * purge logic of underlying in-memory result
-   */
-  private long doNotPurgeUntilTimeMillis;
-  /**
    * Constructor
    * @param inMemoryRS : Underlying in-memory result set
    * @param reqPreFetchSize : requested number of rows to be pre-fetched and cached.
@@ -95,11 +87,13 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
     }
     preFetchRows(reqPreFetchSize);
     log.info("Pre-Fetched {} rows of result and isComplteleyFetched = {} and doNotPurgeUntilTimeMillis ={}",
-        numOfPreFetchedRows, isComplteleyFetched, doNotPurgeUntilTimeMillis);
+        numOfPreFetchedRows, isComplteleyFetched);
   }
 
   private void preFetchRows(int reqPreFetchSize) throws LensException {
-    preFetchedRows = new ArrayList<ResultRow>(reqPreFetchSize + 1); //+1 as one extra row is read
+    //rows fetched = reqPreFetchSize+1. One extra row is read to check if underlying inMemoryRS result is completely
+    //or partially read.
+    preFetchedRows = new ArrayList<ResultRow>(reqPreFetchSize + 1);
     boolean hasNext = inMemoryRS.hasNext();
     while (hasNext) {
       if (numOfPreFetchedRows >= reqPreFetchSize) {
@@ -117,16 +111,6 @@ public class PartiallyFetchedInMemoryResultSet extends InMemoryResultSet {
       //we have accessed ( hasNext() for ) one extra row. Lets cache it too.
       preFetchedRows.add(inMemoryRS.next());
       numOfPreFetchedRows++;
-    }
-  }
-
-  @Override
-  public boolean seekToStart() throws LensException {
-    cursor = 0;
-    if (!isComplteleyFetched && cursor > numOfPreFetchedRows) {
-      return inMemoryRS.seekToStart();
-    } else {
-      return true;
     }
   }
 

@@ -424,7 +424,7 @@ public class TestJdbcDriver {
       {10, true, 10, true, 20000}, //result has 10 rows and all 10 rows are pre fetched
       {5, false, 6, false, 8000}, //result has 10 rows and 5 rows are pre fetched. (Extra row is  fetched = 5+1 = 6)
       {15, true, 10, false, 8000}, //result has 10 rows and 15 rows are requested to be pre fetched
-      {10, true, 10, false, 10}, //similar to case 1 but executeTimeout is very less.
+      {10, false, 0, false, 10}, //similar to case 1 but executeTimeout is very less.
     };
   }
 
@@ -465,24 +465,34 @@ public class TestJdbcDriver {
       return; // NO need to check further in this  case
     }
 
-    PartiallyFetchedInMemoryResultSet rs = (PartiallyFetchedInMemoryResultSet) resultSet;
-    assertEquals(rs.isComplteleyFetched(), isComplteleyFetched);
+    PartiallyFetchedInMemoryResultSet prs = (PartiallyFetchedInMemoryResultSet) resultSet;
+    assertEquals(prs.isComplteleyFetched(), isComplteleyFetched);
 
     //Check Streaming flow
-    assertEquals(rs.getPreFetchedRows().size(), rowsPreFetched);
+    if (isComplteleyFetched) {
+      assertTrue(prs.isComplteleyFetched());
+      prs.getPreFetchedRows(); //This will be called while streaming
+      assertEquals(prs.size().intValue(), rowsPreFetched);
+    } else {
+      assertFalse(prs.isComplteleyFetched());
+      assertEquals(prs.getPreFetchedRows().size(), rowsPreFetched);
+    }
+
+    assertEquals(prs.getMetadata().getColumns().size(), 1);
+    assertEquals(prs.getMetadata().getColumns().get(0).getName(), "ID");
 
     // Check Persistence flow
     int rowCount = 0;
-    while (rs.hasNext()) {
-      ResultRow row = rs.next();
+    while (prs.hasNext()) {
+      ResultRow row = prs.next();
       assertEquals(row.getValues().get(0), rowCount);
       rowCount++;
     }
     assertEquals(rowCount, 10);
-    rs.setFullyAccessed(true);
+    prs.setFullyAccessed(true);
 
     //Check Purge
-    assertEquals(rs.canBePurged() , true);
+    assertEquals(prs.canBePurged() , true);
   }
 
   @Test

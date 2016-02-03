@@ -39,8 +39,6 @@ public abstract class InMemoryResultSet extends LensResultSet {
   @Getter
   private long creationTime = System.currentTimeMillis();;
 
-  public abstract boolean seekToStart() throws LensException;
-
   @Override
   public boolean canBePurged() {
     return fullyAccessed;

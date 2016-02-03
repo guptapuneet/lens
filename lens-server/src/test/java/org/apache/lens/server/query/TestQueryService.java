@@ -18,17 +18,12 @@
  */
 package org.apache.lens.server.query;
 
-import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
-import static javax.ws.rs.core.Response.Status.NOT_FOUND;
-import static javax.ws.rs.core.Response.Status.SEE_OTHER;
+import static javax.ws.rs.core.Response.Status.*;
 
 import static org.apache.lens.server.LensServerTestUtil.DB_WITH_JARS;
 import static org.apache.lens.server.LensServerTestUtil.DB_WITH_JARS_2;
 import static org.apache.lens.server.api.LensServerAPITestUtil.getLensConf;
-import static org.apache.lens.server.common.RestAPITestUtil.executeAndGetHandle;
-import static org.apache.lens.server.common.RestAPITestUtil.executeAndWaitForQueryToFinish;
-import static org.apache.lens.server.common.RestAPITestUtil.getLensQueryResult;
-import static org.apache.lens.server.common.RestAPITestUtil.waitForQueryToFinish;
+import static org.apache.lens.server.common.RestAPITestUtil.*;
 
 import static org.testng.Assert.*;
 
@@ -68,6 +63,7 @@ import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.QueryExecutionService;
 import org.apache.lens.server.api.session.SessionService;
 import org.apache.lens.server.common.ErrorResponseExpectedData;
+import org.apache.lens.server.common.RestAPITestUtil;
 import org.apache.lens.server.common.TestDataUtils;
 import org.apache.lens.server.common.TestResourceFile;
 import org.apache.lens.server.error.LensExceptionMapper;
@@ -98,6 +94,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Test(groups = "unit-test")
 public class TestQueryService extends LensJerseyTest {
+
+  private static final MediaType DEAFULT_MEDIA_TYPE = MediaType.APPLICATION_XML_TYPE;
 
   /** The query service. */
   QueryExecutionServiceImpl queryService;
@@ -1322,11 +1320,11 @@ public class TestQueryService extends LensJerseyTest {
       assertNull(result.getResult()); // Query execution not finished yet
     }
 
-    waitForQueryToFinish(target(), lensSessionId, handle, Status.SUCCESSFUL);
+    waitForQueryToFinish(target(), lensSessionId, handle, Status.SUCCESSFUL, DEAFULT_MEDIA_TYPE);
 
     // Test Persistent Result
     validatePersistedResult(handle, target(), lensSessionId, new String[][] { { "ID", "INT" }, { "IDSTR", "STRING" } },
-        false, true);
+        false, true, DEAFULT_MEDIA_TYPE);
   }
 
   private static class DeferredFileSerdeFormatter extends FileSerdeFormatter {

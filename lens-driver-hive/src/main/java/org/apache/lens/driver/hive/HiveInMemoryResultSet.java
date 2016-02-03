@@ -81,6 +81,7 @@ public class HiveInMemoryResultSet extends InMemoryResultSet {
     this.closeAfterFecth = closeAfterFecth;
     this.metadata = client.getResultSetMetadata(opHandle);
     this.numColumns = metadata.getColumnDescriptors().size();
+    this.orientation = FetchOrientation.FETCH_FIRST;
   }
 
   /*

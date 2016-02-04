@@ -263,7 +263,7 @@ public class TestQueryEndEmailNotifier extends LensJerseyTest {
       expectedKeywords =
           QueryEndNotifier.RESULT_AVAILABLE_UNTIL_MSG
               + QueryEndNotifier.MESSAGE_DATE_FORMATTER.print(creationTime + inMemoryResultsetTTLSecs);
-      QueryResult result = getLensQueryResult(target(), lensSessionId, handle, mt);
+      getLensQueryResultAsString(target(), lensSessionId, handle, mt);//Reading it so that query can be purged
     }
     WiserMessage message = getMessage();
     assertKeywordsContains(message, handle, "Query SUCCESSFUL", expectedKeywords);

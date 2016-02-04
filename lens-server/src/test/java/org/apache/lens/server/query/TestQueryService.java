@@ -94,8 +94,6 @@ import lombok.extern.slf4j.Slf4j;
 @Test(groups = "unit-test")
 public class TestQueryService extends LensJerseyTest {
 
-  private static final MediaType DEAFULT_MEDIA_TYPE = MediaType.APPLICATION_XML_TYPE;
-
   /** The query service. */
   QueryExecutionServiceImpl queryService;
 
@@ -1298,7 +1296,7 @@ public class TestQueryService extends LensJerseyTest {
     conf.addProperty("deferPersistenceByMillis", deferPersistenceByMillis); // property used for test only
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), conf,
         MediaType.APPLICATION_XML_TYPE));
-    QueryHandleWithResultSet result =target.request()
+    QueryHandleWithResultSet result =target.request(MediaType.APPLICATION_XML_TYPE)
             .post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE),
                 new GenericType<LensAPIResult<QueryHandleWithResultSet>>() {}).getData();
     QueryHandle handle = result.getQueryHandle();
@@ -1319,11 +1317,11 @@ public class TestQueryService extends LensJerseyTest {
       assertNull(result.getResult()); // Query execution not finished yet
     }
 
-    waitForQueryToFinish(target(), lensSessionId, handle, Status.SUCCESSFUL, DEAFULT_MEDIA_TYPE);
+    waitForQueryToFinish(target(), lensSessionId, handle, Status.SUCCESSFUL, MediaType.APPLICATION_XML_TYPE);
 
     // Test Persistent Result
     validatePersistedResult(handle, target(), lensSessionId, new String[][] { { "ID", "INT" }, { "IDSTR", "STRING" } },
-        false, true, DEAFULT_MEDIA_TYPE);
+        false, true, MediaType.APPLICATION_XML_TYPE);
   }
 
   private static class DeferredFileSerdeFormatter extends FileSerdeFormatter {

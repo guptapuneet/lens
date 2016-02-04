@@ -20,6 +20,7 @@ package org.apache.lens.server.query;
 
 import static org.apache.lens.server.api.LensServerAPITestUtil.getLensConf;
 import static org.apache.lens.server.common.RestAPITestUtil.*;
+
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -263,7 +264,7 @@ public class TestQueryEndEmailNotifier extends LensJerseyTest {
       expectedKeywords =
           QueryEndNotifier.RESULT_AVAILABLE_UNTIL_MSG
               + QueryEndNotifier.MESSAGE_DATE_FORMATTER.print(creationTime + inMemoryResultsetTTLSecs);
-      getLensQueryResultAsString(target(), lensSessionId, handle, mt);//Reading it so that query can be purged
+      getLensQueryResultAsString(target(), lensSessionId, handle, mt); //Reading it so that query can be purged
     }
     WiserMessage message = getMessage();
     assertKeywordsContains(message, handle, "Query SUCCESSFUL", expectedKeywords);

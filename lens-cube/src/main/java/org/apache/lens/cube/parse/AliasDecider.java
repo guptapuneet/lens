@@ -16,44 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/*
- *
- */
-package org.apache.lens.api.query;
+package org.apache.lens.cube.parse;
 
-import java.util.List;
+import org.apache.hadoop.hive.ql.parse.ASTNode;
 
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
-import javax.xml.bind.annotation.XmlRootElement;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
-/**
- * The Class QueryResultSetMetadata.
- */
-@XmlRootElement
-/**
- * Instantiates a new query result set metadata.
- *
- * @param columns
- *          the columns
- */
-@AllArgsConstructor
-/**
- * Instantiates a new query result set metadata.
- */
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class QueryResultSetMetadata {
-
-  /**
-   * The columns.
-   */
-  @XmlElementWrapper
-  @XmlElement
-  @Getter
-  private List<ResultColumn> columns;
+public interface AliasDecider {
+  String decideAlias(ASTNode node);
 }

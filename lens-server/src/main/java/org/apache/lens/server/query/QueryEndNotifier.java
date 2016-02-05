@@ -34,7 +34,6 @@ import javax.mail.internet.MimeMultipart;
 
 import org.apache.lens.api.query.QueryStatus;
 import org.apache.lens.server.LensServices;
-import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.driver.InMemoryResultSet;
 import org.apache.lens.server.api.driver.LensResultSet;
 import org.apache.lens.server.api.error.LensException;

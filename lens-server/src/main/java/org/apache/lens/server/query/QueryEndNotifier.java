@@ -33,7 +33,6 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
 import org.apache.lens.api.query.QueryStatus;
-import org.apache.lens.server.LensServerConf;
 import org.apache.lens.server.LensServices;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.driver.InMemoryResultSet;
@@ -116,8 +115,7 @@ public class QueryEndNotifier extends AsyncEventListener<QueryEnded> {
     mailSmtpConnectionTimeout = Integer.parseInt(conf.get(MAIL_SMTP_CONNECTIONTIMEOUT,
       MAIL_DEFAULT_SMTP_CONNECTIONTIMEOUT));
     this.logSegregationContext = logSegregationContext;
-    this.inMemoryResultsetTTLSecs = LensServerConf.getHiveConf().getInt(
-        LensConfConstants.INMEMORY_RESULT_SET_TTL_SECS, LensConfConstants.DEFAULT_INMEMORY_RESULT_SET_TTL_SECS);
+    this.inMemoryResultsetTTLSecs =conf.getInt(INMEMORY_RESULT_SET_TTL_SECS, DEFAULT_INMEMORY_RESULT_SET_TTL_SECS);
   }
 
   /*

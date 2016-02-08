@@ -696,8 +696,8 @@ public class TestQueryService extends LensJerseyTest {
       fail("unexpected cancel status: " + result.getStatus());
     }
 
-    // Test http download end point
-    // and Fetch result should fail before query is marked successful and result path should be correct
+    // 1. Test http download end point and result path should be correct
+    // 2. Test Fetch result should fail before query is marked successful
     log.info("Starting httpendpoint test");
     final FormDataMultiPart mp3 = new FormDataMultiPart();
     mp3.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), lensSessionId,

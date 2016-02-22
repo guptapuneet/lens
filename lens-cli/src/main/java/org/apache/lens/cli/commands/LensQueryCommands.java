@@ -29,6 +29,8 @@ import org.apache.lens.api.query.*;
 import org.apache.lens.api.result.PrettyPrintable;
 import org.apache.lens.cli.commands.annotations.UserDocumentation;
 import org.apache.lens.client.LensClient;
+import org.apache.lens.client.LensClient.LensClientResultSetWithStats;
+import org.apache.lens.client.LensClientResultSet;
 import org.apache.lens.client.exceptions.LensAPIException;
 import org.apache.lens.client.exceptions.LensBriefErrorException;
 import org.apache.lens.client.model.BriefError;
@@ -110,7 +112,20 @@ public class LensQueryCommands extends BaseLensCommand {
         QueryHandle queryHandle = getClient().executeQueryAsynch(sql, queryName).getData();
         return queryHandle.getHandleIdString();
       } else {
-        return formatResultSet(getClient().getResults(sql, queryName));
+        LensClientResultSetWithStats resultWithStats;
+        long timeOutMillis = 10000; //TODO read from config
+        LensClient.getCliLooger().info("Executing query with timeout of {} secs", timeOutMillis/1000);
+        QueryHandleWithResultSet result = getClient().executeQueryWithTimeout(sql, queryName, timeOutMillis);
+        if (!result.getStatus().finished()) {
+          //Query not finished yet. Wait till it finishes and get result.
+          LensClient.getCliLooger().info("Couldn't complete query execution within timeout. Waiting for completion");
+          resultWithStats = getClient().getSyncResults(result.getQueryHandle());
+        } else {
+          LensClientResultSet clientResultSet = new LensClientResultSet(result.getResultMetadata(), result.getResult());
+          resultWithStats =
+              new LensClientResultSetWithStats(clientResultSet, getClient().getQueryDetails(result.getQueryHandle()));
+        }
+        return formatResultSet(resultWithStats);
       }
     } catch (final LensAPIException e) {
 

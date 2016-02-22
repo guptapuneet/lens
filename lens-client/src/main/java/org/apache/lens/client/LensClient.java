@@ -109,6 +109,23 @@ public class LensClient {
     return lensAPIResult;
   }
 
+  public QueryHandleWithResultSet executeQueryWithTimeout(String sql, String queryName, long timeOutMillis)
+      throws LensAPIException {
+    log.debug("Executing query {} with timeout of {} millis", sql, timeOutMillis);
+    LensAPIResult<QueryHandleWithResultSet> lensAPIResult = statement.executeQuery(sql, queryName, timeOutMillis);
+    LensQuery query = statement.getQuery();
+    log.debug("Adding query to statementMap {}", query.getQueryHandle());
+    statementMap.put(query.getQueryHandle(), statement);
+    QueryHandleWithResultSet executeResult = lensAPIResult.getData();
+    if (executeResult.getStatus().failed()) {
+      IdBriefErrorTemplate errorResult = new IdBriefErrorTemplate(IdBriefErrorTemplateKey.QUERY_ID,
+          executeResult.getQueryHandle().getHandleIdString(), new BriefError(executeResult.getStatus()
+              .getErrorCode(), executeResult.getStatus().getErrorMessage()));
+      throw new LensBriefErrorException(errorResult);
+    }
+    return executeResult;
+  }
+
   public Date getLatestDateOfCube(String cubeName, String timePartition) {
     return mc.getLatestDateOfCube(cubeName, timePartition);
   }

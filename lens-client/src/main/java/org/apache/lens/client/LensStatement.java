@@ -305,7 +305,7 @@ public class LensStatement {
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), connection
       .getSessionHandle(), MediaType.APPLICATION_XML_TYPE));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("query").build(), sql));
-    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("operation").build(), "execute"));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("operation").build(), "EXECUTE"));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("queryName").build(), queryName == null ? ""
       : queryName));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), new LensConf(),
@@ -316,6 +316,35 @@ public class LensStatement {
 
     if (response.getStatus() == Response.Status.OK.getStatusCode()) {
       return response.readEntity(new GenericType<LensAPIResult<QueryHandle>>() {});
+    }
+
+    throw new LensAPIException(response.readEntity(LensAPIResult.class));
+  }
+
+  public LensAPIResult<QueryHandleWithResultSet> executeQuery(String sql, String queryName, long timeOutMillis)
+      throws LensAPIException {
+    if (!connection.isOpen()) {
+      throw new IllegalStateException("Lens Connection has to be established before querying");
+    }
+
+    Client client = connection.buildClient();
+    FormDataMultiPart mp = new FormDataMultiPart();
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), connection
+        .getSessionHandle(), MediaType.APPLICATION_XML_TYPE));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("query").build(), sql));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("operation").build(), "EXECUTE_WITH_TIMEOUT"));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("timeoutmillis").build(), "" + timeOutMillis));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("queryName").build(), queryName == null ? ""
+        : queryName));
+    mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), new LensConf(),
+        MediaType.APPLICATION_XML_TYPE));
+    WebTarget target = getQueryWebTarget(client);
+
+    Response response = target.request().post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE));
+
+    if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+      return response.readEntity(new GenericType<LensAPIResult<QueryHandleWithResultSet>>() {
+      });
     }
 
     throw new LensAPIException(response.readEntity(LensAPIResult.class));

@@ -102,7 +102,6 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     String sql = "cube select id,name from test_dim";
     String result = qCom.executeQuery(sql, false, "testQuery2");
     assertTrue(result.contains("1\tfirst"), result);
-
   }
 
   /**

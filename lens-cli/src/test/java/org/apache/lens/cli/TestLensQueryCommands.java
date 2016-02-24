@@ -22,7 +22,6 @@ import static org.testng.Assert.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
@@ -34,6 +33,7 @@ import org.apache.lens.api.metastore.*;
 import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.QueryStatus;
 import org.apache.lens.cli.commands.LensCubeCommands;
+import org.apache.lens.cli.commands.LensDimensionTableCommands;
 import org.apache.lens.cli.commands.LensQueryCommands;
 import org.apache.lens.client.LensClient;
 import org.apache.lens.driver.hive.TestHiveDriver;
@@ -41,9 +41,7 @@ import org.apache.lens.driver.hive.TestHiveDriver;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
 
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -87,7 +85,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     if (withMetrics) {
       client.setConnectionParam("lens.query.enable.metrics.per.query", "true");
     }
-    setup(client);
+
     LensQueryCommands qCom = new LensQueryCommands();
     qCom.setClient(client);
     return qCom;
@@ -137,12 +135,8 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     }
     String status = qCom.getStatus(handle);
     log.debug("Prepared Query Status is  " + status);
-    assertTrue(status.contains("Status : SUCCESSFUL"));
+    assertTrue(status.contains("Status: SUCCESSFUL"));
 
-    result = qCom.getQueryResults(handle, null, true);
-    log.debug("Prepared Query Result is  " + result);
-    assertTrue(result.contains("1\tfirst"));
-    // Fetch again.
     result = qCom.getQueryResults(handle, null, true);
     log.debug("Prepared Query Result is  " + result);
     assertTrue(result.contains("1\tfirst"));
@@ -242,7 +236,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     while (!queryStatus.finished()) {
       if (queryStatus.launched()) {
         String details = qCom.getDetails(null);
-        assertTrue(details.contains("driverQuery"));
+        assertTrue(details.contains("Driver Query:"));
       }
       Thread.sleep(1000);
       queryStatus = qCom.getClient().getQueryStatus(qh);
@@ -251,17 +245,12 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     // Check that query name searching is 'ilike'
     String result2 = qCom.getAllQueries("", "query", "all", "", -1, Long.MAX_VALUE);
     assertTrue(result2.contains(qh), result2);
-
-    assertTrue(qCom.getStatus(qh).contains("Status : SUCCESSFUL"));
+    assertTrue(qCom.getStatus(qh).contains("Status: SUCCESSFUL"));
     String details = qCom.getDetails(qh);
-    assertTrue(details.contains("driverQuery"));
+    assertTrue(details.contains("Driver Query:"));
 
     result = qCom.getQueryResults(null, null, true);
     assertTrue(result.contains("1\tfirst"));
-
-    downloadResult(qCom, qh, result);
-    // re-download should also succeed
-    downloadResult(qCom, qh, result);
 
     // Kill query is not tested as there is no deterministic way of killing a query
 
@@ -314,11 +303,6 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
   }
 
-  private void downloadResult(LensQueryCommands qCom, String qh, String expected) throws IOException {
-    assertTrue(qCom.getQueryResults(qh, resDir, true).contains("Saved"));
-    assertEquals(readFile(resDir.getAbsolutePath() + File.separator + qh + ".csv").trim(), expected.trim());
-  }
-
   private String readFile(String path) throws FileNotFoundException {
     return new Scanner(new File(path)).useDelimiter("\\Z").next();
   }
@@ -329,7 +313,9 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
    * @param client the new up
    * @throws Exception the exception
    */
-  public void setup(LensClient client) throws Exception {
+  @BeforeClass
+  public void setup() throws Exception {
+    LensClient client = new LensClient();
     LensCubeCommands command = new LensCubeCommands();
     command.setClient(client);
 
@@ -353,6 +339,21 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     xp.setTimePartitionSpec(timePart);
     APIResult result = client.addPartitionToDim("dim_table", "local", xp);
     assertEquals(result.getStatus(), APIResult.Status.SUCCEEDED);
+  }
+
+  @AfterClass
+  public void tearDown() {
+    LensClient client = new LensClient();
+
+    LensCubeCommands cubeCmd = new LensCubeCommands();
+    cubeCmd.setClient(client);
+    cubeCmd.dropCube("sample_cube");
+
+    TestLensDimensionCommands.dropDimensions();
+
+    LensDimensionTableCommands dimTableCmd = new LensDimensionTableCommands();
+    dimTableCmd.setClient(client);
+    dimTableCmd.dropDimensionTable("dim_table", true);
   }
 
   /**
@@ -406,7 +407,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     while (!qCom.getClient().getQueryStatus(qh).finished()) {
       Thread.sleep(5000);
     }
-    assertTrue(qCom.getStatus(qh).contains("Status : SUCCESSFUL"));
+    assertTrue(qCom.getStatus(qh).contains("Status: SUCCESSFUL"));
 
     String result = qCom.getQueryResults(qh, null, true);
     System.out.println("@@ RESULT " + result);

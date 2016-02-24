@@ -77,7 +77,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
             + TWO_DAYS_RANGE, conf);
     //maxCause : FACT_NOT_AVAILABLE_IN_RANGE, Ordinal : 1
     NoCandidateFactAvailableException ne2 = (NoCandidateFactAvailableException)
-            getLensExceptionInRewrite("cube select dim1 from " + cubeName + " where " + LAST_YEAR_RANGE, getConf());
+            getLensExceptionInRewrite("select dim1 from " + cubeName + " where " + LAST_YEAR_RANGE, getConf());
     assertEquals(ne1.compareTo(ne2), 8);
   }
 
@@ -554,7 +554,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
     conf.setBoolean(CubeQueryConfUtil.FAIL_QUERY_ON_PARTIAL_DATA, false);
     String hql, expected;
     // Prefer fact that has a storage with part col on queried time dim
-    hql = rewrite("cube select msr12 from basecube where " + TWO_DAYS_RANGE, conf);
+    hql = rewrite("select msr12 from basecube where " + TWO_DAYS_RANGE, conf);
     expected = getExpectedQuery(BASE_CUBE_NAME, "select sum(basecube.msr12) FROM ", null, null,
       getWhereForDailyAndHourly2days(BASE_CUBE_NAME, "c1_testfact2_base"));
     compareQueries(hql, expected);
@@ -563,7 +563,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
     conf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "C4");
     conf.setBoolean(CubeQueryConfUtil.FAIL_QUERY_ON_PARTIAL_DATA, true);
     LensException exc =
-      getLensExceptionInRewrite("cube select msr12 from basecube where " + TWO_DAYS_RANGE, conf);
+      getLensExceptionInRewrite("select msr12 from basecube where " + TWO_DAYS_RANGE, conf);
     NoCandidateFactAvailableException ne = (NoCandidateFactAvailableException) exc;
     PruneCauses.BriefAndDetailedError pruneCause = ne.getJsonMessage();
     assertTrue(pruneCause.getBrief().contains("Missing partitions"));
@@ -578,7 +578,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
 
     // fail on partial false. Should go to fallback column. Also testing transitivity of timedim relations
     conf.setBoolean(CubeQueryConfUtil.FAIL_QUERY_ON_PARTIAL_DATA, false);
-    hql = rewrite("cube select msr12 from basecube where " + TWO_DAYS_RANGE, conf);
+    hql = rewrite("select msr12 from basecube where " + TWO_DAYS_RANGE, conf);
     String dTimeWhereClause = "basecube.d_time >= '" + HIVE_QUERY_DATE_PARSER.get().format(ABSDATE_PARSER.get().parse(
       getAbsDateFormatString(getDateUptoHours(
         TWODAYS_BACK)))) + "' and "
@@ -598,7 +598,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
 
     // Multiple timedims in single query. test that
     CubeQueryContext ctx =
-      rewriteCtx("cube select msr12 from basecube where " + TWO_DAYS_RANGE + " and " + TWO_DAYS_RANGE_TTD, conf);
+      rewriteCtx("select msr12 from basecube where " + TWO_DAYS_RANGE + " and " + TWO_DAYS_RANGE_TTD, conf);
     assertEquals(ctx.getCandidateFactSets().size(), 1);
     assertEquals(ctx.getCandidateFactSets().iterator().next().size(), 1);
     CandidateFact cfact = ctx.getCandidateFactSets().iterator().next().iterator().next();
@@ -692,7 +692,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
       || hqlQuery.toLowerCase().startsWith("select coalesce(mq1.dim1, mq2.dim1) dim1, "
         + "coalesce(mq1.dim11, mq2.dim11) dim11, mq1.msr12 msr12, mq2.roundedmsr2 roundedmsr2 from "), hqlQuery);
     assertTrue(hqlQuery.contains(joinSubString)
-      && hqlQuery.endsWith(endSubString + " WHERE (( alias0  +  roundedmsr2 ) <=  1000 )"), hqlQuery);
+      && hqlQuery.endsWith(endSubString + " WHERE (( alias0 + roundedmsr2 ) <= 1000 )"), hqlQuery);
 
     // No push-down-able having clauses.
     hqlQuery = rewrite("select dim1, dim11, msr12, roundedmsr2 from basecube where " + TWO_DAYS_RANGE
@@ -715,7 +715,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
       || hqlQuery.toLowerCase().startsWith("select coalesce(mq1.dim1, mq2.dim1) dim1, coalesce(mq1.dim11, mq2.dim11) "
         + "dim11, mq1.msr12 msr12, mq2.roundedmsr2 roundedmsr2 from "), hqlQuery);
     assertTrue(hqlQuery.contains(joinSubString)
-      && hqlQuery.endsWith(endSubString + " WHERE (( alias0  +  roundedmsr2 ) <=  1000 )"), hqlQuery);
+      && hqlQuery.endsWith(endSubString + " WHERE (( alias0 + roundedmsr2 ) <= 1000 )"), hqlQuery);
 
     // function over expression of two functions over measures
     hqlQuery = rewrite("select dim1, dim11, msr12, roundedmsr2 from basecube where " + TWO_DAYS_RANGE
@@ -738,7 +738,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
       || hqlQuery.toLowerCase().startsWith("select coalesce(mq1.dim1, mq2.dim1) dim1, coalesce(mq1.dim11, mq2.dim11) "
         + "dim11, mq1.msr12 msr12, mq2.roundedmsr2 roundedmsr2 from "), hqlQuery);
     assertTrue(hqlQuery.contains(joinSubString)
-      && hqlQuery.endsWith(endSubString + " WHERE (round(( alias0  +  roundedmsr2 )) <=  1000 )"), hqlQuery);
+      && hqlQuery.endsWith(endSubString + " WHERE (round(( alias0 + roundedmsr2 )) <= 1000 )"), hqlQuery);
 
 
     // Following test cases only select dimensions, and all the measures are in having.
@@ -779,7 +779,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
     compareContains(expected2, hqlQuery);
     assertTrue(hqlQuery.toLowerCase().startsWith(begin), hqlQuery);
     assertTrue(hqlQuery.contains(joinSubString)
-      && hqlQuery.endsWith(endSubString + " WHERE (( alias0  +  alias1 ) <=  1000 )"), hqlQuery);
+      && hqlQuery.endsWith(endSubString + " WHERE (( alias0 + alias1 ) <= 1000 )"), hqlQuery);
 
     hqlQuery = rewrite("select dim1, dim11 from basecube where " + TWO_DAYS_RANGE
       + "having msr12 > 2 and roundedmsr2 > 0 and flooredmsr12+roundedmsr2 <= 1000", conf);
@@ -797,7 +797,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
     compareContains(expected2, hqlQuery);
     assertTrue(hqlQuery.toLowerCase().startsWith(begin), hqlQuery);
     assertTrue(hqlQuery.contains(joinSubString)
-      && hqlQuery.endsWith(endSubString + " WHERE (( alias0  +  alias1 ) <=  1000 )"), hqlQuery);
+      && hqlQuery.endsWith(endSubString + " WHERE (( alias0 + alias1 ) <= 1000 )"), hqlQuery);
 
     hqlQuery = rewrite("select dim1, dim11 from basecube where " + TWO_DAYS_RANGE
       + "having msr12 > 2 or roundedmsr2 > 0 or flooredmsr12+roundedmsr2 <= 1000", conf);
@@ -810,7 +810,7 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
       "select basecube.dim1 as dim1, basecube.dim11 as dim11, round(sum(basecube.msr2)/1000) as alias1 FROM ",
       null, " group by basecube.dim1, basecube.dim11",
       getWhereForDailyAndHourly2days(cubeName, "C1_testFact1_BASE"));
-    String havingToWhere = " WHERE ((( alias0  >  2 ) or ( alias1  >  0 )) or (( alias2  +  alias1 ) <=  1000 ))";
+    String havingToWhere = " WHERE (( alias0 > 2 ) or ( alias1 > 0 ) or (( alias2 + alias1 ) <= 1000 ))";
 
     assertFalse(hqlQuery.toLowerCase().contains("having"));
     compareContains(expected1, hqlQuery);

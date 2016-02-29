@@ -31,7 +31,6 @@ import org.apache.lens.api.APIResult;
 import org.apache.lens.api.LensConf;
 import org.apache.lens.api.query.*;
 import org.apache.lens.api.query.QueryStatus.Status;
-
 import org.apache.lens.api.result.LensAPIResult;
 import org.apache.lens.client.exceptions.LensAPIException;
 
@@ -321,6 +320,17 @@ public class LensStatement {
     throw new LensAPIException(response.readEntity(LensAPIResult.class));
   }
 
+  /**
+   * Execute query via EXECUTE_WITH_TIMEOUT option.
+   * Note: If the query does not finish within the timeout time, server returns the query handle which can be used to
+   * track further progress.
+   * 
+   * @param sql : query/command to be executed
+   * @param queryName : optional query name
+   * @param timeOutMillis : timeout milliseconds for the query execution.
+   * @return
+   * @throws LensAPIException
+   */
   public LensAPIResult<QueryHandleWithResultSet> executeQuery(String sql, String queryName, long timeOutMillis)
     throws LensAPIException {
     if (!connection.isOpen()) {

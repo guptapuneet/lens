@@ -131,7 +131,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
       { qCom1, "cube select id,name from test_dim", true, 1 },
       { qCom1, "cube select id,name1 from invalid_test_dim", false, 1 }, // this query should fail;
       { qCom2, "cube select id,name from test_dim", true, 2 },
-      { qCom3, "cube select id,name from test_dim", true, 3 },};
+      { qCom3, "cube select id,name from test_dim", true, 3 }, };
   }
 
   /**

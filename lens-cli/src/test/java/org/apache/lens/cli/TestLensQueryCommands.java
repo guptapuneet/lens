@@ -35,8 +35,11 @@ import org.apache.lens.api.query.QueryStatus;
 import org.apache.lens.cli.commands.LensCubeCommands;
 import org.apache.lens.cli.commands.LensDimensionTableCommands;
 import org.apache.lens.cli.commands.LensQueryCommands;
+import org.apache.lens.cli.config.LensCliConfigConstants;
 import org.apache.lens.client.LensClient;
 import org.apache.lens.driver.hive.TestHiveDriver;
+import org.apache.lens.server.api.LensConfConstants;
+import org.apache.lens.server.query.TestQueryService.DeferredInMemoryResultFormatter;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
@@ -79,10 +82,10 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     };
   }
 
-  private LensQueryCommands setupQueryCommands(boolean withMetrics) throws Exception {
+  private LensQueryCommands setupQueryCommands(boolean enableMetrics) throws Exception {
     LensClient client = new LensClient();
     client.setConnectionParam("lens.query.enable.persistent.resultset.indriver", "false");
-    if (withMetrics) {
+    if (enableMetrics) {
       client.setConnectionParam("lens.query.enable.metrics.per.query", "true");
     }
 
@@ -91,15 +94,70 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     return qCom;
   }
 
+  @DataProvider(name = "executeSyncQueryDP")
+  private Object[][] executeSyncQueryDP() {
+    //Streaming not enabled. InMemory ResultSet Expected
+    LensClient client1 = new LensClient();
+    client1.setConnectionParam("lens.query.enable.persistent.resultset.indriver", "false");
+    client1.setConnectionParam("lens.query.enable.persistent.resultset", "false");
+    client1.setConnectionParam("lens.query.enable.metrics.per.query", "false");
+    LensQueryCommands qCom1 = new LensQueryCommands();
+    qCom1.setClient(client1);
+
+    //Streaming enabled (via PREFETCH_INMEMORY_RESULTSET_ROWS) and query finishes fast. InMemory result set expected
+    LensClient client2 = new LensClient();
+    client2.setConnectionParam("lens.query.enable.persistent.resultset.indriver", "false");
+    client2.setConnectionParam("lens.query.enable.persistent.resultset", "true");
+    //client2.setConnectionParam(LensConfConstants.PREFETCH_INMEMORY_RESULTSET, "true");
+    client2.setConnectionParam(LensConfConstants.PREFETCH_INMEMORY_RESULTSET_ROWS, "100");
+    client2.getConf().setLong(LensCliConfigConstants.QUERY_EXECUTE_TIMEOUT_MILLIS, 20000);
+    LensQueryCommands qCom2 = new LensQueryCommands();
+    qCom2.setClient(client2);
+
+    //Streaming enabled and query execution finishes fast, but server takes long time to format result.
+    //InMemory ResultSet Excepted. Wait for query to be successful (i,e finish both execution and formatting)
+    LensClient client3 = new LensClient();
+    client3.setConnectionParam("lens.query.enable.persistent.resultset.indriver", "false");
+    client3.setConnectionParam("lens.query.enable.persistent.resultset", "true");
+    //client3.setConnectionParam(LensConfConstants.PREFETCH_INMEMORY_RESULTSET, "true");
+    client3.setConnectionParam(LensConfConstants.PREFETCH_INMEMORY_RESULTSET_ROWS, "100");
+    client3.setConnectionParam(LensConfConstants.QUERY_OUTPUT_FORMATTER,
+        DeferredInMemoryResultFormatter.class.getName());
+    client3.setConnectionParam("deferPersistenceByMillis", "5000"); // property used for test only
+    client3.getConf().setLong(LensCliConfigConstants.QUERY_EXECUTE_TIMEOUT_MILLIS, 20000);
+    LensQueryCommands qCom3 = new LensQueryCommands();
+    qCom3.setClient(client3);
+
+    return new Object[][] {
+      { qCom1, "cube select id,name from test_dim", true, 1 },
+      { qCom1, "cube select id,name1 from invalid_test_dim", false, 1 }, // this query should fail;
+      { qCom2, "cube select id,name from test_dim", true, 2 },
+      { qCom3, "cube select id,name from test_dim", true, 3 }, };
+  }
+
   /**
    * Test execute sync query
    */
-  @Test(dataProvider = "queryCommands")
-  public void executeSyncQuery(LensQueryCommands qCom) {
+  @Test(dataProvider = "executeSyncQueryDP")
+  public void executeSyncQuery(LensQueryCommands qCom, String sql, boolean shouldPass, int queriesSuccessfulSoFar)
+    throws Exception{
     assertEquals(qCom.getAllPreparedQueries("all", "", -1, -1), "No prepared queries");
-    String sql = "cube select id,name from test_dim";
-    String result = qCom.executeQuery(sql, false, "testQuery2");
-    assertTrue(result.contains("1\tfirst"), result);
+    try {
+      String result = qCom.executeQuery(sql, false, "testQuerySync");
+      assertTrue(result.contains("1\tfirst"), result);
+    } catch (Exception e) {
+      if (shouldPass) {
+        fail("Unexpected failure");
+      } else {
+        return;
+      }
+    }
+    // Wait for query to get purged
+    while (!qCom.getAllQueries("SUCCESSFUL", null, "all", null, -1, Long.MAX_VALUE).contains(
+        "Total number of queries: " + queriesSuccessfulSoFar)) {
+      Thread.sleep(2000);
+    }
+    //Thread.sleep(2000); // Wait few extra seconds for purger to kick in after query status is set to SUCCESSFUL
   }
 
   /**

@@ -110,7 +110,7 @@ public class LensClient {
   }
 
   public QueryHandleWithResultSet executeQueryWithTimeout(String sql, String queryName, long timeOutMillis)
-      throws LensAPIException {
+    throws LensAPIException {
     log.debug("Executing query {} with timeout of {} millis", sql, timeOutMillis);
     LensAPIResult<QueryHandleWithResultSet> lensAPIResult = statement.executeQuery(sql, queryName, timeOutMillis);
     LensQuery query = statement.getQuery();

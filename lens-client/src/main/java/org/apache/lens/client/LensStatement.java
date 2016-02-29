@@ -322,7 +322,7 @@ public class LensStatement {
   }
 
   public LensAPIResult<QueryHandleWithResultSet> executeQuery(String sql, String queryName, long timeOutMillis)
-      throws LensAPIException {
+    throws LensAPIException {
     if (!connection.isOpen()) {
       throw new IllegalStateException("Lens Connection has to be established before querying");
     }
@@ -340,11 +340,14 @@ public class LensStatement {
         MediaType.APPLICATION_XML_TYPE));
     WebTarget target = getQueryWebTarget(client);
 
-    Response response = target.request().post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE));
+    Response response =
+        target.request(MediaType.APPLICATION_XML_TYPE).post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE));
 
     if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-      return response.readEntity(new GenericType<LensAPIResult<QueryHandleWithResultSet>>() {
-      });
+      LensAPIResult<QueryHandleWithResultSet> result =
+          response.readEntity(new GenericType<LensAPIResult<QueryHandleWithResultSet>>() {});
+      this.query = getQuery(result.getData().getQueryHandle());
+      return result;
     }
 
     throw new LensAPIException(response.readEntity(LensAPIResult.class));

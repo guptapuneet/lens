@@ -143,12 +143,12 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     result = qCom.getQueryResults(handle, null, true);
     log.debug("Prepared Query Result is  " + result);
     assertTrue(result.contains("1\tfirst"));
-    //Wait for query to purge. Purger runs every second 
-    Thread.sleep(3000); 
+    //Wait for query to purge. Purger runs every second
+    Thread.sleep(3000);
     //Fetch again. Should not get resultset
     result = qCom.getQueryResults(handle, null, true);
     log.debug("Prepared Query Result is  " + result);
-    assertTrue(result.contains("Resultset not available for the query"), "Query is not purged yet " + handle );
+    assertTrue(result.contains("Resultset not available for the query"), "Query is not purged yet " + handle);
 
     result = qCom.destroyPreparedQuery(qh);
 
@@ -387,13 +387,14 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     }
     //Downlaod once
     downloadResult(qCom, qCom.getClient().getStatement().getQueryHandleString(), "testQuery3", "\"1\",\"first\"");
-    //Download Again 
+    //Download Again
     downloadResult(qCom, qCom.getClient().getStatement().getQueryHandleString(), "testQuery3",  "\"1\",\"first\"");
     System.out.println("@@END_PERSISTENT_RESULT_TEST-------------");
     qCom.getClient().setConnectionParam("lens.query.enable.persistent.resultset.indriver", "false");
   }
 
-  private void downloadResult(LensQueryCommands qCom, String qHandle, String qName, String expected) throws IOException {
+  private void downloadResult(LensQueryCommands qCom, String qHandle, String qName, String expected)
+    throws IOException{
     assertTrue(qCom.getQueryResults(qHandle, resDir, true).contains("Saved to"));
     assertEquals(readFile(resDir.getAbsolutePath() + File.separator + qName + "-" + qHandle + ".csv").trim(),
         expected.trim());

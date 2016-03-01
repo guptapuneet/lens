@@ -59,7 +59,7 @@
   <property>
     <name>lens.cli.query.execute.timeout.millis</name>
     <value>10000</value>
-    <description>This property defines the timeout value when "EXECUTE_WITH_TIMEOUT" option
+    <description>This property defines the timeout value when sync or --async false option
     is used to execute a query. The default value is 10 seconds.
     </description>
   </property>

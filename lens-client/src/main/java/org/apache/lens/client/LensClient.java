@@ -113,7 +113,7 @@ public class LensClient {
    * Execute query with timeout option.
    * If the query does not finish within the timeout time, server returns the query handle which can be used to
    * track further progress.
-   * 
+   *
    * @param sql : query/command to be executed
    * @param queryName : optional query name
    * @param timeOutMillis : timeout milliseconds for the query execution.
@@ -122,10 +122,9 @@ public class LensClient {
    */
   public QueryHandleWithResultSet executeQueryWithTimeout(String sql, String queryName, long timeOutMillis)
     throws LensAPIException {
-    log.debug("Executing query {} with timeout of {} millis", sql, timeOutMillis);
+    log.info("Executing query {} with timeout of {} milliseconds", sql, timeOutMillis);
     LensAPIResult<QueryHandleWithResultSet> lensAPIResult = statement.executeQuery(sql, queryName, timeOutMillis);
     LensQuery query = statement.getQuery();
-    log.debug("Adding query to statementMap {}", query.getQueryHandle());
     statementMap.put(query.getQueryHandle(), statement);
     QueryHandleWithResultSet executeResult = lensAPIResult.getData();
     if (executeResult.getStatus().failed()) {

@@ -22,6 +22,7 @@ import static org.testng.Assert.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
@@ -64,7 +65,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
 
   @BeforeClass
   public void createResultsDir() {
-    resDir = new File("target/results");
+    resDir = new File("target/lens-results");
     assertTrue(resDir.exists() || resDir.mkdirs());
   }
 
@@ -138,9 +139,16 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     log.debug("Prepared Query Status is  " + status);
     assertTrue(status.contains("Status: SUCCESSFUL"));
 
+    //Fetch results
     result = qCom.getQueryResults(handle, null, true);
     log.debug("Prepared Query Result is  " + result);
     assertTrue(result.contains("1\tfirst"));
+    //Wait for query to purge. Purger runs every second 
+    Thread.sleep(3000); 
+    //Fetch again. Should not get resultset
+    result = qCom.getQueryResults(handle, null, true);
+    log.debug("Prepared Query Result is  " + result);
+    assertTrue(result.contains("Resultset not available for the query"), "Query is not purged yet " + handle );
 
     result = qCom.destroyPreparedQuery(qh);
 
@@ -366,7 +374,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
   @Test(dataProvider = "queryCommands")
   public void showPersistentResultSet(LensQueryCommands qCom) throws Exception {
     System.out.println("@@PERSISTENT_RESULT_TEST-------------");
-    qCom.getClient().setConnectionParam("lens.query.enable.persistent.resultset.indriver", "true");
+    qCom.getClient().setConnectionParam("lens.query.enable.persistent.resultset", "true");
     String query = "cube select id,name from test_dim";
     try {
       String result = qCom.executeQuery(query, false, "testQuery3");
@@ -377,9 +385,20 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
       log.error("Exception not expected while getting resultset.", exc);
       fail("Exception not expected: " + exc.getMessage());
     }
+    //Downlaod once
+    downloadResult(qCom, qCom.getClient().getStatement().getQueryHandleString(), "testQuery3", "\"1\",\"first\"");
+    //Download Again 
+    downloadResult(qCom, qCom.getClient().getStatement().getQueryHandleString(), "testQuery3",  "\"1\",\"first\"");
     System.out.println("@@END_PERSISTENT_RESULT_TEST-------------");
     qCom.getClient().setConnectionParam("lens.query.enable.persistent.resultset.indriver", "false");
   }
+
+  private void downloadResult(LensQueryCommands qCom, String qHandle, String qName, String expected) throws IOException {
+    assertTrue(qCom.getQueryResults(qHandle, resDir, true).contains("Saved to"));
+    assertEquals(readFile(resDir.getAbsolutePath() + File.separator + qName + "-" + qHandle + ".csv").trim(),
+        expected.trim());
+  }
+
 
   /**
    * Test execute sync results.

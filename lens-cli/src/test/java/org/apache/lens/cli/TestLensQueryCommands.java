@@ -161,6 +161,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
       if (shouldPass) {
         fail("Unexpected failure");
       } else {
+        qCom.getClient().closeConnection();
         return;
       }
     }
@@ -174,6 +175,8 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
         fail("Unable to get successful status for query even after 30 checks");
       }
     }
+
+    qCom.getClient().closeConnection();
   }
 
   /**
@@ -239,6 +242,8 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     assertFalse(handles2.contains(qh), handles2);
     result = qCom.destroyPreparedQuery(handles);
     assertEquals("Successfully destroyed " + handles, result);
+
+    qCom.getClient().closeConnection();
   }
 
   /**
@@ -271,6 +276,8 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
 
     log.debug(result);
     assertTrue(result.contains(explainPlan));
+
+    qCom.getClient().closeConnection();
   }
 
   /**
@@ -289,6 +296,8 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
 
     result = qCom.explainAndPrepare(sql, "");
     assertTrue(result.contains("Explain FAILED:"));
+
+    qCom.getClient().closeConnection();
   }
 
   /**
@@ -382,6 +391,8 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     }
 
     System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+
+    qCom.getClient().closeConnection();
   }
 
   private String readFile(String path) throws FileNotFoundException {
@@ -463,6 +474,8 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     downloadResult(qCom, qCom.getClient().getStatement().getQueryHandleString(), "testQuery3",  "\"1\",\"first\"");
     System.out.println("@@END_PERSISTENT_RESULT_TEST-------------");
     qCom.getClient().setConnectionParam("lens.query.enable.persistent.resultset.indriver", "false");
+
+    qCom.getClient().closeConnection();
   }
 
   private void downloadResult(LensQueryCommands qCom, String qHandle, String qName, String expected)
@@ -484,6 +497,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     String qh = qCom.executeQuery(sql, true, "testQuery4");
     String result = qCom.getQueryResults(qh, null, false);
     assertTrue(result.contains("1\tfirst"), result);
+    qCom.getClient().closeConnection();
   }
 
   /**
@@ -510,6 +524,8 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     assertFalse(result.contains("(-"));
     System.out.println("@@END_FINISHED_PURGED_RESULT_TEST-------------");
     qCom.getClient().setConnectionParam("lens.query.enable.persistent.resultset", "false");
+
+    qCom.getClient().closeConnection();
   }
 
   @Test
@@ -552,5 +568,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     Assert.assertEquals(proxyQuery, query);
     Assert.assertEquals(proxyQuery.hashCode(), proxyQuery2.hashCode());
     Assert.assertEquals(proxyQuery.hashCode(), query.hashCode());
+
+    client.closeConnection();
   }
 }

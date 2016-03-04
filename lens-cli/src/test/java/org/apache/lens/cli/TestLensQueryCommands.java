@@ -22,6 +22,7 @@ import static org.testng.Assert.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
@@ -30,6 +31,7 @@ import javax.xml.datatype.DatatypeFactory;
 
 import org.apache.lens.api.APIResult;
 import org.apache.lens.api.metastore.*;
+import org.apache.lens.api.query.LensQuery;
 import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.QueryStatus;
 import org.apache.lens.cli.commands.LensCubeCommands;
@@ -37,6 +39,7 @@ import org.apache.lens.cli.commands.LensDimensionTableCommands;
 import org.apache.lens.cli.commands.LensQueryCommands;
 import org.apache.lens.cli.config.LensCliConfigConstants;
 import org.apache.lens.client.LensClient;
+import org.apache.lens.client.model.ProxyLensQuery;
 import org.apache.lens.driver.hive.TestHiveDriver;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.query.TestQueryService.DeferredInMemoryResultFormatter;
@@ -44,6 +47,7 @@ import org.apache.lens.server.query.TestQueryService.DeferredInMemoryResultForma
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
 
+import org.testng.Assert;
 import org.testng.annotations.*;
 
 import lombok.extern.slf4j.Slf4j;
@@ -141,6 +145,13 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
   public void executeSyncQuery(LensQueryCommands qCom, String sql, boolean shouldPass, int queriesSuccessfulSoFar)
     throws Exception{
     assertEquals(qCom.getAllPreparedQueries("all", "", -1, -1), "No prepared queries");
+    String successfulQueries = qCom.getAllQueries("SUCCESSFUL", null, "all", null, -1, Long.MAX_VALUE);
+    int succQueries;
+    if (successfulQueries.contains("No queries")) {
+      succQueries = 0;
+    } else {
+      succQueries = Integer.parseInt(successfulQueries.substring(successfulQueries.lastIndexOf(": ") + 2));
+    }
     try {
       String result = qCom.executeQuery(sql, false, "testQuerySync");
       assertTrue(result.contains("1\tfirst"), result);
@@ -153,7 +164,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     }
     // Wait for query to reach successful state
     while (!qCom.getAllQueries("SUCCESSFUL", null, "all", null, -1, Long.MAX_VALUE).contains(
-        "Total number of queries: " + queriesSuccessfulSoFar)) {
+        "Total number of queries: " + (succQueries + 1))) {
       Thread.sleep(2000);
     }
   }
@@ -494,4 +505,15 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     qCom.getClient().setConnectionParam("lens.query.enable.persistent.resultset", "false");
   }
 
+  @Test
+  public void testProxyLensQuery() throws Exception {
+    LensClient client = new LensClient();
+    QueryHandle handle = client.executeQueryAsynch("cube select id,name from test_dim", "proxyTestQuery").getData();
+    client.getStatement().waitForQueryToComplete(handle);
+    LensQuery query = client.getQueryDetails(handle);
+    ProxyLensQuery proxyQuery = new ProxyLensQuery(client.getStatement(), handle);
+    Assert.assertEquals(query.getStatus().successful(), proxyQuery.getStatus().successful());
+    Assert.assertEquals(query.getDriverQuery(), proxyQuery.getDriverQuery());
+    Assert.assertEquals(query.getUserQuery(), proxyQuery.getUserQuery());
+  }
 }

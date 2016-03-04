@@ -33,6 +33,7 @@ import org.apache.lens.api.query.*;
 import org.apache.lens.api.query.QueryStatus.Status;
 import org.apache.lens.api.result.LensAPIResult;
 import org.apache.lens.client.exceptions.LensAPIException;
+import org.apache.lens.client.model.ProxyLensQuery;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -66,7 +67,7 @@ public class LensStatement {
   public LensAPIResult<QueryHandle> execute(String sql, boolean waitForQueryToComplete,
       String queryName) throws LensAPIException {
     LensAPIResult<QueryHandle> lensAPIResult = executeQuery(sql, waitForQueryToComplete, queryName);
-    this.query = getQuery(lensAPIResult.getData());
+    this.query = new ProxyLensQuery(this, lensAPIResult.getData());
     return lensAPIResult;
   }
 
@@ -78,7 +79,7 @@ public class LensStatement {
    */
   public void execute(String sql, String queryName) throws LensAPIException {
     QueryHandle handle = executeQuery(sql, true, queryName).getData();
-    this.query = getQuery(handle);
+    this.query = new ProxyLensQuery(this, handle);
   }
 
   /**
@@ -324,7 +325,7 @@ public class LensStatement {
    * Execute query via EXECUTE_WITH_TIMEOUT option.
    * Note: If the query does not finish within the timeout time, server returns the query handle which can be used to
    * track further progress.
-   * 
+   *
    * @param sql : query/command to be executed
    * @param queryName : optional query name
    * @param timeOutMillis : timeout milliseconds for the query execution.
@@ -356,7 +357,7 @@ public class LensStatement {
     if (response.getStatus() == Response.Status.OK.getStatusCode()) {
       LensAPIResult<QueryHandleWithResultSet> result =
           response.readEntity(new GenericType<LensAPIResult<QueryHandleWithResultSet>>() {});
-      this.query = getQuery(result.getData().getQueryHandle());
+      this.query = new ProxyLensQuery(this, result.getData().getQueryHandle());
       return result;
     }
 
@@ -638,4 +639,9 @@ public class LensStatement {
   public String getQueryHandleString() {
     return this.query.getQueryHandleString();
   }
+
+  public String getUser() {
+    return this.connection.getLensConnectionParams().getUser();
+  }
 }
+

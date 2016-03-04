@@ -30,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * This class can be used to create Proxy Lens Query objects. The Proxy objects support lazy initialization
- * of members of this calss given a query handle and LensStatement.
+ * of members of this class given a query handle and LensStatement.
  *
  * Note: In most cases the query handle information should suffice which is available locally, and only in a few cases
  * like {@link org.apache.lens.client.LensClient.LensClientResultSetWithStats}, extra information needs to be fetched

@@ -87,10 +87,10 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     };
   }
 
-  private LensQueryCommands setupQueryCommands(boolean enableMetrics) throws Exception {
+  private LensQueryCommands setupQueryCommands(boolean withMetrics) throws Exception {
     LensClient client = new LensClient();
     client.setConnectionParam("lens.query.enable.persistent.resultset.indriver", "false");
-    if (enableMetrics) {
+    if (withMetrics) {
       client.setConnectionParam("lens.query.enable.metrics.per.query", "true");
     }
 
@@ -147,11 +147,11 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     throws Exception{
     assertEquals(qCom.getAllPreparedQueries("all", "", -1, -1), "No prepared queries");
     String successfulQueries = qCom.getAllQueries("SUCCESSFUL", null, "all", null, -1, Long.MAX_VALUE);
-    int succQueries;
+    int noOfSuccQueriesSoFar;
     if (successfulQueries.contains("No queries")) {
-      succQueries = 0;
+      noOfSuccQueriesSoFar = 0;
     } else {
-      succQueries = Integer.parseInt(successfulQueries.substring(successfulQueries.lastIndexOf(": ") + 2));
+      noOfSuccQueriesSoFar = Integer.parseInt(successfulQueries.substring(successfulQueries.lastIndexOf(": ") + 2));
     }
     try {
       String result = qCom.executeQuery(sql, false, "testQuerySync");
@@ -165,7 +165,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     }
     // Wait for query to reach successful state
     while (!qCom.getAllQueries("SUCCESSFUL", null, "all", null, -1, Long.MAX_VALUE).contains(
-        "Total number of queries: " + (succQueries + 1))) {
+        "Total number of queries: " + (noOfSuccQueriesSoFar + 1))) {
       Thread.sleep(2000);
     }
   }
@@ -516,5 +516,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     Assert.assertEquals(query.getStatus().successful(), proxyQuery.getStatus().successful());
     Assert.assertEquals(query.getDriverQuery(), proxyQuery.getDriverQuery());
     Assert.assertEquals(query.getUserQuery(), proxyQuery.getUserQuery());
+    Assert.assertEquals(query.getSubmissionTime(), proxyQuery.getSubmissionTime());
+    Assert.assertEquals(query.getFinishTime(), proxyQuery.getFinishTime());
   }
 }

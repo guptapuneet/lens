@@ -79,7 +79,7 @@ import lombok.*;
  * Instantiates a new lens query.
  */
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@EqualsAndHashCode
+@EqualsAndHashCode(of="queryHandle", callSuper=false)
 public class LensQuery extends ToYAMLString {
 
   /**

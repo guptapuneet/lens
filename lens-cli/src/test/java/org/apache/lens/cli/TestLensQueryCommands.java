@@ -23,6 +23,8 @@ import static org.testng.Assert.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.util.*;
 
@@ -46,7 +48,6 @@ import org.apache.lens.server.query.TestQueryService.DeferredInMemoryResultForma
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
-
 
 import org.testng.Assert;
 import org.testng.annotations.*;
@@ -514,9 +515,37 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     LensQuery query = client.getQueryDetails(handle);
     ProxyLensQuery proxyQuery = new ProxyLensQuery(client.getStatement(), handle);
     Assert.assertEquals(query.getStatus().successful(), proxyQuery.getStatus().successful());
-    Assert.assertEquals(query.getDriverQuery(), proxyQuery.getDriverQuery());
-    Assert.assertEquals(query.getUserQuery(), proxyQuery.getUserQuery());
     Assert.assertEquals(query.getSubmissionTime(), proxyQuery.getSubmissionTime());
     Assert.assertEquals(query.getFinishTime(), proxyQuery.getFinishTime());
+
+    //Check is any new getters are added to LensQuery. If yes, ProxyLensQuery should be updated too
+    StringBuffer b1 = new StringBuffer();
+    int getMethodCountInLensQuery = 0;
+    for (Method m :LensQuery.class.getDeclaredMethods()) {
+      if (Modifier.isPublic(m.getModifiers()) && !m.getName().startsWith("hash") && !m.getName().startsWith("equals")) {
+        b1.append(m.getName());
+        b1.append(", ");
+        getMethodCountInLensQuery++;
+      }
+    }
+    int getMethodCountInProxyLensQuery = 0;
+    StringBuffer b2 = new StringBuffer();
+    for (Method m :ProxyLensQuery.class.getDeclaredMethods()) {
+      if (Modifier.isPublic(m.getModifiers())) {
+        b2.append(m.getName());
+        b2.append(", ");
+        getMethodCountInProxyLensQuery++;
+      }
+    }
+    assertEquals(getMethodCountInLensQuery, getMethodCountInProxyLensQuery,
+        "Methods in LensQuery and ProxyLensQuery do not match. LensQuery methods: " + b1.toString()
+            + " ProxyLensQuery methods :" + b2.toString());
+
+    //Check equals and hashCode override
+    ProxyLensQuery proxyQuery2 = new ProxyLensQuery(client.getStatement(), handle);
+    Assert.assertEquals(proxyQuery, proxyQuery2);
+    Assert.assertEquals(proxyQuery, query);
+    Assert.assertEquals(proxyQuery.hashCode(), proxyQuery2.hashCode());
+    Assert.assertEquals(proxyQuery.hashCode(), query.hashCode());
   }
 }

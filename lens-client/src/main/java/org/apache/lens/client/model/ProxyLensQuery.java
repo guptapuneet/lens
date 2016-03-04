@@ -41,8 +41,8 @@ public class ProxyLensQuery extends LensQuery {
 
   private LensStatement statement;
   private QueryHandle queryHandle;
-  private boolean isFullyInitialized = false;
-  private LensQuery actualLensQuery = null;
+  private boolean isFullyInitialized;
+  private LensQuery actualLensQuery;
 
   public ProxyLensQuery(LensStatement statement, QueryHandle queryHandle) {
     this.statement = statement;

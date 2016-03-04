@@ -26,7 +26,7 @@ Lens client configuration
 *--+--+---+--+
 |1|lens.cli.json.pretty|false|Should CLI try to prettify the JSON of an object before priting.|
 *--+--+---+--+
-|2|lens.cli.query.execute.timeout.millis|10000|This property defines the timeout value when "EXECUTE_WITH_TIMEOUT" option is used to execute a query. The default value is 10 seconds.|
+|2|lens.cli.query.execute.timeout.millis|10000|This property defines the timeout value when sync or --async false option is used to execute a query. The default value is 10 seconds.|
 *--+--+---+--+
 |3|lens.client.dbname|default|Default lens database|
 *--+--+---+--+

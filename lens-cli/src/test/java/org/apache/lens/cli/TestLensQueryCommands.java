@@ -165,9 +165,14 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
       }
     }
     // Wait for query to reach successful state
+    int chkCount = 0;
     while (!qCom.getAllQueries("SUCCESSFUL", null, "all", null, -1, Long.MAX_VALUE).contains(
         "Total number of queries: " + (noOfSuccQueriesSoFar + 1))) {
       Thread.sleep(2000);
+      chkCount++;
+      if (chkCount > 30) {
+        fail("Unable to get successful status for query even after 30 checks");
+      }
     }
   }
 

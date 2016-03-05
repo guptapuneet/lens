@@ -134,17 +134,17 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     qCom3.setClient(client3);
 
     return new Object[][] {
-      { qCom1, "cube select id,name from test_dim", true, 1 },
-      { qCom1, "cube select id,name1 from invalid_test_dim", false, 1 }, // this query should fail;
-      { qCom2, "cube select id,name from test_dim", true, 2 },
-      { qCom3, "cube select id,name from test_dim", true, 3 }, };
+      { qCom1, "cube select id,name from test_dim", true, false },
+      { qCom1, "cube select id,name1 from invalid_test_dim", false, true }, // this query should fail;
+      { qCom2, "cube select id,name from test_dim", true, true },
+      { qCom3, "cube select id,name from test_dim", true, true }, };
   }
 
   /**
    * Test execute sync query
    */
   @Test(dataProvider = "executeSyncQueryDP")
-  public void executeSyncQuery(LensQueryCommands qCom, String sql, boolean shouldPass, int queriesSuccessfulSoFar)
+  public void executeSyncQuery(LensQueryCommands qCom, String sql, boolean shouldPass, boolean closeConn)
     throws Exception{
     assertEquals(qCom.getAllPreparedQueries("all", "", -1, -1), "No prepared queries");
     String successfulQueries = qCom.getAllQueries("SUCCESSFUL", null, "all", null, -1, Long.MAX_VALUE);
@@ -175,8 +175,9 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
         fail("Unable to get successful status for query even after 30 checks");
       }
     }
-
-    qCom.getClient().closeConnection();
+    if (closeConn) {
+      qCom.getClient().closeConnection();
+    }
   }
 
   /**

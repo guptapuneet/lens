@@ -317,12 +317,12 @@ public class TestQueryService extends LensJerseyTest {
     assertTrue(query.getFinishTime() > 0);
     assertEquals(query.getStatus().getStatus(), Status.SUCCESSFUL);
 
-    assertEquals(query.getPriority(), Priority.NORMAL);
+    assertEquals(query.getPriority(), Priority.LOW);
     //Check Query Priority can be read even after query is purged i,e query details are read from DB.
     if (queryService.allQueries.size() > 0) {
       Thread.sleep(1000);
     }
-    assertEquals(query.getPriority(), Priority.NORMAL);
+    assertEquals(query.getPriority(), Priority.LOW);
 
     // Update conf for query
     final FormDataMultiPart confpart = new FormDataMultiPart();

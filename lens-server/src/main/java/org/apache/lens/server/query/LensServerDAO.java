@@ -110,7 +110,7 @@ public class LensServerDAO {
       String sql = "insert into finished_queries (handle, userquery, submitter, priority, "
         + "starttime,endtime,result,status,metadata,rows,filesize,"
         + "errormessage,driverstarttime,driverendtime, drivername, queryname, submissiontime)"
-        + " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        + " values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
       try {
         conn = getConnection();
         QueryRunner runner = new QueryRunner();

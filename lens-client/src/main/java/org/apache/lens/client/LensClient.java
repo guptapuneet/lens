@@ -100,13 +100,11 @@ public class LensClient {
     return mc;
   }
 
-  public LensAPIResult<QueryHandle> executeQueryAsynch(String sql, String queryName) throws LensAPIException {
+  public QueryHandle executeQueryAsynch(String sql, String queryName) throws LensAPIException {
     log.debug("Executing query {}", sql);
-    LensAPIResult<QueryHandle> lensAPIResult = statement.execute(sql, false, queryName);
-    LensQuery query = statement.getQuery();
-    log.debug("Adding query to statementMap {}", query.getQueryHandle());
-    statementMap.put(query.getQueryHandle(), statement);
-    return lensAPIResult;
+    QueryHandle handle = statement.executeQuery(sql, false, queryName);
+    statementMap.put(handle, statement);
+    return handle;
   }
 
   /**
@@ -123,17 +121,15 @@ public class LensClient {
   public QueryHandleWithResultSet executeQueryWithTimeout(String sql, String queryName, long timeOutMillis)
     throws LensAPIException {
     log.info("Executing query {} with timeout of {} milliseconds", sql, timeOutMillis);
-    LensAPIResult<QueryHandleWithResultSet> lensAPIResult = statement.executeQuery(sql, queryName, timeOutMillis);
-    LensQuery query = statement.getQuery();
-    statementMap.put(query.getQueryHandle(), statement);
-    QueryHandleWithResultSet executeResult = lensAPIResult.getData();
-    if (executeResult.getStatus().failed()) {
+    QueryHandleWithResultSet result = statement.executeQuery(sql, queryName, timeOutMillis);
+    statementMap.put(result.getQueryHandle(), statement);
+    if (result.getStatus().failed()) {
       IdBriefErrorTemplate errorResult = new IdBriefErrorTemplate(IdBriefErrorTemplateKey.QUERY_ID,
-          executeResult.getQueryHandle().getHandleIdString(), new BriefError(executeResult.getStatus()
-              .getErrorCode(), executeResult.getStatus().getErrorMessage()));
+          result.getQueryHandle().getHandleIdString(), new BriefError(result.getStatus()
+              .getErrorCode(), result.getStatus().getErrorMessage()));
       throw new LensBriefErrorException(errorResult);
     }
-    return executeResult;
+    return result;
   }
 
   public Date getLatestDateOfCube(String cubeName, String timePartition) {
@@ -166,7 +162,7 @@ public class LensClient {
 
   public LensClientResultSetWithStats getResults(String sql, String queryName) throws LensAPIException {
     log.debug("Executing query {}", sql);
-    statement.execute(sql, true, queryName);
+    statement.executeQuery(sql, true, queryName);
     return getResultsFromStatement(statement);
   }
 
@@ -619,12 +615,14 @@ public class LensClient {
     return statement.getPreparedQuery(phandle);
   }
 
-  public LensClientResultSetWithStats getResultsFromPrepared(QueryPrepareHandle phandle, String queryName) {
+  public LensClientResultSetWithStats getResultsFromPrepared(QueryPrepareHandle phandle, String queryName)
+    throws LensAPIException {
     QueryHandle qh = statement.executeQuery(phandle, true, queryName);
     return getResultsFromHandle(qh, true);
   }
 
-  public QueryHandle executePrepared(QueryPrepareHandle phandle, String queryName) {
+  public QueryHandle executePrepared(QueryPrepareHandle phandle, String queryName)
+    throws LensAPIException {
     return statement.executeQuery(phandle, false, queryName);
   }
 

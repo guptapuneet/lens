@@ -110,7 +110,7 @@ public class LensQueryCommands extends BaseLensCommand {
 
     try {
       if (async) {
-        QueryHandle queryHandle = getClient().executeQueryAsynch(sql, queryName).getData();
+        QueryHandle queryHandle = getClient().executeQueryAsynch(sql, queryName);
         return queryHandle.getHandleIdString();
       } else {
         LensClientResultSetWithStats resultWithStats;
@@ -451,17 +451,17 @@ public class LensQueryCommands extends BaseLensCommand {
     @CliOption(key = {"async"}, mandatory = false, unspecifiedDefaultValue = "false",
       specifiedDefaultValue = "true", help = "<async>") boolean async,
     @CliOption(key = {"name"}, mandatory = false, help = "<query-name>") String queryName) {
-    if (async) {
-      QueryHandle handle = getClient().executePrepared(QueryPrepareHandle.fromString(phandle), queryName);
-      return handle.getHandleId().toString();
-    } else {
-      try {
-        LensClient.LensClientResultSetWithStats result = getClient().getResultsFromPrepared(
-          QueryPrepareHandle.fromString(phandle), queryName);
+    try {
+      if (async) {
+        QueryHandle handle = getClient().executePrepared(QueryPrepareHandle.fromString(phandle), queryName);
+        return handle.getHandleId().toString();
+      } else {
+        LensClient.LensClientResultSetWithStats result =
+            getClient().getResultsFromPrepared(QueryPrepareHandle.fromString(phandle), queryName);
         return formatResultSet(result);
-      } catch (Throwable t) {
-        return t.getMessage();
       }
+    } catch (Throwable t) {
+      return t.getMessage();
     }
   }
 

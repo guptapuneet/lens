@@ -538,7 +538,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
   @Test
   public void testProxyLensQuery() throws Exception {
     LensClient client = new LensClient();
-    QueryHandle handle = client.executeQueryAsynch("cube select id,name from test_dim", "proxyTestQuery").getData();
+    QueryHandle handle = client.executeQueryAsynch("cube select id,name from test_dim", "proxyTestQuery");
     client.getStatement().waitForQueryToComplete(handle);
     LensQuery query = client.getQueryDetails(handle);
     ProxyLensQuery proxyQuery = new ProxyLensQuery(client.getStatement(), handle);

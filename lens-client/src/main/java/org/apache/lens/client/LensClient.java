@@ -64,7 +64,7 @@ public class LensClient {
   @Getter
   private PathValidator pathValidator;
 
-  public static Logger getCliLooger() {
+  public static Logger getCliLogger() {
     return LoggerFactory.getLogger(CLILOGGER);
   }
 

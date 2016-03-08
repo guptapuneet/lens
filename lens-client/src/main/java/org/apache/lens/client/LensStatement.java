@@ -258,27 +258,27 @@ public class LensStatement {
    * @param handle the handle
    */
   public void waitForQueryToComplete(QueryHandle handle) {
-    LensClient.getCliLooger().info("Query handle: {}", handle);
+    LensClient.getCliLogger().info("Query handle: {}", handle);
     LensQuery queryDetails = getQuery(handle);
     while (queryDetails.queued()) {
       queryDetails = getQuery(handle);
-      LensClient.getCliLooger().debug("Query {} status: {}", handle, queryDetails.getStatus());
+      LensClient.getCliLogger().debug("Query {} status: {}", handle, queryDetails.getStatus());
       try {
         Thread.sleep(connection.getLensConnectionParams().getQueryPollInterval());
       } catch (InterruptedException e) {
         throw new IllegalStateException(e);
       }
     }
-    LensClient.getCliLooger().info("User query: '{}' was submitted to {}", queryDetails.getUserQuery(),
+    LensClient.getCliLogger().info("User query: '{}' was submitted to {}", queryDetails.getUserQuery(),
       queryDetails.getSelectedDriverName());
     if (queryDetails.getDriverQuery() != null) {
-      LensClient.getCliLooger().info(" Driver query: '{}' and Driver handle: {}", queryDetails.getDriverQuery(),
+      LensClient.getCliLogger().info(" Driver query: '{}' and Driver handle: {}", queryDetails.getDriverQuery(),
         queryDetails.getDriverOpHandle());
     }
     while (!queryDetails.getStatus().finished()
       && !(queryDetails.getStatus().getStatus().equals(Status.CLOSED))) {
       queryDetails = getQuery(handle);
-      LensClient.getCliLooger().info("Query Status:{} ", queryDetails.getStatus());
+      LensClient.getCliLogger().info("Query Status:{} ", queryDetails.getStatus());
       try {
         Thread.sleep(connection.getLensConnectionParams().getQueryPollInterval());
       } catch (InterruptedException e) {

@@ -160,7 +160,7 @@ public class SampleQueries {
           retCode = 1;
         }
       } catch (Exception e) {
-        LensClient.getCliLooger().error("Exception for example query : \"{}\"", query, e);
+        LensClient.getCliLogger().error("Exception for example query : \"{}\"", query, e);
         retCode = 1;
       }
       System.out.println("--------------------");

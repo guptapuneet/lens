@@ -162,11 +162,13 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
       String result = qCom.executeQuery(sql, false, "testQuerySync");
       assertTrue(result.contains("1\tfirst"), result);
     } catch (Exception e) {
+      if (closeConn) {
+        closeClientConnection(qCom);
+      }
       if (shouldPass) {
-        fail("Unexpected failure");
+        fail("Unexpected failure", e);
       } else {
-        qCom.getClient().closeConnection();
-        return;
+        return; //simulated failure scenario
       }
     }
     // Wait for query to reach successful state

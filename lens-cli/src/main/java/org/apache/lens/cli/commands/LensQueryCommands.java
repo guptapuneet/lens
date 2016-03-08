@@ -116,11 +116,11 @@ public class LensQueryCommands extends BaseLensCommand {
         LensClientResultSetWithStats resultWithStats;
         long timeOutMillis = getClient().getConf().getLong(LensCliConfigConstants.QUERY_EXECUTE_TIMEOUT_MILLIS,
             LensCliConfigConstants.DEFAULT_QUERY_EXECUTE_TIMEOUT_MILLIS);
-        LensClient.getCliLooger().info("Executing query with timeout of {} milliseconds", timeOutMillis);
+        LensClient.getCliLogger().info("Executing query with timeout of {} milliseconds", timeOutMillis);
         QueryHandleWithResultSet result = getClient().executeQueryWithTimeout(sql, queryName, timeOutMillis);
         if (result.getResult() == null) {
           //Query not finished yet. Wait till it finishes and get result.
-          LensClient.getCliLooger().info("Couldn't complete query execution within timeout. Waiting for completion");
+          LensClient.getCliLogger().info("Couldn't complete query execution within timeout. Waiting for completion");
           resultWithStats = getClient().getSyncResults(result.getQueryHandle());
         } else {
           LensClientResultSet clientResultSet = new LensClientResultSet(result.getResultMetadata(), result.getResult());

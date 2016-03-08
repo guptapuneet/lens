@@ -140,6 +140,10 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
       { qCom3, "cube select id,name from test_dim", true, true }, };
   }
 
+  private void closeClientConnection(LensQueryCommands queryCommands) {
+    queryCommands.getClient().closeConnection();
+  }
+
   /**
    * Test execute sync query
    */
@@ -176,7 +180,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
       }
     }
     if (closeConn) {
-      qCom.getClient().closeConnection();
+      closeClientConnection(qCom);
     }
   }
 
@@ -244,7 +248,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     result = qCom.destroyPreparedQuery(handles);
     assertEquals("Successfully destroyed " + handles, result);
 
-    qCom.getClient().closeConnection();
+    closeClientConnection(qCom);
   }
 
   /**
@@ -278,7 +282,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     log.debug(result);
     assertTrue(result.contains(explainPlan));
 
-    qCom.getClient().closeConnection();
+    closeClientConnection(qCom);
   }
 
   /**
@@ -392,8 +396,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     }
 
     System.out.println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-
-    qCom.getClient().closeConnection();
+    closeClientConnection(qCom);
   }
 
   private String readFile(String path) throws FileNotFoundException {
@@ -447,6 +450,9 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     LensDimensionTableCommands dimTableCmd = new LensDimensionTableCommands();
     dimTableCmd.setClient(client);
     dimTableCmd.dropDimensionTable("dim_table", true);
+
+    // close client connection
+    client.closeConnection();
   }
 
   /**
@@ -476,7 +482,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     System.out.println("@@END_PERSISTENT_RESULT_TEST-------------");
     qCom.getClient().setConnectionParam("lens.query.enable.persistent.resultset.indriver", "false");
 
-    qCom.getClient().closeConnection();
+    closeClientConnection(qCom);
   }
 
   private void downloadResult(LensQueryCommands qCom, String qHandle, String qName, String expected)
@@ -498,7 +504,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     String qh = qCom.executeQuery(sql, true, "testQuery4");
     String result = qCom.getQueryResults(qh, null, false);
     assertTrue(result.contains("1\tfirst"), result);
-    qCom.getClient().closeConnection();
+    closeClientConnection(qCom);
   }
 
   /**
@@ -526,7 +532,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     System.out.println("@@END_FINISHED_PURGED_RESULT_TEST-------------");
     qCom.getClient().setConnectionParam("lens.query.enable.persistent.resultset", "false");
 
-    qCom.getClient().closeConnection();
+    closeClientConnection(qCom);
   }
 
   @Test

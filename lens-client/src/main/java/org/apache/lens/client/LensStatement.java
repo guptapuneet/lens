@@ -54,8 +54,8 @@ public class LensStatement {
   /** The connection. */
   private final LensConnection connection;
 
-  /** The query. */
-  private LensQuery query;
+  /** The query handle. */
+  private QueryHandle queryHandle;
 
   /**
    * Execute.
@@ -67,7 +67,7 @@ public class LensStatement {
   public LensAPIResult<QueryHandle> execute(String sql, boolean waitForQueryToComplete,
       String queryName) throws LensAPIException {
     LensAPIResult<QueryHandle> lensAPIResult = executeQuery(sql, waitForQueryToComplete, queryName);
-    this.query = new ProxyLensQuery(this, lensAPIResult.getData());
+    this.queryHandle = lensAPIResult.getData();
     return lensAPIResult;
   }
 
@@ -78,8 +78,7 @@ public class LensStatement {
    * @param queryName the query name
    */
   public void execute(String sql, String queryName) throws LensAPIException {
-    QueryHandle handle = executeQuery(sql, true, queryName).getData();
-    this.query = new ProxyLensQuery(this, handle);
+    this.queryHandle = executeQuery(sql, true, queryName).getData();
   }
 
   /**
@@ -201,26 +200,26 @@ public class LensStatement {
    */
   public void waitForQueryToComplete(QueryHandle handle) {
     LensClient.getCliLooger().info("Query handle: {}", handle);
-    query = getQuery(handle);
-    while (query.queued()) {
-      query = getQuery(handle);
-      LensClient.getCliLooger().debug("Query {} status: {}", handle, query.getStatus());
+    queryHandle = getQuery(handle);
+    while (queryHandle.queued()) {
+      queryHandle = getQuery(handle);
+      LensClient.getCliLooger().debug("Query {} status: {}", handle, queryHandle.getStatus());
       try {
         Thread.sleep(connection.getLensConnectionParams().getQueryPollInterval());
       } catch (InterruptedException e) {
         throw new IllegalStateException(e);
       }
     }
-    LensClient.getCliLooger().info("User query: '{}' was submitted to {}", query.getUserQuery(),
-      query.getSelectedDriverName());
-    if (query.getDriverQuery() != null) {
-      LensClient.getCliLooger().info(" Driver query: '{}' and Driver handle: {}", query.getDriverQuery(),
-        query.getDriverOpHandle());
+    LensClient.getCliLooger().info("User query: '{}' was submitted to {}", queryHandle.getUserQuery(),
+      queryHandle.getSelectedDriverName());
+    if (queryHandle.getDriverQuery() != null) {
+      LensClient.getCliLooger().info(" Driver query: '{}' and Driver handle: {}", queryHandle.getDriverQuery(),
+        queryHandle.getDriverOpHandle());
     }
-    while (!query.getStatus().finished()
-      && !(query.getStatus().getStatus().equals(Status.CLOSED))) {
-      query = getQuery(handle);
-      LensClient.getCliLooger().info("Query Status:{} ", query.getStatus());
+    while (!queryHandle.getStatus().finished()
+      && !(queryHandle.getStatus().getStatus().equals(Status.CLOSED))) {
+      queryHandle = getQuery(handle);
+      LensClient.getCliLooger().info("Query Status:{} ", queryHandle.getStatus());
       try {
         Thread.sleep(connection.getLensConnectionParams().getQueryPollInterval());
       } catch (InterruptedException e) {
@@ -261,9 +260,9 @@ public class LensStatement {
     try {
       Client client = connection.buildClient();
       WebTarget target = getQueryWebTarget(client);
-      this.query = target.path(handle.toString()).queryParam("sessionid", connection.getSessionHandle()).request()
+      this.queryHandle = target.path(handle.toString()).queryParam("sessionid", connection.getSessionHandle()).request()
         .get(LensQuery.class);
-      return query;
+      return queryHandle;
     } catch (Exception e) {
       log.error("Failed to get query status, cause:", e);
       throw new IllegalStateException("Failed to get query status, cause:" + e.getMessage());
@@ -357,7 +356,7 @@ public class LensStatement {
     if (response.getStatus() == Response.Status.OK.getStatusCode()) {
       LensAPIResult<QueryHandleWithResultSet> result =
           response.readEntity(new GenericType<LensAPIResult<QueryHandleWithResultSet>>() {});
-      this.query = new ProxyLensQuery(this, result.getData().getQueryHandle());
+      this.queryHandle = new ProxyLensQuery(this, result.getData().getQueryHandle());
       return result;
     }
 
@@ -464,7 +463,7 @@ public class LensStatement {
   }
 
   public QueryResultSetMetadata getResultSetMetaData() {
-    return this.getResultSetMetaData(query);
+    return this.getResultSetMetaData(queryHandle);
   }
 
   /**
@@ -491,11 +490,11 @@ public class LensStatement {
   }
 
   public QueryResult getResultSet() {
-    return this.getResultSet(this.query);
+    return this.getResultSet(this.queryHandle);
   }
 
   public Response getHttpResultSet() {
-    return this.getHttpResultSet(this.query);
+    return this.getHttpResultSet(this.queryHandle);
   }
 
   /**
@@ -549,7 +548,7 @@ public class LensStatement {
    * @return true, if successful
    */
   public boolean kill() {
-    return this.kill(query);
+    return this.kill(queryHandle);
   }
 
   /**
@@ -579,13 +578,13 @@ public class LensStatement {
    * @return true, if successful
    */
   public boolean closeResultSet() {
-    if (!query.getStatus().isResultSetAvailable()) {
+    if (!queryHandle.getStatus().isResultSetAvailable()) {
       return false;
     }
     Client client = connection.buildClient();
     WebTarget target = getQueryWebTarget(client);
 
-    APIResult result = target.path(query.getQueryHandle().toString()).path("resultset")
+    APIResult result = target.path(queryHandle.getQueryHandle().toString()).path("resultset")
       .queryParam("sessionid", connection.getSessionHandle()).request().delete(APIResult.class);
 
     return result.getStatus() == APIResult.Status.SUCCEEDED;
@@ -608,7 +607,7 @@ public class LensStatement {
   }
 
   public boolean isIdle() {
-    return query == null || query.getStatus().finished();
+    return queryHandle == null || queryHandle.getStatus().finished();
   }
 
   /**
@@ -617,7 +616,7 @@ public class LensStatement {
    * @return true, if successful
    */
   public boolean wasQuerySuccessful() {
-    return query.getStatus().getStatus().equals(QueryStatus.Status.SUCCESSFUL);
+    return queryHandle.getStatus().getStatus().equals(QueryStatus.Status.SUCCESSFUL);
   }
 
   public QueryStatus getStatus() {
@@ -625,19 +624,19 @@ public class LensStatement {
   }
 
   public LensQuery getQuery() {
-    return this.query;
+    return this.queryHandle;
   }
 
   public int getErrorCode() {
-    return this.query.getErrorCode();
+    return this.queryHandle.getErrorCode();
   }
 
   public String getErrorMessage() {
-    return this.query.getErrorMessage();
+    return this.queryHandle.getErrorMessage();
   }
 
   public String getQueryHandleString() {
-    return this.query.getQueryHandleString();
+    return this.queryHandle.getQueryHandleString();
   }
 
   public String getUser() {

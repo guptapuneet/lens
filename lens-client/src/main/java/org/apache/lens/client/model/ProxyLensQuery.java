@@ -36,7 +36,7 @@ import lombok.extern.slf4j.Slf4j;
  * like {@link org.apache.lens.client.LensClient.LensClientResultSetWithStats}, extra information needs to be fetched
  * from Lens Server.
  * <p>
- * Note:This class if not meant to be used by external apps using lens-client to interact with lens server
+ * Note:This class if not meant to be used by lens apps (using lens-client to interact with lens server) directly
  */
 @Slf4j
 public class ProxyLensQuery extends LensQuery {

@@ -58,28 +58,6 @@ public class LensStatement {
   private LensQuery query;
 
   /**
-   * Execute.
-   *
-   * @param sql                    the sql
-   * @param waitForQueryToComplete the wait for query to complete
-   * @param queryName              the query name
-   */
-/*  public LensAPIResult<QueryHandle> execute(String sql, boolean waitForQueryToComplete,
-      String queryName) throws LensAPIException {
-    return executeQuery(sql, waitForQueryToComplete, queryName);
-  }*/
-
-  /**
-   * Execute.
-   *
-   * @param sql       the sql
-   * @param queryName the query name
-   */
-/*  public void execute(String sql, String queryName) throws LensAPIException {
-    executeQuery(sql, true, queryName).getData();
-  }
-*/
-  /**
    * This method can be used for executing a query. If waitForQueryToComplete is false, the call to this method returns
    * immediately after submitting the query to the server without waiting for it to complete execution.
    * <p>
@@ -115,7 +93,6 @@ public class LensStatement {
    * @return the query handle
    */
   public QueryHandle executeQuery(QueryPrepareHandle phandle, boolean waitForQueryToComplete, String queryName) {
-
     QueryHandle handle = submitQuery(phandle, queryName);
 
     if (waitForQueryToComplete) {
@@ -128,13 +105,14 @@ public class LensStatement {
    * This method can be used for executing query. The method waits for timeOutMillis time OR query execution to succeed,
    * which ever happens first, before returning the response to the caller.
    * <p>
-   * If the query execution finishes before timeout time, user can check for failures using
-   * {@link QueryHandleWithResultSet#getStatus()} and access the result via {@link QueryHandleWithResultSet#getResult()}
-   * and {@link QueryHandleWithResultSet#getResultMetadata()}.
+   * If the query execution finishes before timeout, user can check the query Status (SUCCESSFUL/FAILED) using
+   * {@link QueryHandleWithResultSet#getStatus()} and access the result of SUCCESSFUL query via
+   * {@link QueryHandleWithResultSet#getResult()} and {@link QueryHandleWithResultSet#getResultMetadata()}.
    * <p>
-   * If the query does not finish within the timeout time {@link #getStatus(QueryHandle)} can be used to track to track
-   * the query progress and {@link #getQuery(QueryHandle)} can be used to get complete details (including status) about
-   * the query.
+   * If the query does not finish within the timeout, user can use {@link #getStatus(QueryHandle)} to track
+   * the query progress and {@link #getQuery(QueryHandle)} to get complete details (including status) about
+   * the query. Once the query has reached SUCCESSFUL state, user can access the results via
+   * {@link #getResultSet(LensQuery)} and {@link #getResultSetMetaData(LensQuery)}
    *
    * @param sql : query/command to be executed
    * @param queryName : optional query name
@@ -483,7 +461,7 @@ public class LensStatement {
    * Gets the result set meta data for the most recently executed query.
    */
   public QueryResultSetMetadata getResultSetMetaData() {
-    return this.getResultSetMetaData(query);
+    return this.getResultSetMetaData(this.getQuery());
   }
 
   /**
@@ -574,7 +552,7 @@ public class LensStatement {
    * @return true, if successful
    */
   public boolean kill() {
-    return this.kill(query);
+    return this.kill(this.getQuery());
   }
 
   /**

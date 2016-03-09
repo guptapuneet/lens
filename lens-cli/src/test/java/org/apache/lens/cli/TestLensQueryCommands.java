@@ -304,7 +304,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     result = qCom.explainAndPrepare(sql, "");
     assertTrue(result.contains("Explain FAILED:"));
 
-    qCom.getClient().closeConnection();
+    closeClientConnection(qCom);
   }
 
   /**

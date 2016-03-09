@@ -1680,7 +1680,8 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         ctx.setQueryName(pctx.getQueryName());
       }
       ctx.setLensSessionIdentifier(sessionHandle.getPublicId().toString());
-      return submitQuery(ctx);
+      QueryHandle handle = submitQuery(ctx);
+      return handle;
     } finally {
       release(sessionHandle);
     }

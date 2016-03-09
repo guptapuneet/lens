@@ -113,10 +113,8 @@ public class LensStatement {
    * @param waitForQueryToComplete the wait for query to complete
    * @param queryName              the query name
    * @return the query handle
-   * @throws LensAPIException
    */
-  public QueryHandle executeQuery(QueryPrepareHandle phandle, boolean waitForQueryToComplete, String queryName)
-    throws LensAPIException {
+  public QueryHandle executeQuery(QueryPrepareHandle phandle, boolean waitForQueryToComplete, String queryName) {
 
     QueryHandle handle = submitQuery(phandle, queryName);
 
@@ -372,9 +370,9 @@ public class LensStatement {
     Response response = target.request().post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE));
 
     if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-      QueryHandle hanlde = response.readEntity(new GenericType<LensAPIResult<QueryHandle>>() {}).getData();
-      this.query = new ProxyLensQuery(this, hanlde);
-      return hanlde;
+      QueryHandle handle = response.readEntity(new GenericType<LensAPIResult<QueryHandle>>() {}).getData();
+      this.query = new ProxyLensQuery(this, handle);
+      return handle;
     }
 
     throw new LensAPIException(response.readEntity(LensAPIResult.class));
@@ -388,7 +386,7 @@ public class LensStatement {
    * @return the query handle
    * @throws LensAPIException
    */
-  private QueryHandle submitQuery(QueryPrepareHandle phandle, String queryName) throws LensAPIException {
+  private QueryHandle submitQuery(QueryPrepareHandle phandle, String queryName) {
     if (!connection.isOpen()) {
       throw new IllegalStateException("Lens Connection has to be " + "established before querying");
     }
@@ -403,15 +401,11 @@ public class LensStatement {
       : queryName));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), new LensConf(),
       MediaType.APPLICATION_XML_TYPE));
-    Response response = target.request().post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE));
+    QueryHandle handle = target.request()
+        .post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE), QueryHandle.class);
 
-    if (response.getStatus() == Response.Status.OK.getStatusCode()) {
-      QueryHandle hanlde = response.readEntity(new GenericType<LensAPIResult<QueryHandle>>() {}).getData();
-      this.query = new ProxyLensQuery(this, hanlde);
-      return hanlde;
-    }
-
-    throw new LensAPIException(response.readEntity(LensAPIResult.class));
+    this.query = new ProxyLensQuery(this, handle);
+    return handle;
   }
 
   /**

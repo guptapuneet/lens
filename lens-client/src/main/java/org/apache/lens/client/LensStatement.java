@@ -87,7 +87,7 @@ public class LensStatement {
    * {@link #getStatus(QueryHandle)} can be used to track to track the query progress and
    * {@link #getQuery(QueryHandle)} can be used to get complete details (including status) about the query.
    *
-   * @param phandle                the phandle
+   * @param phandle                the prepared query handle
    * @param waitForQueryToComplete the wait for query to complete
    * @param queryName              the query name
    * @return the query handle
@@ -117,7 +117,7 @@ public class LensStatement {
    * @param sql : query/command to be executed
    * @param queryName : optional query name
    * @param timeOutMillis : timeout milliseconds
-   * @return
+   * @return QueryHandleWithResultSet
    * @throws LensAPIException
    */
   public QueryHandleWithResultSet executeQuery(String sql, String queryName, long timeOutMillis)

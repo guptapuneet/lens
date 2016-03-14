@@ -270,7 +270,7 @@ public class TestQueryService extends LensJerseyTest {
     long runningQueries = metricsSvc.getRunningQueries();
     long finishedQueries = metricsSvc.getFinishedQueries();
 
-    int noOfQueries = queryService.allQueries.size();
+    int noOfQueriesBeforeExecution = queryService.allQueries.size();
     QueryHandle handle = executeAndGetHandle(target(), Optional.of(lensSessionId), Optional.of("select ID from "
       + TEST_TABLE), Optional.<LensConf>absent(), mt);
 
@@ -320,7 +320,7 @@ public class TestQueryService extends LensJerseyTest {
 
     assertEquals(query.getPriority(), Priority.LOW);
     //Check Query Priority can be read even after query is purged i,e query details are read from DB.
-    if (queryService.allQueries.size() != (noOfQueries + 1)) {
+    if (queryService.allQueries.size() != (noOfQueriesBeforeExecution + 1)) {
       Thread.sleep(1000);
     }
     assertEquals(query.getPriority(), Priority.LOW);

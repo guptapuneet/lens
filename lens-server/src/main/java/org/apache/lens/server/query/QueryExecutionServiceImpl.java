@@ -1767,6 +1767,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       long timeOutMillis) throws LensException {
     QueryContext ctx = new QueryContext(pctx, userName, conf, qconf);
     ctx.setExecuteTimeoutMillis(timeOutMillis);
+    ctx.getSelectedDriver().decidePriority(ctx);
     return ctx;
   }
 
@@ -2000,7 +2001,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       result.setStatus(queryCtx.getStatus());
       return result;
     }
-
+    ctx.getSelectedDriver().decidePriority(ctx);
     QueryCompletionListenerImpl listener = new QueryCompletionListenerImpl(handle);
     synchronized (queryCtx) {
       if (!queryCtx.getStatus().finished()) {

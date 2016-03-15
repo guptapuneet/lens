@@ -99,8 +99,7 @@ public abstract class AbstractLensDriver implements LensDriver {
 
   @Override
   public Priority decidePriority(QueryContext queryContext) {
-    // no-op by default
-    return null;
+    return Priority.NORMAL;
   }
 
   @Override

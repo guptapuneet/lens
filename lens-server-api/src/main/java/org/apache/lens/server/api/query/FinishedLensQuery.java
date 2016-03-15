@@ -205,7 +205,10 @@ public class FinishedLensQuery {
     if (null != ctx.getSelectedDriver()) {
       this.driverName = ctx.getSelectedDriver().getFullyQualifiedName();
     }
-    this.priority = ctx.getPriority().toString();
+    //Priority can be null in case no driver is fit to execute a query and launch fails.
+    if (null != ctx.getPriority()) {
+      this.priority = ctx.getPriority().toString();
+    }
   }
 
   public QueryContext toQueryContext(Configuration conf, Collection<LensDriver> drivers) {
@@ -227,7 +230,9 @@ public class FinishedLensQuery {
     qctx.getDriverStatus().setDriverFinishTime(getDriverEndTime());
     qctx.setResultSetPath(getResult());
     qctx.setQueryName(getQueryName());
-    qctx.setPriority(Priority.valueOf(getPriority()));
+    if (getPriority() != null) {
+      qctx.setPriority(Priority.valueOf(getPriority()));
+    }
     return qctx;
   }
 

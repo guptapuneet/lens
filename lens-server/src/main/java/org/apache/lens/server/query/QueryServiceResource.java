@@ -511,7 +511,7 @@ public class QueryServiceResource {
    *
    * @param sessionid   The user session handle
    * @param queryHandle The query handle
-   * @return {@link LensQuery}
+   * @return {@link LensQueryDetails}
    */
   @GET
   @Path("queries/{queryHandle}")

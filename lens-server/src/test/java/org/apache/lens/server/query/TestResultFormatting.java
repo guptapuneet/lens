@@ -19,7 +19,6 @@
 package org.apache.lens.server.query;
 
 import static org.apache.lens.server.LensServerTestUtil.*;
-
 import static org.testng.Assert.*;
 
 import java.io.IOException;
@@ -34,6 +33,7 @@ import javax.ws.rs.core.MediaType;
 import org.apache.lens.api.LensConf;
 import org.apache.lens.api.LensSessionHandle;
 import org.apache.lens.api.query.LensQuery;
+import org.apache.lens.api.query.LensQueryDetails;
 import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.QueryStatus;
 import org.apache.lens.api.query.QueryStatus.Status;
@@ -210,11 +210,12 @@ public class TestResultFormatting extends LensJerseyTest {
 
     // Get query
     LensQuery ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(mt)
-      .get(LensQuery.class);
+      .get(LensQueryDetails.class);
     // wait till the query finishes
     QueryStatus stat = ctx.getStatus();
     while (!stat.finished()) {
-      ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(mt).get(LensQuery.class);
+      ctx =
+          target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(mt).get(LensQueryDetails.class);
       stat = ctx.getStatus();
       Thread.sleep(1000);
     }

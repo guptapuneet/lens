@@ -161,16 +161,16 @@ public class QueryServiceUIResource {
    *
    * @param publicId    The public id of session handle
    * @param queryHandle The query handle
-   * @return {@link LensQuery}
+   * @return {@link LensQueryDetails}
    */
   @GET
   @Path("queries/{queryHandle}")
   @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
-  public LensQuery getStatus(@QueryParam("publicId") UUID publicId, @PathParam("queryHandle") String queryHandle) {
+  public LensQueryDetails getStatus(@QueryParam("publicId") UUID publicId, @PathParam("queryHandle") String queryHandle) {
     LensSessionHandle sessionHandle = SessionUIResource.getOpenSession(publicId);
     checkSessionHandle(sessionHandle);
     try {
-      return queryServer.getQuery(sessionHandle, getQueryHandle(queryHandle));
+      return (LensQueryDetails)queryServer.getQuery(sessionHandle, getQueryHandle(queryHandle));
     } catch (LensException e) {
       throw new WebApplicationException(e);
     }

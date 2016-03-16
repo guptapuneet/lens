@@ -179,7 +179,7 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
 
       Assert.assertNotNull(handle);
       LensQuery ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(defaultMT)
-        .get(LensQuery.class);
+        .get(LensQueryDetails.class);
       log.info("{} submitted query {} state: {}", i, handle, ctx.getStatus().getStatus());
       launchedQueries.add(handle);
     }
@@ -196,12 +196,12 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
       log.info("Polling query {}", handle);
       try {
         LensQuery ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(defaultMT)
-          .get(LensQuery.class);
+          .get(LensQueryDetails.class);
         QueryStatus stat = ctx.getStatus();
         while (!stat.finished()) {
           log.info("Polling query {} Status:{}", handle, stat);
           ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(defaultMT)
-            .get(LensQuery.class);
+            .get(LensQueryDetails.class);
           stat = ctx.getStatus();
           Thread.sleep(1000);
         }
@@ -275,11 +275,11 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
 
     // wait for query to move out of QUEUED state
     LensQuery ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(defaultMT)
-        .get(LensQuery.class);
+        .get(LensQueryDetails.class);
     QueryStatus stat = ctx.getStatus();
     while (stat.queued()) {
       ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(defaultMT)
-        .get(LensQuery.class);
+        .get(LensQueryDetails.class);
       stat = ctx.getStatus();
       Thread.sleep(1000);
     }

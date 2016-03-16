@@ -33,6 +33,7 @@ import org.apache.lens.api.APIResult;
 import org.apache.lens.api.LensConf;
 import org.apache.lens.api.LensSessionHandle;
 import org.apache.lens.api.query.LensQuery;
+import org.apache.lens.api.query.LensQueryDetails;
 import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.QueryStatus;
 import org.apache.lens.api.result.LensAPIResult;
@@ -207,7 +208,7 @@ public class TestServerMode extends LensAllApplicationJerseyTest {
       assertNotNull(qhandle);
       // wait for query completion if mode is not read only
       LensQuery ctx = queryTarget.path(qhandle.toString()).queryParam("sessionid", lensSessionId).request()
-        .get(LensQuery.class);
+        .get(LensQueryDetails.class);
       // Assert.assertEquals(ctx.getStatus().getStatus(), QueryStatus.Status.QUEUED);
 
       // wait till the query finishes

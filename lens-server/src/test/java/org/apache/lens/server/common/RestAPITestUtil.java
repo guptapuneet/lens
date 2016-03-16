@@ -235,7 +235,7 @@ public class RestAPITestUtil {
   public static LensQuery getLensQuery(final WebTarget target, final LensSessionHandle lensSessionHandle,
     final QueryHandle handle, MediaType mt) {
     return target.path("queryapi/queries").path(handle.toString()).queryParam("sessionid", lensSessionHandle)
-      .request(mt).get(LensQuery.class);
+      .request(mt).get(LensQueryDetails.class);
   }
 
   public static String getLensQueryResultAsString(final WebTarget target, final LensSessionHandle lensSessionHandle,

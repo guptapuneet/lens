@@ -291,13 +291,14 @@ public class TestQueryService extends LensJerseyTest {
     assertEquals(response.getStatus(), 404);
 
     LensQuery ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(mt)
-      .get(LensQuery.class);
+      .get(LensQueryDetails.class);
 
     // wait till the query finishes
     QueryStatus stat = ctx.getStatus();
     while (!stat.finished()) {
       Thread.sleep(1000);
-      ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(mt).get(LensQuery.class);
+      ctx =
+          target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(mt).get(LensQueryDetails.class);
       stat = ctx.getStatus();
       /*
       Commented due to same issue as: https://issues.apache.org/jira/browse/LENS-683
@@ -638,7 +639,7 @@ public class TestQueryService extends LensJerseyTest {
 
     // Get query
     LensQuery lensQuery = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(mt)
-      .get(LensQuery.class);
+      .get(LensQueryDetails.class);
     assertTrue(lensQuery.getStatus().getStatus().equals(Status.QUEUED)
       || lensQuery.getStatus().getStatus().equals(Status.LAUNCHED)
       || lensQuery.getStatus().getStatus().equals(Status.RUNNING)
@@ -647,7 +648,7 @@ public class TestQueryService extends LensJerseyTest {
     // wait till the query finishes
     QueryStatus stat = lensQuery.getStatus();
     while (!stat.finished()) {
-      lensQuery = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(mt).get(LensQuery
+      lensQuery = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(mt).get(LensQueryDetails
         .class);
       stat = lensQuery.getStatus();
       /* Commented and jira ticket raised for correction: https://issues.apache.org/jira/browse/LENS-683
@@ -685,7 +686,7 @@ public class TestQueryService extends LensJerseyTest {
       .delete(APIResult.class);
     // cancel would fail query is already successful
     LensQuery ctx2 = target.path(handle2.toString()).queryParam("sessionid", lensSessionId).request(mt)
-      .get(LensQuery.class);
+      .get(LensQueryDetails.class);
     if (result.getStatus().equals(APIResult.Status.FAILED)) {
       assertEquals(ctx2.getStatus().getStatus(), QueryStatus.Status.SUCCESSFUL,
         "cancel failed without query having been succeeded");

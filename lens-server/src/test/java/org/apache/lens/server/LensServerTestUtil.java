@@ -33,13 +33,13 @@ import javax.ws.rs.core.MediaType;
 import org.apache.lens.api.LensConf;
 import org.apache.lens.api.LensSessionHandle;
 import org.apache.lens.api.query.LensQuery;
+import org.apache.lens.api.query.LensQueryDetails;
 import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.QueryStatus;
 import org.apache.lens.api.result.LensAPIResult;
 import org.apache.lens.server.api.LensConfConstants;
 
 import org.apache.commons.io.FileUtils;
-
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.Database;
@@ -97,11 +97,11 @@ public final class LensServerTestUtil {
             new GenericType<LensAPIResult<QueryHandle>>() {}).getData();
     // wait till the query finishes
     LensQuery ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(mt)
-      .get(LensQuery.class);
+      .get(LensQueryDetails.class);
     QueryStatus stat = ctx.getStatus();
     while (!stat.finished()) {
       ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(mt)
-        .get(LensQuery.class);
+        .get(LensQueryDetails.class);
       stat = ctx.getStatus();
       Thread.sleep(1000);
     }
@@ -140,11 +140,11 @@ public final class LensServerTestUtil {
 
     // wait till the query finishes
     LensQuery ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(mt)
-        .get(LensQuery.class);
+        .get(LensQueryDetails.class);
     QueryStatus stat = ctx.getStatus();
     while (!stat.finished()) {
       ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(mt)
-        .get(LensQuery.class);
+        .get(LensQueryDetails.class);
       stat = ctx.getStatus();
       Thread.sleep(1000);
     }

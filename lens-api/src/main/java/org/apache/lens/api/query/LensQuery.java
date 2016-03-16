@@ -16,211 +16,127 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/*
- *
- */
 package org.apache.lens.api.query;
 
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
 
 import org.apache.lens.api.LensConf;
 import org.apache.lens.api.Priority;
-import org.apache.lens.api.ToYAMLString;
 
-import lombok.*;
-
-/**
- * The Class LensQuery.
- */
-@XmlRootElement
-/**
- * Instantiates a new lens query.
- *
- * @param queryHandle
- *          the query handle
- * @param userQuery
- *          the user query
- * @param submittedUser
- *          the submitted user
- * @param priority
- *          the priority
- * @param isPersistent
- *          the is persistent
- * @param selectedDriverName
- *          the selected driver class name
- * @param driverQuery
- *          the driver query
- * @param status
- *          the status
- * @param resultSetPath
- *          the result set path
- * @param driverOpHandle
- *          the driver op handle
- * @param queryConf
- *          the query conf
- * @param submissionTime
- *          the submission time
- * @param launchTime
- *          the launch time
- * @param driverStartTime
- *          the driver start time
- * @param driverFinishTime
- *          the driver finish time
- * @param finishTime
- *          the finish time
- * @param closedTime
- *          the closed time
- * @param queryName
- *          the query name
- */
-@AllArgsConstructor
-/**
- * Instantiates a new lens query.
- */
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@EqualsAndHashCode(of = "queryHandle", callSuper = false)
-public class LensQuery extends ToYAMLString {
+ /**
+  * Interface to provide all details about a query
+  */
+public interface LensQuery {
 
   /**
-   * The query handle.
+   * @return query handle
    */
-  @XmlElement
-  @Getter
-  private QueryHandle queryHandle;
+  QueryHandle getQueryHandle();
 
   /**
-   * The user query.
+   * @return query name
    */
-  @XmlElement
-  @Getter
-  private String userQuery;
+  String getQueryName();
 
   /**
-   * The submitted user.
+   * @return the query submitted by the user
    */
-  @XmlElement
-  @Getter
-  private String submittedUser;
+  String getUserQuery();
 
   /**
-   * The priority.
+   * @return user who submitted the query
    */
-  @XmlElement
-  @Getter
-  private Priority priority;
+  String getSubmittedUser();
 
   /**
-   * The is persistent.
+   * @return Priority of the query
    */
-  @XmlElement
-  @Getter
-  private boolean isPersistent;
+  Priority getPriority();
 
   /**
-   * The selected driver class name.
+   * @return true if query's result would be persisted by server.
    */
-  @XmlElement
-  @Getter
-  private String selectedDriverName;
+  boolean isPersistent();
 
   /**
-   * The driver query.
+   * @return driver which executed the query (Example: hive, jdbc, elastic-search, etc)
    */
-  @XmlElement
-  @Getter
-  private String driverQuery;
+  String getSelectedDriverName();
 
   /**
-   * The status.
+   * @return the final query (derived form user query) that was submitted by the driver for execution.
    */
-  @XmlElement
-  @Getter
-  private QueryStatus status;
+  String getDriverQuery();
 
   /**
-   * The result set path.
+   * @return the status of this query.
+   *
+   * The {@link QueryStatus#getStatus()} method can be used to get the {@link QueryStatus.Status} enum that defines
+   * the current state of the query. Also other utility methods are available to check the status of the query like
+   * {@link QueryStatus#queued()}, {@link QueryStatus#successful()}, {@link QueryStatus#finished()},
+   * {@link QueryStatus#failed()} and {@link QueryStatus#running()}
    */
-  @XmlElement
-  @Getter
-  private String resultSetPath;
+  QueryStatus getStatus();
 
   /**
-   * The driver op handle.
+   * @return result path for this query if the query output was persisted by the server
    */
-  @XmlElement
-  @Getter
-  private String driverOpHandle;
+  String getResultSetPath();
 
   /**
-   * The query conf.
+   * @return operation handle associated with the driver, if any.
    */
-  @XmlElement
-  @Getter
-  private LensConf queryConf;
+  String getDriverOpHandle();
 
   /**
-   * The submission time.
+   * @return the conf that was used for executing this query
    */
-  @XmlElement
-  @Getter
-  private long submissionTime;
+  LensConf getQueryConf();
 
   /**
-   * The launch time.
+   * @return query submission time
    */
-  @XmlElement
-  @Getter
-  private long launchTime;
+  long getSubmissionTime();
 
   /**
-   * The driver start time.
+   * @return query launch time. This will be submission time + time spent by query waiting in the queue
    */
-  @XmlElement
-  @Getter
-  private long driverStartTime;
+  long getLaunchTime();
 
   /**
-   * The driver finish time.
+   * @return the query execution start time on driver. This will >= launch time.
    */
-  @XmlElement
-  @Getter
-  private long driverFinishTime;
+  long getDriverStartTime();
 
   /**
-   * The finish time.
+   * @return the query execution end time on driver
    */
-  @XmlElement
-  @Getter
-  private long finishTime;
+  long getDriverFinishTime();
 
   /**
-   * The closed time.
+   * @return the query finish time on server. This will be driver finish time + any extra time spent by server (like
+   * formatting the result)
    */
-  @XmlElement
-  @Getter
-  private long closedTime;
+  long getFinishTime();
 
   /**
-   * The query name.
+   * @return the query close time when the query is purged by the server and no more operations are pending for it.
+   * Note: not supported as of now.
    */
-  @XmlElement
-  @Getter
-  private String queryName;
+  long getClosedTime();
 
-  public Integer getErrorCode() {
-    return (this.status != null) ? this.status.getErrorCode() : null;
-  }
+  /**
+   * @return error code in case of query failures
+   */
+  Integer getErrorCode();
 
-  public String getErrorMessage() {
-    return (this.status != null) ? this.status.getLensErrorTOErrorMsg() : null;
-  }
+  /**
+   * @return error message in case of query failures
+   */
+  String getErrorMessage();
 
-  public String getQueryHandleString() {
-    return (this.queryHandle != null) ? this.queryHandle.getHandleIdString() : null;
-  }
 
-  public boolean queued() {
-    return this.status.queued();
-  }
+  /**
+   * @return the query handle that represents the query uniquely
+   */
+  String getQueryHandleString();
 }

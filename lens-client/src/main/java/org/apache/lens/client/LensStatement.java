@@ -32,8 +32,8 @@ import org.apache.lens.api.LensConf;
 import org.apache.lens.api.query.*;
 import org.apache.lens.api.query.QueryStatus.Status;
 import org.apache.lens.api.result.LensAPIResult;
+import org.apache.lens.cleint.util.ProxyLensQuery;
 import org.apache.lens.client.exceptions.LensAPIException;
-import org.apache.lens.client.model.ProxyLensQuery;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -145,7 +145,7 @@ public class LensStatement {
     if (response.getStatus() == Response.Status.OK.getStatusCode()) {
       QueryHandleWithResultSet result =
           response.readEntity(new GenericType<LensAPIResult<QueryHandleWithResultSet>>() {}).getData();
-      this.query = new ProxyLensQuery(this, result.getQueryHandle());
+      this.query = ProxyLensQuery.createProxy(this, result.getQueryHandle());
       return result;
     }
 
@@ -236,7 +236,7 @@ public class LensStatement {
   public void waitForQueryToComplete(QueryHandle handle) {
     LensClient.getCliLogger().info("Query handle: {}", handle);
     LensQuery queryDetails = getQuery(handle);
-    while (queryDetails.queued()) {
+    while (queryDetails.getStatus().queued()) {
       queryDetails = getQuery(handle);
       LensClient.getCliLogger().debug("Query {} status: {}", handle, queryDetails.getStatus());
       try {
@@ -296,7 +296,7 @@ public class LensStatement {
       Client client = connection.buildClient();
       WebTarget target = getQueryWebTarget(client);
       return target.path(handle.toString()).queryParam("sessionid", connection.getSessionHandle()).request()
-        .get(LensQuery.class);
+        .get(LensQueryDetails.class);
     } catch (Exception e) {
       log.error("Failed to get query status, cause:", e);
       throw new IllegalStateException("Failed to get query status, cause:" + e.getMessage());
@@ -349,7 +349,7 @@ public class LensStatement {
 
     if (response.getStatus() == Response.Status.OK.getStatusCode()) {
       QueryHandle handle = response.readEntity(new GenericType<LensAPIResult<QueryHandle>>() {}).getData();
-      this.query = new ProxyLensQuery(this, handle);
+      this.query = ProxyLensQuery.createProxy(this, handle);
       return handle;
     }
 
@@ -382,7 +382,7 @@ public class LensStatement {
     QueryHandle handle = target.request()
         .post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE), QueryHandle.class);
 
-    this.query = new ProxyLensQuery(this, handle);
+    this.query = ProxyLensQuery.createProxy(this, handle);
     return handle;
   }
 

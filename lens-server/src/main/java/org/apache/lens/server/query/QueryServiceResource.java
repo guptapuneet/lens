@@ -516,11 +516,11 @@ public class QueryServiceResource {
   @GET
   @Path("queries/{queryHandle}")
   @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
-  public LensQuery getStatus(@QueryParam("sessionid") LensSessionHandle sessionid,
+  public LensQueryDetails getStatus(@QueryParam("sessionid") LensSessionHandle sessionid,
     @PathParam("queryHandle") String queryHandle) {
     checkSessionId(sessionid);
     try {
-      return queryServer.getQuery(sessionid, getQueryHandle(queryHandle));
+      return (LensQueryDetails)queryServer.getQuery(sessionid, getQueryHandle(queryHandle));
     } catch (LensException e) {
       throw new WebApplicationException(e);
     }

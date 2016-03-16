@@ -29,9 +29,7 @@ import java.util.UUID;
 
 import org.apache.lens.api.LensConf;
 import org.apache.lens.api.Priority;
-import org.apache.lens.api.query.LensQuery;
-import org.apache.lens.api.query.QueryHandle;
-import org.apache.lens.api.query.QueryStatus;
+import org.apache.lens.api.query.*;
 import org.apache.lens.api.query.QueryStatus.Status;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.driver.DriverQueryStatus;
@@ -332,7 +330,7 @@ public class QueryContext extends AbstractQueryContext {
    * @return the lens query
    */
   public LensQuery toLensQuery() {
-    return new LensQuery(queryHandle, userQuery, super.getSubmittedUser(), priority, isPersistent,
+    return new LensQueryDetails(queryHandle, userQuery, super.getSubmittedUser(), priority, isPersistent,
       getSelectedDriver() != null ? getSelectedDriver().getFullyQualifiedName() : null,
       getSelectedDriverQuery(),
       status,

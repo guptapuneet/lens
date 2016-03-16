@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.util.*;
 
@@ -32,16 +31,17 @@ import javax.ws.rs.BadRequestException;
 import javax.xml.datatype.DatatypeFactory;
 
 import org.apache.lens.api.APIResult;
+import org.apache.lens.api.ToYAMLString;
 import org.apache.lens.api.metastore.*;
 import org.apache.lens.api.query.LensQuery;
 import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.QueryStatus;
+import org.apache.lens.cleint.util.ProxyLensQuery;
 import org.apache.lens.cli.commands.LensCubeCommands;
 import org.apache.lens.cli.commands.LensDimensionTableCommands;
 import org.apache.lens.cli.commands.LensQueryCommands;
 import org.apache.lens.cli.config.LensCliConfigConstants;
 import org.apache.lens.client.LensClient;
-import org.apache.lens.client.model.ProxyLensQuery;
 import org.apache.lens.driver.hive.TestHiveDriver;
 import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.query.TestQueryService.DeferredInMemoryResultFormatter;
@@ -542,37 +542,22 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
     LensClient client = new LensClient();
     QueryHandle handle = client.executeQueryAsynch("cube select id,name from test_dim", "proxyTestQuery");
     client.getStatement().waitForQueryToComplete(handle);
-    LensQuery query = client.getQueryDetails(handle);
-    ProxyLensQuery proxyQuery = new ProxyLensQuery(client.getStatement(), handle);
-    Assert.assertEquals(query.getStatus().successful(), proxyQuery.getStatus().successful());
-    Assert.assertEquals(query.getSubmissionTime(), proxyQuery.getSubmissionTime());
-    Assert.assertEquals(query.getFinishTime(), proxyQuery.getFinishTime());
 
-    //Check is any new getters are added to LensQuery. If yes, ProxyLensQuery should be updated too
-    StringBuffer b1 = new StringBuffer();
-    int getMethodCountInLensQuery = 0;
-    for (Method m :LensQuery.class.getDeclaredMethods()) {
-      if (Modifier.isPublic(m.getModifiers()) && !m.getName().startsWith("hash") && !m.getName().startsWith("equals")) {
-        b1.append(m.getName());
-        b1.append(", ");
-        getMethodCountInLensQuery++;
+    LensQuery proxyQuery = ProxyLensQuery.createProxy(client.getStatement(), handle);
+    LensQuery query = client.getQueryDetails(handle);
+    for (Method method : LensQuery.class.getDeclaredMethods()) {
+      Object result = method.invoke(query, null);
+      Object proxyResult = method.invoke(proxyQuery, null);
+      if (result instanceof ToYAMLString) {
+        Assert.assertEquals(((ToYAMLString)result).toString(), ((ToYAMLString)proxyResult).toString(),
+            "Comparison failed for method " + method.getName());
+      } else {
+        Assert.assertEquals(result, proxyResult, "Comparison failed for method " + method.getName());
       }
     }
-    int getMethodCountInProxyLensQuery = 0;
-    StringBuffer b2 = new StringBuffer();
-    for (Method m :ProxyLensQuery.class.getDeclaredMethods()) {
-      if (Modifier.isPublic(m.getModifiers())) {
-        b2.append(m.getName());
-        b2.append(", ");
-        getMethodCountInProxyLensQuery++;
-      }
-    }
-    assertEquals(getMethodCountInLensQuery, getMethodCountInProxyLensQuery,
-        "Methods in LensQuery and ProxyLensQuery do not match. LensQuery methods: " + b1.toString()
-            + " ProxyLensQuery methods :" + b2.toString());
 
     //Check equals and hashCode override
-    ProxyLensQuery proxyQuery2 = new ProxyLensQuery(client.getStatement(), handle);
+    LensQuery proxyQuery2 = ProxyLensQuery.createProxy(client.getStatement(), handle);
     Assert.assertEquals(proxyQuery, proxyQuery2);
     Assert.assertEquals(proxyQuery, query);
     Assert.assertEquals(proxyQuery.hashCode(), proxyQuery2.hashCode());

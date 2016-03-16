@@ -210,11 +210,11 @@ public final class LensServerTestUtil {
 
     // wait till the query finishes
     LensQuery ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(mt)
-      .get(LensQuery.class);
+      .get(LensQueryDetails.class);
     QueryStatus stat = ctx.getStatus();
     while (!stat.finished()) {
       ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(mt)
-        .get(LensQuery.class);
+        .get(LensQueryDetails.class);
       stat = ctx.getStatus();
       Thread.sleep(1000);
     }

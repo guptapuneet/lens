@@ -314,12 +314,12 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
 
     // Poll for first query, we should not get any exception
     ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(defaultMT)
-      .get(LensQuery.class);
+      .get(LensQueryDetails.class);
     stat = ctx.getStatus();
     while (!stat.finished()) {
       log.info("Polling query {} Status:{}", handle, stat);
       ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(defaultMT)
-        .get(LensQuery.class);
+        .get(LensQueryDetails.class);
       stat = ctx.getStatus();
       Thread.sleep(1000);
     }
@@ -341,12 +341,12 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     handle = response.readEntity(new GenericType<LensAPIResult<QueryHandle>>() {}).getData();
 
     // Poll for second query, this should finish successfully
-    ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(defaultMT).get(LensQuery.class);
+    ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(defaultMT).get(LensQueryDetails.class);
     stat = ctx.getStatus();
     while (!stat.finished()) {
       log.info("Post restart polling query {} Status:{}", handle, stat);
       ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(defaultMT)
-        .get(LensQuery.class);
+        .get(LensQueryDetails.class);
       stat = ctx.getStatus();
       Thread.sleep(1000);
     }

@@ -36,6 +36,7 @@ import javax.ws.rs.core.MediaType;
 import org.apache.lens.api.LensConf;
 import org.apache.lens.api.LensSessionHandle;
 import org.apache.lens.api.query.LensQuery;
+import org.apache.lens.api.query.LensQueryDetails;
 import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.QueryStatus;
 import org.apache.lens.api.result.LensAPIResult;
@@ -649,11 +650,11 @@ public class LensMLImpl implements LensML {
           new GenericType<LensAPIResult<QueryHandle>>() {}).getData();
 
       LensQuery ctx = target.path(handle.toString()).queryParam("sessionid", sessionHandle).request()
-        .get(LensQuery.class);
+        .get(LensQueryDetails.class);
 
       QueryStatus stat = ctx.getStatus();
       while (!stat.finished()) {
-        ctx = target.path(handle.toString()).queryParam("sessionid", sessionHandle).request().get(LensQuery.class);
+        ctx = target.path(handle.toString()).queryParam("sessionid", sessionHandle).request().get(LensQueryDetails.class);
         stat = ctx.getStatus();
         try {
           Thread.sleep(500);

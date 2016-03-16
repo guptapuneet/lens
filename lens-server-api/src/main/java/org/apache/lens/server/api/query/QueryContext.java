@@ -73,13 +73,6 @@ public class QueryContext extends AbstractQueryContext {
   private QueryHandle queryHandle;
 
   /**
-   * The priority.
-   */
-  @Getter
-  @Setter
-  private Priority priority;
-
-  /**
    * The is persistent.
    */
   @Getter
@@ -333,7 +326,7 @@ public class QueryContext extends AbstractQueryContext {
    * @return the lens query
    */
   public LensQuery toLensQuery() {
-    return new LensQuery(queryHandle, userQuery, super.getSubmittedUser(), priority, isPersistent,
+    return new LensQuery(queryHandle, userQuery, super.getSubmittedUser(), getPriority(), isPersistent,
       getSelectedDriver() != null ? getSelectedDriver().getFullyQualifiedName() : null,
       getSelectedDriverQuery(),
       status,
@@ -457,21 +450,6 @@ public class QueryContext extends AbstractQueryContext {
 
   public ImmutableSet<WaitingQueriesSelectionPolicy> getSelectedDriverSelectionPolicies() {
     return getSelectedDriver().getWaitingQuerySelectionPolicies();
-  }
-
-  public Priority decidePriority(LensDriver driver, QueryPriorityDecider queryPriorityDecider) throws LensException {
-    // On-demand re-computation of cost, in case it's not alredy set by a previous estimate call.
-    // In driver test cases, estimate doesn't happen. Hence this code path ensures cost is computed and
-    // priority is set based on correct cost.
-    calculateCost(driver);
-    priority = queryPriorityDecider.decidePriority(getDriverQueryCost(driver));
-    return priority;
-  }
-
-  private void calculateCost(LensDriver driver) throws LensException {
-    if (getDriverQueryCost(driver) == null) {
-      setDriverCost(driver, driver.estimate(this));
-    }
   }
 
   public synchronized void registerDriverResult(LensResultSet result) throws LensException {

@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.lens.api.LensConf;
-import org.apache.lens.api.Priority;
 import org.apache.lens.api.query.LensQuery;
 import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.api.query.QueryStatus;
@@ -42,7 +41,6 @@ import org.apache.lens.server.api.driver.PartiallyFetchedInMemoryResultSet;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.query.collect.WaitingQueriesSelectionPolicy;
 import org.apache.lens.server.api.query.constraint.QueryLaunchingConstraint;
-import org.apache.lens.server.api.query.priority.QueryPriorityDecider;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;

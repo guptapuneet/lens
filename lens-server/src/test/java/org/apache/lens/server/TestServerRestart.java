@@ -341,7 +341,8 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     handle = response.readEntity(new GenericType<LensAPIResult<QueryHandle>>() {}).getData();
 
     // Poll for second query, this should finish successfully
-    ctx = target.path(handle.toString()).queryParam("sessionid", lensSessionId).request(defaultMT).get(LensQueryDetails.class);
+    ctx = target.path(handle.toString()).queryParam("sessionid",
+        lensSessionId).request(defaultMT).get(LensQueryDetails.class);
     stat = ctx.getStatus();
     while (!stat.finished()) {
       log.info("Post restart polling query {} Status:{}", handle, stat);

@@ -19,6 +19,7 @@
 package org.apache.lens.server.query;
 
 import static org.apache.lens.server.LensServerTestUtil.*;
+
 import static org.testng.Assert.*;
 
 import java.io.IOException;

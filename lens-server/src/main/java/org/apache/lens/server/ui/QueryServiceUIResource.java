@@ -166,7 +166,8 @@ public class QueryServiceUIResource {
   @GET
   @Path("queries/{queryHandle}")
   @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
-  public LensQueryDetails getStatus(@QueryParam("publicId") UUID publicId, @PathParam("queryHandle") String queryHandle) {
+  public LensQueryDetails getStatus(@QueryParam("publicId") UUID publicId,
+      @PathParam("queryHandle") String queryHandle) {
     LensSessionHandle sessionHandle = SessionUIResource.getOpenSession(publicId);
     checkSessionHandle(sessionHandle);
     try {

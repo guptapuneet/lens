@@ -535,7 +535,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       } else {
         this.finishTime = new Date(ctx.getEndTime());
       }
-      if (ctx.successful() && ctx.isResultAvailableInDriver()) {
+      if (ctx.isResultAvailableInDriver()) {
         try {
           driverRS = ctx.getSelectedDriver().fetchResultSet(getCtx());
         } catch (Exception e) {

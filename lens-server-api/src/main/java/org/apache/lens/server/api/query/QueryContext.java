@@ -333,12 +333,7 @@ public class QueryContext extends AbstractQueryContext {
   }
 
   public boolean isResultAvailableInDriver() {
-    // result is available in driver if driverStatus.isResultSetAvailable() - will be true for fetching inmemory
-    // result set.
-    // if result is persisted in driver driverStatus.isResultSetAvailable() will be false
-    // so, for select queries, if result is persisted in driver, we return true sothat the result can be fetched thru
-    // persistent resultset
-    return isDriverPersistent() || driverStatus.isResultSetAvailable();
+    return driverStatus.isSuccessful() && (isDriverPersistent() || driverStatus.isResultSetAvailable());
   }
 
   /**

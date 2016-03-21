@@ -549,7 +549,7 @@ public class TestLensQueryCommands extends LensCliApplicationTest {
       Object result = method.invoke(query, null);
       Object proxyResult = method.invoke(proxyQuery, null);
       if (result instanceof ToYAMLString) {
-        Assert.assertEquals(((ToYAMLString)result).toString(), ((ToYAMLString)proxyResult).toString(),
+        Assert.assertEquals(result.toString(), proxyResult.toString(),
             "Comparison failed for method " + method.getName());
       } else {
         Assert.assertEquals(result, proxyResult, "Comparison failed for method " + method.getName());

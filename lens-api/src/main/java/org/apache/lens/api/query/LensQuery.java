@@ -79,7 +79,7 @@ import lombok.*;
  * Instantiates a new lens query.
  */
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@EqualsAndHashCode
+@EqualsAndHashCode(of = "queryHandle", callSuper = false)
 public class LensQuery extends ToYAMLString {
 
   /**
@@ -218,9 +218,5 @@ public class LensQuery extends ToYAMLString {
 
   public String getQueryHandleString() {
     return (this.queryHandle != null) ? this.queryHandle.getHandleIdString() : null;
-  }
-
-  public boolean queued() {
-    return this.status.queued();
   }
 }

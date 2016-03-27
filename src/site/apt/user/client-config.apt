@@ -30,7 +30,7 @@ Lens client configuration
 *--+--+---+--+
 |3|lens.client.dbname|default|Default lens database|
 *--+--+---+--+
-|4|lens.client.query.poll.interval|10|Interval at which query progress will be polled. Interval has to be given in milliseconds|
+|4|lens.client.query.poll.interval|10000|Interval at which query progress will be polled. Interval has to be given in milliseconds|
 *--+--+---+--+
 |5|lens.client.requestfilter.ws.filter.impl|org.apache.lens.client.RequestFilter|Implementation class for Request Filter|
 *--+--+---+--+

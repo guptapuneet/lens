@@ -34,6 +34,46 @@ import lombok.*;
  * This class provides all the details about the query represented by the {@link LensQuery#queryHandle}
  */
 @XmlRootElement
+/**
+ * Instantiates a new lens query.
+ *
+ * @param queryHandle
+ *          the query handle
+ * @param userQuery
+ *          the user query
+ * @param submittedUser
+ *          the submitted user
+ * @param priority
+ *          the priority
+ * @param isPersistent
+ *          the is persistent
+ * @param selectedDriverName
+ *          the selected driver class name
+ * @param driverQuery
+ *          the driver query
+ * @param status
+ *          the status
+ * @param resultSetPath
+ *          the result set path
+ * @param driverOpHandle
+ *          the driver op handle
+ * @param queryConf
+ *          the query conf
+ * @param submissionTime
+ *          the submission time
+ * @param launchTime
+ *          the launch time
+ * @param driverStartTime
+ *          the driver start time
+ * @param driverFinishTime
+ *          the driver finish time
+ * @param finishTime
+ *          the finish time
+ * @param closedTime
+ *          the closed time
+ * @param queryName
+ *          the query name
+ */
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @EqualsAndHashCode(of = "queryHandle", callSuper = false)

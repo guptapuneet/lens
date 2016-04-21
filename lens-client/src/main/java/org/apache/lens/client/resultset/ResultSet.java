@@ -19,7 +19,6 @@
 
 package org.apache.lens.client.resultset;
 
-
 import java.nio.charset.Charset;
 
 import org.apache.lens.client.exceptions.LensClientIOException;

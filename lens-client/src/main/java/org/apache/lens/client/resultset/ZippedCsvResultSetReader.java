@@ -24,9 +24,6 @@ import java.nio.charset.Charset;
 
 import org.apache.lens.client.exceptions.LensClientIOException;
 
-/**
- * Created by puneet.gupta on 4/21/16.
- */
 public class ZippedCsvResultSetReader extends ZippedResultSetReader {
   public ZippedCsvResultSetReader(InputStream inStream, Charset encoding, char delimiter, boolean isHeaderRowPresent)
     throws LensClientIOException {

@@ -234,9 +234,6 @@ public class TestLensClient extends LensAllApplicationJerseyTest {
   }
 
   private void compare(String[] actualArr, String[] expectedArr) {
-    assertEquals(actualArr.length, expectedArr.length);
-    for (int i = 0; i < actualArr.length; i++) {
-      assertEquals(actualArr[i], expectedArr[i]);
-    }
+    assertTrue(Arrays.equals(actualArr,expectedArr));
   }
 }

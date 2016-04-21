@@ -89,7 +89,7 @@ public abstract class AbstractResultSet implements ResultSet {
   }
 
   /**
-   * Called when last row form the result set is read. Implementers should release all resources
+   * Called after the last row form the result set is read.
    */
   protected void close() throws LensClientIOException {
     log.info("Total rows from resultset : " + totalRowsRead);

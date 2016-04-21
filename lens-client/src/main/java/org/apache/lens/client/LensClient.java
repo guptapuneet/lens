@@ -18,6 +18,8 @@
  */
 package org.apache.lens.client;
 
+import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -31,9 +33,13 @@ import org.apache.lens.api.result.LensAPIResult;
 import org.apache.lens.api.util.PathValidator;
 import org.apache.lens.client.exceptions.LensAPIException;
 import org.apache.lens.client.exceptions.LensBriefErrorException;
+import org.apache.lens.client.exceptions.LensClientIOException;
 import org.apache.lens.client.model.BriefError;
 import org.apache.lens.client.model.IdBriefErrorTemplate;
 import org.apache.lens.client.model.IdBriefErrorTemplateKey;
+import org.apache.lens.client.resultset.CsvResultSet;
+import org.apache.lens.client.resultset.ResultSet;
+import org.apache.lens.client.resultset.ZippedCsvResultSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -210,6 +216,28 @@ public class LensClient {
 
   public Response getHttpResults(QueryHandle q) {
     return statement.getHttpResultSet(statement.getQuery(q));
+  }
+
+  public ResultSet getZippedCsvResultSet(QueryHandle q) throws LensClientIOException {
+    return getZippedCsvResultSet(q, ResultSet.DEFAULT_ENCODING, true, ResultSet.DEFAULT_DELEIMITER);
+  }
+
+  public ResultSet getZippedCsvResultSet(QueryHandle q, Charset encoding, boolean isHeaderPresent,
+    char delimiter) throws LensClientIOException {
+    Response response = statement.getHttpResultSet(statement.getQuery(q));
+    InputStream resultStream = response.readEntity(InputStream.class);
+    return new ZippedCsvResultSet(resultStream, encoding, isHeaderPresent, delimiter);
+  }
+
+  public ResultSet getCsvResultSet(QueryHandle q) throws LensClientIOException {
+    return getCsvResultSet(q, ResultSet.DEFAULT_ENCODING, true, ResultSet.DEFAULT_DELEIMITER);
+  }
+
+  public ResultSet getCsvResultSet(QueryHandle q, Charset encoding, boolean isHeaderPresent, char delimiter)
+    throws LensClientIOException {
+    Response response = statement.getHttpResultSet(statement.getQuery(q));
+    InputStream resultStream = response.readEntity(InputStream.class);
+    return new CsvResultSet(resultStream, encoding, isHeaderPresent, delimiter);
   }
 
   public LensStatement getLensStatement(QueryHandle query) {

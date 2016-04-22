@@ -18,12 +18,12 @@
  */
 package org.apache.lens.server.api.user;
 
-import org.apache.lens.server.api.driver.DriverQueryHook;
+import org.apache.lens.server.api.driver.NoOpDriverQueryHook;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.query.AbstractQueryContext;
 import org.apache.lens.server.api.query.QueryContext;
 
-public class MockDriverQueryHook implements DriverQueryHook {
+public class MockDriverQueryHook extends NoOpDriverQueryHook {
   public static final String KEY_PRE_LAUNCH = "TEST_KEY_PRE_LAUNCH";
   public static final String VALUE_PRE_LAUNCH = "TEST_VALUE_PRE_LAUNCH";
 
@@ -32,11 +32,13 @@ public class MockDriverQueryHook implements DriverQueryHook {
 
   @Override
   public void preLaunch(QueryContext ctx) {
+    super.preLaunch(ctx);
     ctx.getSelectedDriverConf().set(KEY_PRE_LAUNCH, VALUE_PRE_LAUNCH);
   }
 
   @Override
   public void postSelect(AbstractQueryContext ctx) throws LensException {
+    super.postSelect(ctx);
     ctx.getSelectedDriverConf().set(KEY_POST_SELECT, VALUE_POST_SELECT);
   }
 }

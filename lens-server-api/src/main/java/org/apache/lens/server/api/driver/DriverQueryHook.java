@@ -21,8 +21,6 @@
  */
 package org.apache.lens.server.api.driver;
 
-import java.util.Map;
-
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.query.AbstractQueryContext;
 import org.apache.lens.server.api.query.QueryContext;

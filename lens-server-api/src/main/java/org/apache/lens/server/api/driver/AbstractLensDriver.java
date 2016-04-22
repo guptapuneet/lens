@@ -47,7 +47,7 @@ public abstract class AbstractLensDriver implements LensDriver {
   @Getter
   private String fullyQualifiedName = null;
 
-  private DriverQueryHook NO_OP_DRIVER_HOOK = new NoOpDriverQueryHook();
+  private DriverQueryHook noOpDriverQueryHook = new NoOpDriverQueryHook();
 
   @Override
   public void configure(Configuration conf, String driverType, String driverName) throws LensException {
@@ -106,7 +106,7 @@ public abstract class AbstractLensDriver implements LensDriver {
 
   @Override
   public DriverQueryHook getDriverHook() {
-    return NO_OP_DRIVER_HOOK;
+    return noOpDriverQueryHook;
   }
 
   @Override

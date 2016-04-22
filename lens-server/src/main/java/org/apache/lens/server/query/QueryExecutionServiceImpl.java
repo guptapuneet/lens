@@ -732,6 +732,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     private void launchQuery(final QueryContext query) throws LensException {
 
       checkEstimatedQueriesState(query);
+      query.getSelectedDriver().getDriverHook().preLaunch(query);
       QueryStatus oldStatus = query.getStatus();
       QueryStatus newStatus = new QueryStatus(query.getStatus().getProgress(), null,
         QueryStatus.Status.LAUNCHED, "Query is launched on driver", false, null, null, null);
@@ -1429,6 +1430,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       QueryCost selectedDriverQueryCost = ctx.getDriverContext().getDriverQueryCost(driver);
       ctx.setSelectedDriverQueryCost(selectedDriverQueryCost);
       driver.decidePriority(ctx);
+      driver.getDriverHook().postSelect(ctx);
       selectGauge.markSuccess();
     } finally {
       parallelCallGauge.markSuccess();

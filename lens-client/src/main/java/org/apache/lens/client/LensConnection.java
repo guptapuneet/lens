@@ -319,7 +319,9 @@ public class LensConnection {
     String[] paramKeyAndValue;
     for (String param : params) {
       paramKeyAndValue = param.split("=");
-      paramsMap.put(paramKeyAndValue[0], paramKeyAndValue[1]);
+      if (paramKeyAndValue.length == 2) {
+        paramsMap.put(paramKeyAndValue[0], paramKeyAndValue[1]);
+      }
     }
     return paramsMap;
   }

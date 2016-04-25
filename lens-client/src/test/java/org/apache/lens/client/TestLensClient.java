@@ -22,7 +22,6 @@ import static org.testng.Assert.*;
 
 import java.io.File;
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.util.*;
 
 import javax.ws.rs.core.UriBuilder;
@@ -231,6 +230,6 @@ public class TestLensClient extends LensAllApplicationJerseyTest {
   }
 
   private void compare(String[] actualArr, String[] expectedArr) {
-    assertTrue(Arrays.equals(actualArr,expectedArr));
+    assertTrue(Arrays.equals(actualArr, expectedArr));
   }
 }

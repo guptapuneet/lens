@@ -313,13 +313,13 @@ public class LensConnection {
     return value.getElements();
   }
 
-  public Map<String,String> getConnectionParamsAsMap() {
+  public Map<String, String> getConnectionParamsAsMap() {
     List<String> params = getConnectionParams();
-    Map<String,String> paramsMap = new HashMap<String,String>(params.size());
+    Map<String, String> paramsMap = new HashMap<String, String>(params.size());
     String[] paramKeyAndValue;
-    for(String param : params) {
+    for (String param : params) {
       paramKeyAndValue = param.split("=");
-      paramsMap.put(paramKeyAndValue[0],paramKeyAndValue[1]);
+      paramsMap.put(paramKeyAndValue[0], paramKeyAndValue[1]);
     }
     return paramsMap;
   }

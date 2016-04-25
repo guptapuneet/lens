@@ -223,7 +223,6 @@ public interface LensDriver extends Externalizable {
   /**
    * Returns the DriverQueryHook implementation for the driver.
    * @see DriverQueryHook for more details.
-   * @return
    */
   DriverQueryHook getQueryHook();
 }

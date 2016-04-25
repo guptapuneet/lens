@@ -23,6 +23,7 @@ import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.core.Response;
 
@@ -47,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -69,6 +71,14 @@ public class LensClient {
 
   @Getter
   private PathValidator pathValidator;
+
+  public static final String QUERY_RESULT_SPLIT_INTO_MULTIPLE = "lens.query.result.split.multiple";
+
+  public static final String QUERY_OUTPUT_WRITE_HEADER_ENABLED = "lens.query.output.write.header";
+
+  public static final String QUERY_OUTPUT_ENCODING = "lens.query.output.charset.encoding";
+
+  public static final char DEFAULT_RESULTSET_DELIMITER = ',';
 
   public static Logger getCliLogger() {
     return LoggerFactory.getLogger(CLILOGGER);
@@ -218,26 +228,48 @@ public class LensClient {
     return statement.getHttpResultSet(statement.getQuery(q));
   }
 
-  public ResultSet getZippedCsvResultSet(QueryHandle q) throws LensClientIOException {
-    return getZippedCsvResultSet(q, ResultSet.DEFAULT_ENCODING, true, ResultSet.DEFAULT_DELEIMITER);
+  /**
+   * Gets the ResultSet for the query represented by queryHandle.
+   *
+   * @param queryHandle : query hanlde
+   * @return
+   * @throws LensClientIOException
+   */
+  public ResultSet getHttpResultSet(QueryHandle queryHandle) throws LensClientIOException {
+    Map<String, String> paramsMap = this.connection.getConnectionParamsAsMap();
+    String isSplitFileEnabled = paramsMap.get(QUERY_RESULT_SPLIT_INTO_MULTIPLE);
+    String isHeaderEnabled = paramsMap.get(QUERY_OUTPUT_WRITE_HEADER_ENABLED);
+    String encoding = paramsMap.get(QUERY_OUTPUT_ENCODING);
+    return getHttpResultSet(queryHandle, Charset.forName(encoding), Boolean.parseBoolean(isHeaderEnabled),
+      DEFAULT_RESULTSET_DELIMITER, Boolean.parseBoolean(isSplitFileEnabled));
   }
 
-  public ResultSet getZippedCsvResultSet(QueryHandle q, Charset encoding, boolean isHeaderPresent,
-    char delimiter) throws LensClientIOException {
-    Response response = statement.getHttpResultSet(statement.getQuery(q));
-    InputStream resultStream = response.readEntity(InputStream.class);
-    return new ZippedCsvResultSet(resultStream, encoding, isHeaderPresent, delimiter);
-  }
+  /**
+   * Gets the ResultSet for the query represented by queryHandle.
+   *
+   * @param queryHandle : query handle.
+   * @param encoding  : resultset encoding.
+   * @param isHeaderPresent : whether the resultset has header row included.
+   * @param delimiter : delimiter used to seperate columns of resultset.
+   * @param isResultZipped : whether the resultset is zipped.
+   * @return
+   * @throws LensClientIOException
+   */
+  public ResultSet getHttpResultSet(QueryHandle queryHandle, Charset encoding, boolean isHeaderPresent, char delimiter,
+    boolean isResultZipped) throws LensClientIOException {
+    InputStream resultStream = null;
+    try {
+      Response response = statement.getHttpResultSet(statement.getQuery(queryHandle));
+      resultStream = response.readEntity(InputStream.class);
+    } catch (Exception e) {
+      throw new LensClientIOException("Error while getting resultset", e);
+    }
 
-  public ResultSet getCsvResultSet(QueryHandle q) throws LensClientIOException {
-    return getCsvResultSet(q, ResultSet.DEFAULT_ENCODING, true, ResultSet.DEFAULT_DELEIMITER);
-  }
-
-  public ResultSet getCsvResultSet(QueryHandle q, Charset encoding, boolean isHeaderPresent, char delimiter)
-    throws LensClientIOException {
-    Response response = statement.getHttpResultSet(statement.getQuery(q));
-    InputStream resultStream = response.readEntity(InputStream.class);
-    return new CsvResultSet(resultStream, encoding, isHeaderPresent, delimiter);
+    if (isResultZipped) {
+      return new ZippedCsvResultSet(resultStream, encoding, isHeaderPresent, delimiter);
+    } else {
+      return new CsvResultSet(resultStream, encoding, isHeaderPresent, delimiter);
+    }
   }
 
   public LensStatement getLensStatement(QueryHandle query) {

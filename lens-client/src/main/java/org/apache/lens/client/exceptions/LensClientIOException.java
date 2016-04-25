@@ -19,7 +19,9 @@
 
 package org.apache.lens.client.exceptions;
 
-public class LensClientIOException extends Exception {
+import java.io.IOException;
+
+public class LensClientIOException extends IOException {
 
   public LensClientIOException(String message, Throwable cause) {
     super(message, cause);

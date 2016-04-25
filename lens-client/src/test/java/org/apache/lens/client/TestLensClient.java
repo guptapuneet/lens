@@ -41,7 +41,7 @@ import org.testng.annotations.*;
 
 import lombok.extern.slf4j.Slf4j;
 
-//@Test(groups = "unit-test")
+@Test(groups = "unit-test")
 @Slf4j
 public class TestLensClient extends LensAllApplicationJerseyTest {
   private static final String TEST_DB = TestLensClient.class.getSimpleName();
@@ -193,7 +193,7 @@ public class TestLensClient extends LensAllApplicationJerseyTest {
   }
 
   @Test(dataProvider = "testIterableHttpResultSetDP")
-  public void testIterableHttpResultSet(String query, Map<String, String> queryConf, boolean isResultZipped,
+  public void testHttpResultSet(String query, Map<String, String> queryConf, boolean isResultZipped,
     int columnNamesExpected, int rowsExpected) throws Exception {
 
     for (Map.Entry<String, String> e : queryConf.entrySet()) {
@@ -205,11 +205,8 @@ public class TestLensClient extends LensAllApplicationJerseyTest {
 
     ResultSet result = null;
     boolean isHeaderRowPresent = columnNamesExpected > 0 ? true : false;
-    if (isResultZipped) {
-      result = client.getZippedCsvResultSet(handle, Charset.defaultCharset(), isHeaderRowPresent, ',');
-    } else {
-      result = client.getCsvResultSet(handle, Charset.defaultCharset(), isHeaderRowPresent, ',');
-    }
+    result = client.getHttpResultSet(handle);
+
     assertNotNull(result);
     validateResult(result, columnNamesExpected, rowsExpected);
   }

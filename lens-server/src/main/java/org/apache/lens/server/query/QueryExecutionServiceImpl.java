@@ -1430,7 +1430,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       QueryCost selectedDriverQueryCost = ctx.getDriverContext().getDriverQueryCost(driver);
       ctx.setSelectedDriverQueryCost(selectedDriverQueryCost);
       driver.decidePriority(ctx);
-      driver.getDriverHook().postSelect(ctx);
+      driver.getDriverHook().postDriverSelection(ctx);
       selectGauge.markSuccess();
     } finally {
       parallelCallGauge.markSuccess();

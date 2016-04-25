@@ -37,8 +37,8 @@ public class MockDriverQueryHook extends NoOpDriverQueryHook {
   }
 
   @Override
-  public void postSelect(AbstractQueryContext ctx) throws LensException {
-    super.postSelect(ctx);
+  public void postDriverSelection(AbstractQueryContext ctx) throws LensException {
+    super.postDriverSelection(ctx);
     ctx.getSelectedDriverConf().set(KEY_POST_SELECT, VALUE_POST_SELECT);
   }
 }

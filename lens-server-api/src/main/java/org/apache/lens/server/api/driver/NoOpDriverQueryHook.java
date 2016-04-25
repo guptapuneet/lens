@@ -31,13 +31,13 @@ import lombok.extern.slf4j.Slf4j;
 public class NoOpDriverQueryHook implements DriverQueryHook {
   @Override
   public void preLaunch(QueryContext ctx) {
-    log.info("Pre launch for {}, user query: {}, driver {}, driver query: {}", ctx.getSubmittedUser(),
+    log.debug("Pre launch for {}, user query: {}, driver {}, driver query: {}", ctx.getSubmittedUser(),
       ctx.getUserQuery(), ctx.getSelectedDriver().getFullyQualifiedName(), ctx.getSelectedDriverQuery());
   }
 
   @Override
-  public void postSelect(AbstractQueryContext ctx) throws LensException {
-    log.info("Post select for {}, user query: {}, driver {}, driver query: {}", ctx.getSubmittedUser(),
+  public void postDriverSelection(AbstractQueryContext ctx) throws LensException {
+    log.debug("Post driver selection for {}, user query: {}, driver {}, driver query: {}", ctx.getSubmittedUser(),
       ctx.getUserQuery(), ctx.getSelectedDriver().getFullyQualifiedName(), ctx.getSelectedDriverQuery());
   }
 }

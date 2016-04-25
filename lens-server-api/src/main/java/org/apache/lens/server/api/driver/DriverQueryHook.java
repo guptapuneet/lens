@@ -57,5 +57,5 @@ public interface DriverQueryHook {
    * @param ctx
    * @throws LensException
    */
-  void postSelect(AbstractQueryContext ctx) throws LensException;
+  void postDriverSelection(AbstractQueryContext ctx) throws LensException;
 }

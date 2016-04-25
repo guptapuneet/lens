@@ -105,7 +105,7 @@ public abstract class AbstractLensDriver implements LensDriver {
   }
 
   @Override
-  public DriverQueryHook getDriverHook() {
+  public DriverQueryHook getQueryHook() {
     return noOpDriverQueryHook;
   }
 

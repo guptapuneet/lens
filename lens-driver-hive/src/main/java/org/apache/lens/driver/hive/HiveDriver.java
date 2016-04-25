@@ -1358,7 +1358,7 @@ public class HiveDriver extends AbstractLensDriver {
   }
 
   @Override
-  public DriverQueryHook getDriverHook() {
+  public DriverQueryHook getQueryHook() {
     return queryHook;
   }
 }

@@ -27,10 +27,10 @@ import org.apache.lens.server.api.query.QueryContext;
 
 /**
  * Drivers should initialize a DriverQueryHook object in their  initialization and expose it
- * via {@link LensDriver#getDriverHook}. Lens Server will invoke the driver hook at relevant points during
+ * via {@link LensDriver#getQueryHook}. Lens Server will invoke the driver hook at relevant points during
  * query execution. By default each driver exposes a {@link NoOpDriverQueryHook} which does nothing when invoked.
  *
- * The only use case I see right now is to provide a hook just after driver has been selected for a querey and
+ * The only use case I see right now is to provide a hook just after driver has been selected for a query and
  * before query is launched on the driver. One example usage for hive driver would be to add dynamic configuration or
  * stall execution of a query by looking at the final translated query itself (based on table involved, filters
  * involved, etc in the query).

@@ -221,8 +221,9 @@ public interface LensDriver extends Externalizable {
   Priority decidePriority(AbstractQueryContext queryContext);
 
   /**
-   * Returns the DriverQueryHook implementation for the driver
+   * Returns the DriverQueryHook implementation for the driver.
+   * @see DriverQueryHook for more details.
    * @return
    */
-  DriverQueryHook getDriverHook();
+  DriverQueryHook getQueryHook();
 }

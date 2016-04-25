@@ -23,14 +23,14 @@ import org.apache.lens.client.exceptions.LensClientIOException;
 
 public interface ResultSetReader {
   /**
-   * Reads the next line and returns the column values as a String[].
+   * Returns column values for the current row.
    * @throws LensClientIOException
    */
-  String[] getNext() throws LensClientIOException;
+  String[] getRow() throws LensClientIOException;
 
   /**
-   * Returns true if there are more rows to read
+   * Returns true if next row is present in result set and moves the cursor to that row.
    * @throws LensClientIOException
    */
-  boolean hasNext() throws LensClientIOException;
+  boolean next() throws LensClientIOException;
 }

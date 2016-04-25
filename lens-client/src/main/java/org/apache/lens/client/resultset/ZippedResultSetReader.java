@@ -57,20 +57,20 @@ public abstract class ZippedResultSetReader implements ResultSetReader {
   }
 
   @Override
-  public String[] getNext() throws LensClientIOException {
-    return actualReader.getNext();
+  public String[] getRow() throws LensClientIOException {
+    return actualReader.getRow();
   }
 
   @Override
-  public boolean hasNext() throws LensClientIOException {
-    if (actualReader.hasNext()) {
+  public boolean next() throws LensClientIOException {
+    if (actualReader.next()) {
       return true;
     } else if (getNextEntry() != null) {
-      actualReader = createEntryReader(); //created reader for next entry in zip file
+      actualReader = createEntryReader(); //created reader for getRow entry in zip file
       if (isHeaderRowPresent) {
-        actualReader.hasNext(); //skip the header row in all but first entry
+        actualReader.next(); //skip the header row in all but first entry
       }
-      return hasNext();
+      return next();
     }
     return false;
   }

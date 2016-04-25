@@ -26,26 +26,22 @@ import org.apache.lens.client.exceptions.LensClientIOException;
 /**
  * This interface represents the query ResultSet that the clients can iterate over
  */
-public interface ResultSet {
-
-  char DEFAULT_DELEIMITER = ',';
-  Charset DEFAULT_ENCODING = Charset.defaultCharset();
+public interface ResultSet{
 
   /**
    * Returns true if next row is present in result set and moves the cursor to that row.
    *
-   * @return true if next row is present in result set.
    * @throws LensClientIOException
    */
-  boolean hasNext() throws LensClientIOException;
+  boolean next() throws LensClientIOException;
 
   /**
    * @return column values for the current row
    */
-  String[] next() throws LensClientIOException;
+  String[] getRow() throws LensClientIOException;
 
   /**
-   * @return the column names for this result set if available otherwise null is returned
+   * Returns the column names for this result set if available otherwise null is returned
    * @throws LensClientIOException
    */
   String[] getColumnNames() throws LensClientIOException;

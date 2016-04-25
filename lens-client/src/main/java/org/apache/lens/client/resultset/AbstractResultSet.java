@@ -56,8 +56,8 @@ public abstract class AbstractResultSet implements ResultSet {
 
   protected void init() throws LensClientIOException {
     reader = createResultSetReader();
-    if (isHeaderRowPresent && reader.hasNext()) {
-      columnNames = reader.getNext();
+    if (isHeaderRowPresent && reader.next()) {
+      columnNames = reader.getRow();
       log.info("Resultset column names : " + Arrays.asList(columnNames));
     }
   }
@@ -73,8 +73,8 @@ public abstract class AbstractResultSet implements ResultSet {
   }
 
   @Override
-  public boolean hasNext() throws LensClientIOException {
-    boolean hasNext = reader.hasNext();
+  public boolean next() throws LensClientIOException {
+    boolean hasNext = reader.next();
     if (hasNext) {
       totalRowsRead++;
     } else {
@@ -84,8 +84,8 @@ public abstract class AbstractResultSet implements ResultSet {
   }
 
   @Override
-  public String[] next() throws LensClientIOException {
-    return reader.getNext();
+  public String[] getRow() throws LensClientIOException {
+    return reader.getRow();
   }
 
   /**

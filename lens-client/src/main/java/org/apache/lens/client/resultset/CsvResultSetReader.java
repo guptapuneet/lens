@@ -40,12 +40,12 @@ public class CsvResultSetReader implements ResultSetReader {
   }
 
   @Override
-  public String[] getNext() {
+  public String[] getRow() {
     return nextLine;
   }
 
   @Override
-  public boolean hasNext() throws LensClientIOException {
+  public boolean next() throws LensClientIOException {
     try {
       nextLine = reader.readNext();
     } catch (IOException e) {

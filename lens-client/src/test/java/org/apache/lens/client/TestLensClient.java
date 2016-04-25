@@ -220,12 +220,12 @@ public class TestLensClient extends LensAllApplicationJerseyTest {
     }
 
     if (rowsExpected > 0) {
-      assertTrue(result.hasNext());
-      compare(result.next(), new String[]{"1", "first"});
-      assertTrue(result.hasNext());
-      compare(result.next(), new String[]{"2", "two"});
-      assertTrue(result.hasNext());
-      compare(result.next(), new String[]{"3", "three"});
+      assertTrue(result.next());
+      compare(result.getRow(), new String[]{"1", "first"});
+      assertTrue(result.next());
+      compare(result.getRow(), new String[]{"2", "two"});
+      assertTrue(result.next());
+      compare(result.getRow(), new String[]{"3", "three"});
     }
   }
 

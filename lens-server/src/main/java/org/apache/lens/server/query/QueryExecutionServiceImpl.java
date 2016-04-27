@@ -657,8 +657,12 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     @Override
     public void run() {
       log.info("Starting QuerySubmitter thread");
-      while (!pausedForTest && !stopped && !querySubmitter.isInterrupted()) {
+      while (!stopped && !querySubmitter.isInterrupted()) {
         try {
+          if (pausedForTest) {
+            Thread.sleep(5000);
+            continue;
+          }
           QueryContext query = queuedQueries.take();
           synchronized (query) {
 

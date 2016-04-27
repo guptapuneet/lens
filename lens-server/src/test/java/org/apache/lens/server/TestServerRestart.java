@@ -20,9 +20,11 @@ package org.apache.lens.server;
 
 import static org.apache.lens.server.LensServerTestUtil.createTable;
 import static org.apache.lens.server.LensServerTestUtil.loadData;
+import static org.apache.lens.server.api.user.MockDriverQueryHook.*;
 import static org.apache.lens.server.common.RestAPITestUtil.execute;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
 import java.io.*;
 import java.util.*;
@@ -47,6 +49,7 @@ import org.apache.lens.server.query.TestQueryService;
 import org.apache.lens.server.session.HiveSessionService;
 import org.apache.lens.server.session.LensSessionImpl;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hive.service.Service;
 
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
@@ -63,7 +66,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * The Class TestServerRestart.
  */
-@Test(alwaysRun = true, groups = "restart-test", dependsOnGroups = "unit-test")
+
 @Slf4j
 public class TestServerRestart extends LensAllApplicationJerseyTest {
 
@@ -153,11 +156,13 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     final int NUM_QUERIES = 10;
 
     boolean killed = false;
+    boolean isMockDriverQueryHookTested = false;
+    QueryHandle handleForMockDriverQueryHookTest = null;
     for (int i = 0; i < NUM_QUERIES; i++) {
       if (!killed && i > NUM_QUERIES / 3) {
         // Kill the query submitter thread to make sure some queries stay in accepted queue
         try {
-          queryService.pauseQuerySubmitter();
+          queryService.pauseQuerySubmitter(true);
           log.info("Stopped query submitter");
           Assert.assertFalse(queryService.getHealthStatus().isHealthy());
         } catch (Exception exc) {
@@ -182,13 +187,23 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
         .get(LensQuery.class);
       log.info("{} submitted query {} state: {}", i, handle, ctx.getStatus().getStatus());
       launchedQueries.add(handle);
+      if (killed && !isMockDriverQueryHookTested) {
+        //checking this only for one of the queued queries. A queued query has all the config information available in
+        // server memory. (Some of the information is lost after query is purged)
+        testMockDriverQueryHook(queryService, handle, false);
+        handleForMockDriverQueryHookTest = handle;
+        isMockDriverQueryHookTested = true;
+      }
     }
 
     // Restart the server
     log.info("Restarting lens server!");
-    restartLensServer();
+    restartLensServer(getServerConf(), true);
     log.info("Restarted lens server!");
     queryService = LensServices.get().getService(QueryExecutionService.NAME);
+    Assert.assertFalse(queryService.getHealthStatus().isHealthy());
+    testMockDriverQueryHook(queryService, handleForMockDriverQueryHookTest, true);
+    queryService.pauseQuerySubmitter(false);
     Assert.assertTrue(queryService.getHealthStatus().isHealthy());
 
     // All queries should complete after server restart
@@ -220,6 +235,32 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     log.info("End server restart test");
     LensServerTestUtil.dropTable("test_server_restart", target(), lensSessionId, defaultMT);
     queryService.closeSession(lensSessionId);
+  }
+
+  /**
+   * Tests whether the driver configuration updated by mock query driver hook is
+   * 1. updated in LensConf wherever applicable and
+   * 2. is persisted and available even after server startup.
+   *
+   * @param queryService
+   * @param handle
+   * @param afterRestart
+   */
+  private void testMockDriverQueryHook(QueryExecutionServiceImpl queryService, QueryHandle handle,
+    boolean afterRestart){
+    LensConf lensQueryConf = queryService.getQueryContext(handle).getLensConf();
+    Configuration driverConf = queryService.getQueryContext(handle).getSelectedDriverConf();
+
+    assertEquals(driverConf.get(KEY_POST_SELECT), VALUE_POST_SELECT);
+    assertEquals(lensQueryConf.getProperty(KEY_POST_SELECT), VALUE_POST_SELECT);
+
+    if (afterRestart) {
+      //This will be unavailable since if was not updated in LensConf by MockDriverQueryHook
+      assertNull(driverConf.get(UNSAVED_KEY_POST_SELECT));
+    } else {
+      assertEquals(driverConf.get(UNSAVED_KEY_POST_SELECT), UNSAVED_VALUE_POST_SELECT);
+    }
+    assertNull(lensQueryConf.getProperty(UNSAVED_KEY_POST_SELECT));
   }
 
   /**

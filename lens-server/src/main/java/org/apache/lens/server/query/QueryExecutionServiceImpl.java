@@ -765,13 +765,13 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     }
   }
 
-  // used in tests
 
   /**
    * Pause query submitter.
+   * note : used in tests only
    */
-  public void pauseQuerySubmitter() {
-    querySubmitterRunnable.pausedForTest = true;
+  public void pauseQuerySubmitter(boolean pause) {
+    querySubmitterRunnable.pausedForTest = pause;
   }
 
   /**
@@ -1936,11 +1936,11 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
 
   /**
    * Gets the query context.
-   *
+   * note: this method is made public to expose it to test cases
    * @param queryHandle the query handle
    * @return the query context
    */
-  QueryContext getQueryContext(QueryHandle queryHandle) {
+  public QueryContext getQueryContext(QueryHandle queryHandle) {
     return allQueries.get(queryHandle);
   }
 

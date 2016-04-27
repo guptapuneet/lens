@@ -19,7 +19,6 @@
 package org.apache.lens.server.api.user;
 
 import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.lens.server.api.driver.NoOpDriverQueryHook;
 import org.apache.lens.server.api.error.LensException;
@@ -44,9 +43,12 @@ public class MockDriverQueryHook extends NoOpDriverQueryHook {
   @Override
   public void postDriverSelection(AbstractQueryContext ctx) throws LensException {
     super.postDriverSelection(ctx);
+
     //Updated both in driver config and LensConf(which gets persisted)
     ctx.getSelectedDriverConf().set(KEY_POST_SELECT, VALUE_POST_SELECT);
-    ctx.updateConf(new HashMap<String, String>(1){{put(KEY_POST_SELECT,VALUE_POST_SELECT);}});
+    ctx.updateConf(new HashMap<String, String>(1) {{
+      put(KEY_POST_SELECT, VALUE_POST_SELECT);
+    }});
     
     //Updated only in driver conf.
     ctx.getSelectedDriverConf().set(UNSAVED_KEY_POST_SELECT, UNSAVED_VALUE_POST_SELECT);

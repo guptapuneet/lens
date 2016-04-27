@@ -1427,6 +1427,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       ctx.setSelectedDriverQueryCost(selectedDriverQueryCost);
       Priority priority = driver.decidePriority(ctx);
       ctx.setPriority(priority == null ? Priority.NORMAL : priority);
+      driver.getQueryHook().postDriverSelection(ctx);
       selectGauge.markSuccess();
     } finally {
       parallelCallGauge.markSuccess();

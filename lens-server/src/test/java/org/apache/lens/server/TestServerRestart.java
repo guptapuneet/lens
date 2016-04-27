@@ -155,11 +155,11 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     List<QueryHandle> launchedQueries = new ArrayList<>();
     final int NUM_QUERIES = 10;
 
-    boolean killed = false;
+    boolean isQuerySubmitterPaused = false;
     boolean isMockDriverQueryHookTested = false;
     QueryHandle handleForMockDriverQueryHookTest = null;
     for (int i = 0; i < NUM_QUERIES; i++) {
-      if (!killed && i > NUM_QUERIES / 3) {
+      if (!isQuerySubmitterPaused && i > NUM_QUERIES / 3) {
         // Kill the query submitter thread to make sure some queries stay in accepted queue
         try {
           queryService.pauseQuerySubmitter(true);
@@ -168,7 +168,7 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
         } catch (Exception exc) {
           log.error("Could not kill query submitter", exc);
         }
-        killed = true;
+        isQuerySubmitterPaused = true;
       }
 
       final FormDataMultiPart mp = new FormDataMultiPart();
@@ -187,7 +187,7 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
         .get(LensQuery.class);
       log.info("{} submitted query {} state: {}", i, handle, ctx.getStatus().getStatus());
       launchedQueries.add(handle);
-      if (killed && !isMockDriverQueryHookTested) {
+      if (isQuerySubmitterPaused && !isMockDriverQueryHookTested) {
         //checking this only for one of the queued queries. A queued query has all the config information available in
         // server memory. (Some of the information is lost after query is purged)
         testMockDriverQueryHook(queryService, handle, false);

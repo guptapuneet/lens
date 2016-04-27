@@ -24,6 +24,7 @@ import static org.apache.lens.server.api.user.MockDriverQueryHook.*;
 import static org.apache.lens.server.common.RestAPITestUtil.execute;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 
 import java.io.*;
@@ -41,6 +42,7 @@ import org.apache.lens.api.query.*;
 import org.apache.lens.api.result.LensAPIResult;
 import org.apache.lens.driver.hive.TestRemoteHiveDriver;
 import org.apache.lens.server.api.error.LensException;
+import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.QueryExecutionService;
 import org.apache.lens.server.api.session.SessionService;
 import org.apache.lens.server.common.TestResourceFile;
@@ -156,7 +158,6 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     final int NUM_QUERIES = 10;
 
     boolean isQuerySubmitterPaused = false;
-    boolean isMockDriverQueryHookTested = false;
     QueryHandle handleForMockDriverQueryHookTest = null;
     for (int i = 0; i < NUM_QUERIES; i++) {
       if (!isQuerySubmitterPaused && i > NUM_QUERIES / 3) {
@@ -187,12 +188,12 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
         .get(LensQuery.class);
       log.info("{} submitted query {} state: {}", i, handle, ctx.getStatus().getStatus());
       launchedQueries.add(handle);
-      if (isQuerySubmitterPaused && !isMockDriverQueryHookTested) {
+      if (i == (NUM_QUERIES-1)) {
         //checking this only for one of the queued queries. A queued query has all the config information available in
         // server memory. (Some of the information is lost after query is purged)
         testMockDriverQueryHook(queryService, handle, false);
         handleForMockDriverQueryHookTest = handle;
-        isMockDriverQueryHookTested = true;
+        log.info("Testing query {} for MockDriverQueryHook", handleForMockDriverQueryHookTest);
       }
     }
 
@@ -248,6 +249,9 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
    */
   private void testMockDriverQueryHook(QueryExecutionServiceImpl queryService, QueryHandle handle,
     boolean afterRestart){
+    QueryContext ctx = queryService.getQueryContext(handle);
+    assertNotNull(ctx);
+    assetTrue(ctx.getStatus().queued());
     LensConf lensQueryConf = queryService.getQueryContext(handle).getLensConf();
     Configuration driverConf = queryService.getQueryContext(handle).getSelectedDriverConf();
 

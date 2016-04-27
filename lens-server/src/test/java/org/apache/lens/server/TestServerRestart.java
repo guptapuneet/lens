@@ -23,9 +23,7 @@ import static org.apache.lens.server.LensServerTestUtil.loadData;
 import static org.apache.lens.server.api.user.MockDriverQueryHook.*;
 import static org.apache.lens.server.common.RestAPITestUtil.execute;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
+import static org.testng.Assert.*;
 
 import java.io.*;
 import java.util.*;
@@ -191,7 +189,7 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
       if (i == (NUM_QUERIES-1)) {
         //checking this only for one of the queued queries. A queued query has all the config information available in
         // server memory. (Some of the information is lost after query is purged)
-        testMockDriverQueryHook(queryService, handle, false);
+        testMockDriverQueryHookPostDriverSelection(queryService, handle, false);
         handleForMockDriverQueryHookTest = handle;
         log.info("Testing query {} for MockDriverQueryHook", handleForMockDriverQueryHookTest);
       }
@@ -203,7 +201,7 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
     log.info("Restarted lens server!");
     queryService = LensServices.get().getService(QueryExecutionService.NAME);
     Assert.assertFalse(queryService.getHealthStatus().isHealthy());
-    testMockDriverQueryHook(queryService, handleForMockDriverQueryHookTest, true);
+    testMockDriverQueryHookPostDriverSelection(queryService, handleForMockDriverQueryHookTest, true);
     queryService.pauseQuerySubmitter(false);
     Assert.assertTrue(queryService.getHealthStatus().isHealthy());
 
@@ -247,11 +245,11 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
    * @param handle
    * @param afterRestart
    */
-  private void testMockDriverQueryHook(QueryExecutionServiceImpl queryService, QueryHandle handle,
+  private void testMockDriverQueryHookPostDriverSelection(QueryExecutionServiceImpl queryService, QueryHandle handle,
     boolean afterRestart){
     QueryContext ctx = queryService.getQueryContext(handle);
-    assertNotNull(ctx);
-    assetTrue(ctx.getStatus().queued());
+    assertNotNull(ctx, "Make sure that the query has not  been purged");
+    assertTrue(ctx.getStatus().queued(), "Make sure query is still in QUEUED state");
     LensConf lensQueryConf = queryService.getQueryContext(handle).getLensConf();
     Configuration driverConf = queryService.getQueryContext(handle).getSelectedDriverConf();
 

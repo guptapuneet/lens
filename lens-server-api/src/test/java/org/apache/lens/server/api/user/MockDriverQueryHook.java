@@ -46,10 +46,8 @@ public class MockDriverQueryHook extends NoOpDriverQueryHook {
 
     //Updated both in driver config and LensConf(which gets persisted)
     ctx.getSelectedDriverConf().set(KEY_POST_SELECT, VALUE_POST_SELECT);
-    ctx.updateConf(new HashMap<String, String>(1) {{
-      put(KEY_POST_SELECT, VALUE_POST_SELECT);
-    }});
-    
+    ctx.updateConf(new HashMap<String, String>(1){{put(KEY_POST_SELECT, VALUE_POST_SELECT); }});
+
     //Updated only in driver conf.
     ctx.getSelectedDriverConf().set(UNSAVED_KEY_POST_SELECT, UNSAVED_VALUE_POST_SELECT);
   }

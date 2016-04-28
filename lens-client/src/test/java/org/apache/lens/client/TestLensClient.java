@@ -243,7 +243,7 @@ public class TestLensClient extends LensAllApplicationJerseyTest {
     //Timeout Expected
     config.setInt(LensClientConfig.READ_TIMEOUT_MILLIS, 200);
     LensClient lensClient = new LensClient(config);
-    assertTrue(client.setDatabase(TEST_DB));
+    assertTrue(lensClient.setDatabase(TEST_DB));
     try {
       lensClient.executeQueryWithTimeout("cube select id,name from test_dim", "test", 100000);
       fail("Read Timeout was expected");
@@ -258,6 +258,7 @@ public class TestLensClient extends LensAllApplicationJerseyTest {
 
     //No Timeout Expected
     lensClient = new LensClient(config);
+    assertTrue(lensClient.setDatabase(TEST_DB));
     config.setInt(LensClientConfig.READ_TIMEOUT_MILLIS, LensClientConfig.DEFAULT_READ_TIMEOUT_MILLIS);
     QueryHandleWithResultSet result = lensClient.executeQueryWithTimeout("cube select id,name from test_dim", "test",
       100000);

@@ -80,13 +80,15 @@ public class LensClientConfig extends Configuration {
 
   public static final String SESSION_FILTER_NAMES = CLIENT_PFX + "ws.request.filternames";
 
+  public static final String WS_FILTER_IMPL_SFX = ".ws.filter.impl";
+
   public static final String READ_TIMEOUT_MILLIS = CLIENT_PFX + "read.timeout.millis";
 
-  public static final int DEFAULT_READ_TIMEOUT_MILLIS = 300000;//5 mins
+  public static final int DEFAULT_READ_TIMEOUT_MILLIS = 300000; //5 mins
 
   public static final String CONNECTION_TIMEOUT_MILLIS = CLIENT_PFX + "connection.timeout.millis";
 
-  public static final int DEFAULT_CONNECTION_TIMEOUT_MILLIS = 10000;//10 secs
+  public static final int DEFAULT_CONNECTION_TIMEOUT_MILLIS = 10000; //10 secs
 
   /**
    * Get the username from config

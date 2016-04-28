@@ -21,6 +21,7 @@ package org.apache.lens.client;
 import static org.testng.Assert.*;
 
 import java.io.File;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.*;
 
@@ -30,6 +31,8 @@ import javax.xml.datatype.DatatypeFactory;
 import org.apache.lens.api.APIResult;
 import org.apache.lens.api.metastore.*;
 import org.apache.lens.api.query.QueryHandle;
+import org.apache.lens.api.query.QueryHandleWithResultSet;
+import org.apache.lens.client.exceptions.LensAPIException;
 import org.apache.lens.client.exceptions.LensClientIOException;
 import org.apache.lens.client.resultset.ResultSet;
 import org.apache.lens.server.LensAllApplicationJerseyTest;
@@ -231,5 +234,43 @@ public class TestLensClient extends LensAllApplicationJerseyTest {
 
   private void compare(String[] actualArr, String[] expectedArr) {
     assertTrue(Arrays.equals(actualArr, expectedArr));
+  }
+
+  @Test
+  public void testTimeout() throws LensAPIException {
+    LensClientConfig config = new LensClientConfig();
+
+    //Timeout Expected
+    config.setInt(LensClientConfig.READ_TIMEOUT_MILLIS, 200);
+    LensClient lensClient = new LensClient(config);
+    try {
+      lensClient.executeQueryWithTimeout("cube select id,name from test_dim", "test", 100000);
+      fail("Read Timeout was expected");
+    } catch (Exception e) {
+      if (!(isExceptionDueToSocketTimeout(e))) {
+        log.error("Unexpected Exception", e);
+        fail("SocketTimeoutException was excepted as part of Read Timeout");
+      } else {
+        log.debug("Expected Exception", e);
+      }
+    }
+
+    //No Timeout Expected
+    lensClient = new LensClient(config);
+    config.setInt(LensClientConfig.READ_TIMEOUT_MILLIS, LensClientConfig.DEFAULT_READ_TIMEOUT_MILLIS);
+    QueryHandleWithResultSet result = lensClient.executeQueryWithTimeout("cube select id,name from test_dim", "test",
+      100000);
+    assertTrue(result.getStatus().successful());
+  }
+
+  private boolean isExceptionDueToSocketTimeout(Throwable err) {
+    if (err == null) {
+      return false;
+    }
+    if (err instanceof SocketTimeoutException) {
+      return true;
+    } else {
+      return isExceptionDueToSocketTimeout(err.getCause());
+    }
   }
 }

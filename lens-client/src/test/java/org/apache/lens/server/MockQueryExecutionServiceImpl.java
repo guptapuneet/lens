@@ -31,7 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MockQueryExecutionServiceImpl extends QueryExecutionServiceImpl {
 
-  private static final long INITIAL_SLEEP_MILLIS = 5000; //6 secs
+  private static final long INITIAL_SLEEP_MILLIS = 5000; //5 secs
   private static final long DECREASE_BY_MILLIS = 1000; //1 sec
   private long sleepInterval = INITIAL_SLEEP_MILLIS;
   public static final String ENABLE_SLEEP_FOR_GET_QUERY_OP = "test.MockQueryExecutionServiceImpl.getQuery.sleep";

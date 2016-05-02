@@ -28,7 +28,7 @@ Lens client configuration
 *--+--+---+--+
 |2|lens.cli.query.execute.timeout.millis|10000|This property defines the timeout value when sync or --async false option is used to execute a query. The default value is 10 seconds.|
 *--+--+---+--+
-|3|lens.client.connection.timeout.millis|10000|This is the maximum amount of time a client is blocked for making the initial connection. The Default value for this property is 10 seconds.|
+|3|lens.client.connection.timeout.millis|60000|This is the maximum amount of time a client is blocked for making the initial connection. The Default value for this property is 60 seconds.|
 *--+--+---+--+
 |4|lens.client.dbname|default|Default lens database|
 *--+--+---+--+

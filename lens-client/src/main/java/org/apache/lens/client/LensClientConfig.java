@@ -88,7 +88,7 @@ public class LensClientConfig extends Configuration {
 
   public static final String CONNECTION_TIMEOUT_MILLIS = CLIENT_PFX + "connection.timeout.millis";
 
-  public static final int DEFAULT_CONNECTION_TIMEOUT_MILLIS = 10000; //10 secs
+  public static final int DEFAULT_CONNECTION_TIMEOUT_MILLIS = 60000; //60 secs
 
   /**
    * Get the username from config

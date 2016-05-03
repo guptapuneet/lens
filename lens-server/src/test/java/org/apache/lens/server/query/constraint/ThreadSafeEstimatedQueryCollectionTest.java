@@ -52,8 +52,8 @@ public class ThreadSafeEstimatedQueryCollectionTest {
     LensDriver mockDriver = mock(LensDriver.class);
     LensDriver mockDriver2 = mock(LensDriver.class);
 
-    QueryLaunchingConstraint constraint = new MaxConcurrentDriverQueriesConstraint(null, maxConcurrentQueries, null,
-      null);
+    QueryLaunchingConstraint constraint = new MaxConcurrentDriverQueriesConstraint(maxConcurrentQueries, null,
+      null, null);
     ThreadSafeEstimatedQueryCollection col = new ThreadSafeEstimatedQueryCollection(new
       DefaultEstimatedQueryCollection(new DefaultQueryCollection()));
 

@@ -109,7 +109,7 @@ public class LensServices extends CompositeService implements ServiceProvider {
   @Setter
   private SERVICE_MODE serviceMode;
 
-  /** The is the scheduler which persists the server state at fixed interval*/
+  /** Scheduled Executor which persists the server state periodically*/
   private ScheduledExecutorService serverSnapshotScheduler;
 
   /* Lock for synchronizing persistence of LensServices state */
@@ -319,12 +319,7 @@ public class LensServices extends CompositeService implements ServiceProvider {
           log.warn("No persist path available for service:{}", service.getName());
           continue;
         }
-        try {
-          service.readExternal(in);
-          log.info("Recovered service {} from persisted state", service.getName());
-        } catch (Exception e) {
-          log.error("Unable to recover persisted state for service {}", service.getName(), e);
-        }
+        service.readExternal(in);
       } finally {
         if (in != null) {
           in.close();

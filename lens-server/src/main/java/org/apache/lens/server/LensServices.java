@@ -23,6 +23,7 @@ import static org.apache.lens.server.api.LensConfConstants.*;
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.util.*;
+import java.util.concurrent.*;
 
 import org.apache.lens.api.error.ErrorCollection;
 import org.apache.lens.api.error.ErrorCollectionFactory;
@@ -37,10 +38,12 @@ import org.apache.lens.server.stats.StatisticsService;
 import org.apache.lens.server.user.UserConfigLoaderFactory;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.util.Time;
 import org.apache.hive.service.CompositeService;
 import org.apache.hive.service.Service;
 import org.apache.hive.service.cli.CLIService;
@@ -106,14 +109,16 @@ public class LensServices extends CompositeService implements ServiceProvider {
   @Setter
   private SERVICE_MODE serviceMode;
 
-  /** The timer. */
-  private Timer timer;
+  /** The is the scheduler which persists the server state at fixed interval*/
+  private ScheduledExecutorService serverSnapshotScheduler;
 
   /* Lock for synchronizing persistence of LensServices state */
   private final Object statePersistenceLock = new Object();
 
   @Getter
   private ErrorCollection errorCollection;
+
+  private boolean isServerRestartEnabled;
 
   @Getter
   private final LogSegregationContext logSegregationContext;
@@ -235,27 +240,29 @@ public class LensServices extends CompositeService implements ServiceProvider {
       super.init(conf);
 
       // setup persisted state
-      String persistPathStr = conf.get(SERVER_STATE_PERSIST_LOCATION,
-        DEFAULT_SERVER_STATE_PERSIST_LOCATION);
-      persistDir = new Path(persistPathStr);
-      try {
-        Configuration configuration = new Configuration(conf);
-        configuration.setBoolean(FS_AUTOMATIC_CLOSE, false);
+      isServerRestartEnabled = conf.getBoolean(SERVER_RESTART_ENABLED, DEFAULT_SERVER_RESTART_ENABLED);
+      if (isServerRestartEnabled) {
+        String persistPathStr = conf.get(SERVER_STATE_PERSIST_LOCATION,
+          DEFAULT_SERVER_STATE_PERSIST_LOCATION);
+        persistDir = new Path(persistPathStr);
+        try {
+          Configuration configuration = new Configuration(conf);
+          configuration.setBoolean(FS_AUTOMATIC_CLOSE, false);
 
-        int outStreamBufferSize = conf.getInt(STATE_PERSIST_OUT_STREAM_BUFF_SIZE,
-          DEFAULT_STATE_PERSIST_OUT_STREAM_BUFF_SIZE);
-        configuration.setInt(FS_IO_FILE_BUFFER_SIZE, outStreamBufferSize);
-        log.info("STATE_PERSIST_OUT_STREAM_BUFF_SIZE IN BYTES:{}", outStreamBufferSize);
-        persistenceFS = FileSystem.newInstance(persistDir.toUri(), configuration);
-        setupPersistedState();
-      } catch (Exception e) {
-        log.error("Could not recover from persisted state", e);
-        throw new RuntimeException("Could not recover from persisted state", e);
+          int outStreamBufferSize = conf.getInt(STATE_PERSIST_OUT_STREAM_BUFF_SIZE,
+            DEFAULT_STATE_PERSIST_OUT_STREAM_BUFF_SIZE);
+          configuration.setInt(FS_IO_FILE_BUFFER_SIZE, outStreamBufferSize);
+          log.info("STATE_PERSIST_OUT_STREAM_BUFF_SIZE IN BYTES:{}", outStreamBufferSize);
+          persistenceFS = FileSystem.newInstance(persistDir.toUri(), configuration);
+          setupPersistedState();
+        } catch (Exception e) {
+          log.error("Could not recover from persisted state", e);
+          throw new RuntimeException("Could not recover from persisted state", e);
+        }
+        snapShotInterval = conf.getLong(SERVER_SNAPSHOT_INTERVAL,
+          DEFAULT_SERVER_SNAPSHOT_INTERVAL);
       }
-      snapShotInterval = conf.getLong(SERVER_SNAPSHOT_INTERVAL,
-        DEFAULT_SERVER_SNAPSHOT_INTERVAL);
       log.info("Initialized services: {}", services.keySet().toString());
-      timer = new Timer("lens-server-snapshotter", true);
     }
   }
 
@@ -268,20 +275,32 @@ public class LensServices extends CompositeService implements ServiceProvider {
     if (getServiceState() != STATE.STARTED) {
       super.start();
     }
-    timer.schedule(new TimerTask() {
-      @Override
-      public void run() {
-        try {
-          final String runId = UUID.randomUUID().toString();
-          logSegregationContext.setLogSegregationId(runId);
-          persistLensServiceState();
-          log.info("SnapShot of Lens Services created");
-        } catch (IOException e) {
-          incrCounter(SERVER_STATE_PERSISTENCE_ERRORS);
-          log.warn("Unable to persist lens server state", e);
+
+    if (!isServerRestartEnabled) {
+      log.info("Server restart is not enabled. Not persisting lens server state");
+    } else {
+      ThreadFactory factory = new BasicThreadFactory.Builder()
+        .namingPattern("Lens-server-snapshotter-Thread-%d")
+        .daemon(true)
+        .priority(Thread.NORM_PRIORITY)
+        .build();
+      serverSnapshotScheduler = Executors.newSingleThreadScheduledExecutor(factory);
+      serverSnapshotScheduler.scheduleWithFixedDelay(new Runnable() {
+        @Override
+        public void run() {
+          try {
+            final String runId = UUID.randomUUID().toString();
+            logSegregationContext.setLogSegregationId(runId);
+            persistLensServiceState();
+            log.info("SnapShot of Lens Services created");
+          } catch (Exception e) {
+            incrCounter(SERVER_STATE_PERSISTENCE_ERRORS);
+            log.warn("Unable to persist lens server state", e);
+          }
         }
-      }
-    }, snapShotInterval, snapShotInterval);
+      }, snapShotInterval, snapShotInterval, TimeUnit.MILLISECONDS);
+      log.info("Initialized periodic lens server state persistence");
+    }
   }
 
   /**
@@ -291,24 +310,24 @@ public class LensServices extends CompositeService implements ServiceProvider {
    * @throws ClassNotFoundException the class not found exception
    */
   private void setupPersistedState() throws IOException, ClassNotFoundException {
-    if (conf.getBoolean(SERVER_RECOVER_ON_RESTART,
-      DEFAULT_SERVER_RECOVER_ON_RESTART)) {
-
-      for (BaseLensService service : lensServices) {
-        ObjectInputStream in = null;
+    for (BaseLensService service : lensServices) {
+      ObjectInputStream in = null;
+      try {
         try {
-          try {
-            in = new ObjectInputStream(persistenceFS.open(getServicePersistPath(service)));
-          } catch (FileNotFoundException fe) {
-            log.warn("No persist path available for service:{}", service.getName());
-            continue;
-          }
+          in = new ObjectInputStream(persistenceFS.open(getServicePersistPath(service)));
+        } catch (FileNotFoundException fe) {
+          log.warn("No persist path available for service:{}", service.getName());
+          continue;
+        }
+        try {
           service.readExternal(in);
           log.info("Recovered service {} from persisted state", service.getName());
-        } finally {
-          if (in != null) {
-            in.close();
-          }
+        } catch (Exception e) {
+          log.error("Unable to recover persisted state for service {}", service.getName(), e);
+        }
+      } finally {
+        if (in != null) {
+          in.close();
         }
       }
     }
@@ -316,49 +335,45 @@ public class LensServices extends CompositeService implements ServiceProvider {
 
   /**
    * Persist lens service state.
-   *
-   * @throws IOException Signals that an I/O exception has occurred.
    */
-  private void persistLensServiceState() throws IOException {
-
+  private void persistLensServiceState() {
     synchronized (statePersistenceLock) {
-      if (conf.getBoolean(SERVER_RESTART_ENABLED, DEFAULT_SERVER_RESTART_ENABLED)) {
-        if (persistDir != null) {
-          log.info("Persisting server state in {}", persistDir);
-
-          long now = System.currentTimeMillis();
-
-          for (BaseLensService service : lensServices) {
-            log.info("Persisting state of service: {}", service.getName());
-            Path serviceWritePath = new Path(persistDir, service.getName() + ".out" + "." + now);
-            ObjectOutputStream out = null;
-            try {
-              out = new ObjectOutputStream(persistenceFS.create(serviceWritePath));
-              service.writeExternal(out);
-            } finally {
-              if (out != null) {
-                out.close();
-              }
-            }
-            Path servicePath = getServicePersistPath(service);
-            if (persistenceFS.exists(servicePath)) {
-              // delete the destination first, because rename is no-op in HDFS, if destination exists
-              if (!persistenceFS.delete(servicePath, true)) {
-                log.error("Failed to delete [{}]", servicePath);
-              }
-            }
-            if (!persistenceFS.rename(serviceWritePath, servicePath)) {
-              incrCounter(SERVER_STATE_PERSISTENCE_ERRORS);
-              log.error("Failed to persist {} to [{}]", service.getName(), servicePath);
-            } else {
-              log.info("Persisted service {} to [{}]", service.getName(), servicePath);
-            }
-          }
-        } else {
-          log.info("Server restart is not enabled. Not persisting the server state");
+      log.info("Persisting server state in {}", persistDir);
+      String now = "" + System.currentTimeMillis();
+      for (BaseLensService service : lensServices) {
+        try {
+          persistState(service, now);
+        } catch (Exception e) {
+          incrCounter(SERVER_STATE_PERSISTENCE_ERRORS);
+          log.info("Error while persisting state for service {}", service.getName(), e);
         }
       }
     }
+  }
+
+  private void persistState(BaseLensService service, String time) throws IOException {
+    log.info("Persisting state of service: {}", service.getName());
+    Path serviceWritePath = new Path(persistDir, service.getName() + ".out" + "." + time);
+    ObjectOutputStream out = null;
+    try {
+      out = new ObjectOutputStream(persistenceFS.create(serviceWritePath));
+      service.writeExternal(out);
+    } finally {
+      if (out != null) {
+        out.close();
+      }
+    }
+    Path servicePath = getServicePersistPath(service);
+    if (persistenceFS.exists(servicePath)) {
+      // delete the destination first, because rename is no-op in HDFS, if destination exists
+      if (!persistenceFS.delete(servicePath, true)) {
+        throw new IOException("Failed to delete " + servicePath);
+      }
+    }
+    if (!persistenceFS.rename(serviceWritePath, servicePath)) {
+      throw new IOException("Failed to persist " + service.getName() + " to " + servicePath);
+    }
+    log.info("Persisted service {} to [{}]", service.getName(), servicePath);
   }
 
   /**
@@ -384,23 +399,39 @@ public class LensServices extends CompositeService implements ServiceProvider {
         service.prepareStopping();
       }
 
-      if (timer != null) {
-        timer.cancel();
+      if (isServerRestartEnabled) {
+        try {
+          //1. showdown serverSnapshotScheduler gracefully by allowing already triggered task (if any) to finish
+          serverSnapshotScheduler.shutdown();
+          int maxWaitCounter = 5;
+          try { //Wait for shutdown. Shutdown should be immediate in case no task is running at this point
+            while (maxWaitCounter > 0  && !serverSnapshotScheduler.awaitTermination(1, TimeUnit.MINUTES)) {
+              log.info("Waiting for Lens-server-snapshotter to shutdown gracefully...");
+              maxWaitCounter --;
+            }
+          } catch (InterruptedException e) {
+            log.error("Lens-server-snapshotter interrupted while shutting down" , e);
+          }
+          if(!serverSnapshotScheduler.isTerminated()) {
+            log.error("Lens-server-snapshotter was not shutdown even after waiting for {} minutes", maxWaitCounter);
+          } else {
+            log.info("Lens-server-snapshotter was shutdown gracefully!");
+          }
+
+          //2. persist the latest state of all the services
+          persistLensServiceState();
+        }finally {
+          try {
+            persistenceFS.close();
+            log.info("Persistence File system object close complete");
+          } catch (Exception e) {
+            log.error("Error while closing server snapshot persistence file", e);
+          }
+        }
       }
 
-      try {
-        // persist all the services
-        persistLensServiceState();
+      super.stop();
 
-        persistenceFS.close();
-        log.info("Persistence File system object close complete");
-      } catch (IOException e) {
-        incrCounter(SERVER_STATE_PERSISTENCE_ERRORS);
-        log.error("Could not persist server state", e);
-        throw new IllegalStateException(e);
-      } finally {
-        super.stop();
-      }
     }
   }
 

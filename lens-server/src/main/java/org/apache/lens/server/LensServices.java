@@ -396,7 +396,7 @@ public class LensServices extends CompositeService implements ServiceProvider {
 
       if (isServerRestartEnabled) {
         try {
-          //1. showdown serverSnapshotScheduler gracefully by allowing already triggered task (if any) to finish
+          //1. shutdown serverSnapshotScheduler gracefully by allowing already triggered task (if any) to finish
           serverSnapshotScheduler.shutdown();
           int maxWaitCounter = 5;
           try { //Wait for shutdown. Shutdown should be immediate in case no task is running at this point

@@ -319,6 +319,7 @@ public class LensServices extends CompositeService implements ServiceProvider {
           continue;
         }
         service.readExternal(in);
+        log.info("Recovered service {} from persisted state", service.getName());
       } finally {
         if (in != null) {
           in.close();

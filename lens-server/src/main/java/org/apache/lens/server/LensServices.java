@@ -43,7 +43,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.hadoop.util.Time;
 import org.apache.hive.service.CompositeService;
 import org.apache.hive.service.Service;
 import org.apache.hive.service.cli.CLIService;
@@ -402,12 +401,12 @@ public class LensServices extends CompositeService implements ServiceProvider {
           try { //Wait for shutdown. Shutdown should be immediate in case no task is running at this point
             while (maxWaitCounter > 0  && !serverSnapshotScheduler.awaitTermination(1, TimeUnit.MINUTES)) {
               log.info("Waiting for Lens-server-snapshotter to shutdown gracefully...");
-              maxWaitCounter --;
+              maxWaitCounter--;
             }
           } catch (InterruptedException e) {
             log.error("Lens-server-snapshotter interrupted while shutting down" , e);
           }
-          if(!serverSnapshotScheduler.isTerminated()) {
+          if (!serverSnapshotScheduler.isTerminated()) {
             log.error("Lens-server-snapshotter was not shutdown even after waiting for {} minutes", maxWaitCounter);
           } else {
             log.info("Lens-server-snapshotter was shutdown gracefully!");

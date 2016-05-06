@@ -400,20 +400,14 @@ public class LensServices extends CompositeService implements ServiceProvider {
         try {
           //1. shutdown serverSnapshotScheduler gracefully by allowing already triggered task (if any) to finish
           serverSnapshotScheduler.shutdown();
-          int maxWaitCounter = 5;
           try { //Wait for shutdown. Shutdown should be immediate in case no task is running at this point
-            while (maxWaitCounter > 0  && !serverSnapshotScheduler.awaitTermination(1, TimeUnit.MINUTES)) {
+            while (!serverSnapshotScheduler.awaitTermination(1, TimeUnit.MINUTES)) {
               log.info("Waiting for Lens-server-snapshotter to shutdown gracefully...");
-              maxWaitCounter--;
             }
           } catch (InterruptedException e) {
             log.error("Lens-server-snapshotter interrupted while shutting down" , e);
           }
-          if (!serverSnapshotScheduler.isTerminated()) {
-            log.error("Lens-server-snapshotter was not shutdown even after waiting for {} minutes", maxWaitCounter);
-          } else {
-            log.info("Lens-server-snapshotter was shutdown gracefully!");
-          }
+          log.info("Lens-server-snapshotter was shutdown");
 
           //2. persist the latest state of all the services
           persistLensServiceState();

@@ -91,7 +91,7 @@ public class LensServices extends CompositeService implements ServiceProvider {
   private boolean stopping = false;
 
   /** The snap shot interval. */
-  private long snapShotInterval;
+  private long serverStatePersistenceInterval;
 
   /**
    * The metrics service.
@@ -117,7 +117,7 @@ public class LensServices extends CompositeService implements ServiceProvider {
   @Getter
   private ErrorCollection errorCollection;
 
-  private boolean isServerRestartEnabled;
+  private boolean isServerStatePersistenceEnabled;
 
   @Getter
   private final LogSegregationContext logSegregationContext;
@@ -239,8 +239,9 @@ public class LensServices extends CompositeService implements ServiceProvider {
       super.init(conf);
 
       // setup persisted state
-      isServerRestartEnabled = conf.getBoolean(SERVER_RESTART_ENABLED, DEFAULT_SERVER_RESTART_ENABLED);
-      if (isServerRestartEnabled) {
+      isServerStatePersistenceEnabled = conf.getBoolean(SERVER_STATE_PERSISTENCE_ENABLED,
+        DEFAULT_SERVER_STATE_PERSISTENCE_ENABLED);
+      if (isServerStatePersistenceEnabled) {
         String persistPathStr = conf.get(SERVER_STATE_PERSIST_LOCATION,
           DEFAULT_SERVER_STATE_PERSIST_LOCATION);
         persistDir = new Path(persistPathStr);
@@ -258,8 +259,8 @@ public class LensServices extends CompositeService implements ServiceProvider {
           log.error("Could not recover from persisted state", e);
           throw new RuntimeException("Could not recover from persisted state", e);
         }
-        snapShotInterval = conf.getLong(SERVER_SNAPSHOT_INTERVAL,
-          DEFAULT_SERVER_SNAPSHOT_INTERVAL);
+        serverStatePersistenceInterval = conf.getLong(SERVER_STATE_PERSISTENCE_INTERVAL_MILLIS,
+          DEFAULT_SERVER_STATE_PERSISTENCE_INTERVAL_MILLIS);
       }
       log.info("Initialized services: {}", services.keySet().toString());
     }
@@ -275,7 +276,7 @@ public class LensServices extends CompositeService implements ServiceProvider {
       super.start();
     }
 
-    if (!isServerRestartEnabled) {
+    if (!isServerStatePersistenceEnabled) {
       log.info("Server restart is not enabled. Not persisting lens server state");
     } else {
       ThreadFactory factory = new BasicThreadFactory.Builder()
@@ -297,8 +298,8 @@ public class LensServices extends CompositeService implements ServiceProvider {
             log.warn("Unable to persist lens server state", e);
           }
         }
-      }, snapShotInterval, snapShotInterval, TimeUnit.MILLISECONDS);
-      log.info("Enabled periodic persistence of lens server state");
+      }, serverStatePersistenceInterval, serverStatePersistenceInterval, TimeUnit.MILLISECONDS);
+      log.info("Enabled periodic persistence of lens server state at {} millis interval", serverStatePersistenceInterval);
     }
   }
 
@@ -394,7 +395,7 @@ public class LensServices extends CompositeService implements ServiceProvider {
         service.prepareStopping();
       }
 
-      if (isServerRestartEnabled) {
+      if (isServerStatePersistenceEnabled) {
         try {
           //1. shutdown serverSnapshotScheduler gracefully by allowing already triggered task (if any) to finish
           serverSnapshotScheduler.shutdown();

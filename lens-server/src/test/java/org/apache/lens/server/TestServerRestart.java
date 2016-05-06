@@ -92,7 +92,7 @@ public class TestServerRestart extends LensAllApplicationJerseyTest {
   @Override
   public HiveConf getServerConf() {
     HiveConf conf = super.getServerConf();
-    conf.set("lens.server.state.persistence.interval.millis","1000");
+    conf.set("lens.server.state.persistence.interval.millis", "1000");
     return conf;
   }
 

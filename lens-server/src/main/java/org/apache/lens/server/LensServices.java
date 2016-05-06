@@ -90,9 +90,6 @@ public class LensServices extends CompositeService implements ServiceProvider {
   /** The stopping. */
   private boolean stopping = false;
 
-  /** The snap shot interval. */
-  private long serverStatePersistenceInterval;
-
   /**
    * The metrics service.
    */
@@ -118,6 +115,9 @@ public class LensServices extends CompositeService implements ServiceProvider {
   private ErrorCollection errorCollection;
 
   private boolean isServerStatePersistenceEnabled;
+
+  private long serverStatePersistenceInterval;
+
 
   @Getter
   private final LogSegregationContext logSegregationContext;

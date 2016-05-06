@@ -299,7 +299,8 @@ public class LensServices extends CompositeService implements ServiceProvider {
           }
         }
       }, serverStatePersistenceInterval, serverStatePersistenceInterval, TimeUnit.MILLISECONDS);
-      log.info("Enabled periodic persistence of lens server state at {} millis interval", serverStatePersistenceInterval);
+      log.info("Enabled periodic persistence of lens server state at {} millis interval",
+        serverStatePersistenceInterval);
     }
   }
 

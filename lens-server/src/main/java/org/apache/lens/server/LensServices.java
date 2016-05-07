@@ -313,7 +313,7 @@ public class LensServices extends CompositeService implements ServiceProvider {
   private void setupPersistedState() throws IOException, ClassNotFoundException {
     for (BaseLensService service : lensServices) {
       ObjectInputStream in = null;
-      Path path = getServicePersistPath(service);;
+      Path path = getServicePersistPath(service);
       try {
         try {
           in = new ObjectInputStream(persistenceFS.open(path));

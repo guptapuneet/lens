@@ -342,7 +342,7 @@ public class LensServices extends CompositeService implements ServiceProvider {
           persistState(service, now);
         } catch (Exception e) {
           incrCounter(SERVER_STATE_PERSISTENCE_ERRORS);
-          log.info("Error while persisting state for service {}", service.getName(), e);
+          log.error("Error while persisting state for service {}", service.getName(), e);
         }
       }
     }
@@ -368,7 +368,7 @@ public class LensServices extends CompositeService implements ServiceProvider {
       }
     }
     if (!persistenceFS.rename(serviceWritePath, servicePath)) {
-      throw new IOException("Failed to persist " + service.getName() + " to " + servicePath);
+      throw new IOException("Failed to rename " + serviceWritePath + " to " + servicePath);
     }
     log.info("Persisted service {} to [{}]", service.getName(), servicePath);
   }

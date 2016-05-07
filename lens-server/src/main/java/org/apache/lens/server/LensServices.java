@@ -313,15 +313,16 @@ public class LensServices extends CompositeService implements ServiceProvider {
   private void setupPersistedState() throws IOException, ClassNotFoundException {
     for (BaseLensService service : lensServices) {
       ObjectInputStream in = null;
+      Path path = getServicePersistPath(service);;
       try {
         try {
-          in = new ObjectInputStream(persistenceFS.open(getServicePersistPath(service)));
+          in = new ObjectInputStream(persistenceFS.open(path));
         } catch (FileNotFoundException fe) {
-          log.warn("No persist path available for service:{}", service.getName(), fe);
+          log.warn("Persisted state not available for service: {} at: {}", service.getName(), path);
           continue;
         }
         service.readExternal(in);
-        log.info("Recovered service {} from persisted state", service.getName());
+        log.info("Recovered service {} from persisted state {}", service.getName(), path);
       } finally {
         if (in != null) {
           in.close();
@@ -416,7 +417,7 @@ public class LensServices extends CompositeService implements ServiceProvider {
             persistenceFS.close();
             log.info("Persistence File system object close complete");
           } catch (Exception e) {
-            log.error("Error while closing server snapshot persistence file", e);
+            log.error("Error while closing Persistence File system object", e);
           }
         }
       }

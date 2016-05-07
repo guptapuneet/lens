@@ -295,7 +295,7 @@ public class LensServices extends CompositeService implements ServiceProvider {
             log.info("SnapShot of Lens Services created");
           } catch (Exception e) {
             incrCounter(SERVER_STATE_PERSISTENCE_ERRORS);
-            log.warn("Unable to persist lens server state", e);
+            log.error("Unable to persist lens server state", e);
           }
         }
       }, serverStatePersistenceInterval, serverStatePersistenceInterval, TimeUnit.MILLISECONDS);
@@ -317,7 +317,7 @@ public class LensServices extends CompositeService implements ServiceProvider {
         try {
           in = new ObjectInputStream(persistenceFS.open(getServicePersistPath(service)));
         } catch (FileNotFoundException fe) {
-          log.warn("No persist path available for service:{}", service.getName());
+          log.warn("No persist path available for service:{}", service.getName(), fe);
           continue;
         }
         service.readExternal(in);

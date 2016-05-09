@@ -417,6 +417,7 @@ public class LensServices extends CompositeService implements ServiceProvider {
             persistenceFS.close();
             log.info("Persistence File system object close complete");
           } catch (Exception e) {
+            incrCounter(SERVER_STATE_PERSISTENCE_ERRORS);
             log.error("Error while closing Persistence File system object", e);
           }
         }

@@ -48,7 +48,7 @@ Lens session configuration
 *--+--+---+--+
 |12|lens.query.add.insert.overwrite|true|Prefix query with insert overwrite clause if the query is persistent. User can disable if user gave the clause himself.|
 *--+--+---+--+
-|13|lens.query.cancel.on.timeout|true|Specifies whether to attempt cancelling a query whose execution takes longer than the timeout value specified while submitting the query for execution. The default value is true.|
+|13|lens.query.cancel.on.timeout|true|Specifies whether to attempt cancellation of a query whose execution takes longer than the timeout value specified while submitting the query for execution. The default value is true.|
 *--+--+---+--+
 |14|lens.query.enable.mail.notify|false|When a query ends, whether to notify the submitter by mail or not.|
 *--+--+---+--+

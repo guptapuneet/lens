@@ -2309,12 +2309,13 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
 
   private boolean cancelQuery(@NonNull QueryHandle queryHandle) throws LensException {
     QueryContext ctx =  allQueries.get(queryHandle);
-    synchronized (ctx) {
-      if (ctx == null) {
-        log.info("Could not cancel query {} as it has been purged already", queryHandle);
-        return false;
-      }
 
+    if (ctx == null) {
+      log.info("Could not cancel query {} as it has been purged already", queryHandle);
+      return false;
+    }
+
+    synchronized (ctx) {
       if (ctx.finished()) {
         log.info("Could not cancel query {} as it has finished execution already", queryHandle);
         return false;

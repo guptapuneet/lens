@@ -1304,7 +1304,7 @@ public class TestQueryService extends LensJerseyTest {
     assertTrue(result.getStatus().queued());
     int checkCtr = 0;
     boolean cancelled = false;
-    while (!cancelled && checkCtr++ < 100) { //Max 20 secs wait
+    while (!cancelled && checkCtr++ < 100) { //Max 10 secs wait
       Thread.sleep(100); //wait for query to get auto cancelled
       cancelled = queryService.getUpdatedQueryContext(lensSessionId, result.getQueryHandle()).getStatus().cancelled();
     }

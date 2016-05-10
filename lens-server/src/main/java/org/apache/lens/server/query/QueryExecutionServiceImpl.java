@@ -1329,7 +1329,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
 
   private void startQueryCancellationPool() {
     ThreadFactory factory = new BasicThreadFactory.Builder()
-      .namingPattern("query-killer-pool-Thread-%d")
+      .namingPattern("query-cancellation-pool-Thread-%d")
       .priority(Thread.NORM_PRIORITY)
       .build();
     //Using fixed values for pool . corePoolSize = maximumPoolSize = 3  and keepAliveTime = 60 secs
@@ -2069,7 +2069,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     }
     if (isQueued) { //query is still queued even after waiting for timeoutMillis
       result.setStatus(ctx.getStatus());
-      addQueryToCancellationPoolOnTimeout(ctx, conf, timeoutMillis); //cancel the timed-out Query
+      addQueryToCancellationPool(ctx, conf, timeoutMillis); //cancel the timed-out Query
       return result;
     }
 
@@ -2140,7 +2140,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     result.setStatus(queryCtx.getStatus());
 
     if (!queryCtx.finished()) {
-      addQueryToCancellationPoolOnTimeout(queryCtx, conf, timeoutMillis); //cancel the timed-out Query
+      addQueryToCancellationPool(queryCtx, conf, timeoutMillis); //cancel the timed-out Query
     }
 
     return result;
@@ -2151,7 +2151,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    * The query gets cancelled asynchronously
    * Note : lens.query.cancel.on.timeout should be true for cancellation
    */
-  private void addQueryToCancellationPoolOnTimeout(QueryContext queryCtx, Configuration config, long timeoutMillis) {
+  private void addQueryToCancellationPool(QueryContext queryCtx, Configuration config, long timeoutMillis) {
     if (config.getBoolean(CANCEL_QUERY_ON_TIMEOUT, DEFAULT_CANCEL_QUERY_ON_TIMEOUT)) {
       log.info("Query {} will be cancelled as it could not be completed within the specified timeout interval {}",
         queryCtx.getQueryHandle(), timeoutMillis);
@@ -2326,8 +2326,8 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         }
       }
 
-      setCancelledStatus(ctx, "Query is cancelled");
       log.info("Query {} cancelled successfully", queryHandle);
+      setCancelledStatus(ctx, "Query is cancelled");
       return true;
     }
   }

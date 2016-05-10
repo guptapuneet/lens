@@ -1081,7 +1081,7 @@ public final class LensConfConstants {
   public static final long DEFAULT_STATUS_UPDATE_EXPONENTIAL_WAIT_FACTOR = 30000;
 
   /**
-   * Specifies whether to attempt cancelling a query whose execution takes longer than the timeout value
+   * Specifies whether to attempt cancellation of a query whose execution takes longer than the timeout value
    * specified while submitting the query for execution.
    */
   public static final String CANCEL_QUERY_ON_TIMEOUT = QUERY_PFX + "cancel.on.timeout";

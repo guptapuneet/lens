@@ -2101,9 +2101,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     // formatting and persistence) the query status can be RUNNING or EXECUTED or FAILED or SUCCESSFUL
     LensResultSet resultSet = null;
     queryCtx = getUpdatedQueryContext(sessionHandle, handle, true); // If the query is already purged queryCtx = null
-    if (queryCtx != null
-      && (listener.querySuccessful || queryCtx.getStatus().executed() || queryCtx.getStatus().successful())
-      && queryCtx.getStatus().isResultSetAvailable()) {
+    if (queryCtx != null && queryCtx.getStatus().isResultSetAvailable()) {
       resultSet = queryCtx.getSelectedDriver().fetchResultSet(queryCtx);
       if (resultSet instanceof PartiallyFetchedInMemoryResultSet) {
         PartiallyFetchedInMemoryResultSet partialnMemoryResult = (PartiallyFetchedInMemoryResultSet) resultSet;
@@ -2309,13 +2307,15 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
 
   private boolean cancelQuery(@NonNull QueryHandle queryHandle) throws LensException {
     QueryContext ctx =  allQueries.get(queryHandle);
-
     if (ctx == null) {
       log.info("Could not cancel query {} as it has been purged already", queryHandle);
       return false;
     }
 
     synchronized (ctx) {
+
+      updateStatus(queryHandle);
+
       if (ctx.finished()) {
         log.info("Could not cancel query {} as it has finished execution already", queryHandle);
         return false;

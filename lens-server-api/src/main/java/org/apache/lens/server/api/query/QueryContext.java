@@ -485,7 +485,10 @@ public class QueryContext extends AbstractQueryContext {
     if (isDriverResultRegistered) {
       return; //already registered
     }
+    log.info("Registering {} driver resultset for query {}", getSelectedDriver().getFullyQualifiedName(),
+      getQueryHandleString());
     this.isDriverResultRegistered = true;
+
     /*
      *  Check if results needs to be streamed to client in which case driver result needs to be wrapped in
      *  PartiallyFetchedInMemoryResultSet
@@ -506,6 +509,9 @@ public class QueryContext extends AbstractQueryContext {
         if (System.currentTimeMillis() < executeTimeOutTime) {
           this.driverResult = new PartiallyFetchedInMemoryResultSet((InMemoryResultSet) result, rowsToPreFetch);
           return;
+        } else {
+          log.info("Skipping creation of PartiallyFetchedInMemoryResultSet as the query {} has already timed out",
+            getQueryHandleString());
         }
       }
     }

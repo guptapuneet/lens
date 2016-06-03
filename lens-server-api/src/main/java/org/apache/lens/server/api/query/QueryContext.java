@@ -485,8 +485,7 @@ public class QueryContext extends AbstractQueryContext {
     if (isDriverResultRegistered) {
       return; //already registered
     }
-    log.info("Registering {} driver resultset for query {}", getSelectedDriver().getFullyQualifiedName(),
-      getQueryHandleString());
+    log.info("Registering driver resultset for query {}", getQueryHandleString());
     this.isDriverResultRegistered = true;
 
     /*

@@ -61,7 +61,8 @@ public class QueryEndHttpNotifier extends QueryEventHttpNotifier<QueryEnded> {
   @Override
   protected void updateExtraEventDetails(QueryEvent event, QueryContext queryContext,
     Map<String, Object> eventDetails) {
-    eventDetails.put("status", event.getCurrentValue());
+    //Nothing specific as of now. We can attach query results later if required.
+    //eventDetails.put("status", event.getCurrentValue());//TODO Remove
   }
 
   @Override

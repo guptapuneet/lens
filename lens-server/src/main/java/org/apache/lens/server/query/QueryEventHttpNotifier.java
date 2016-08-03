@@ -102,8 +102,8 @@ public abstract class QueryEventHttpNotifier<T extends QueryEvent> extends Async
     boolean isQueryHTTPNotificationEnabled = queryContext.getConf().getBoolean(
       QUERY_HTTP_NOTIFICATION_TYPE__PFX + getNotificationType().name(), false);
     if (!isQueryHTTPNotificationEnabled) {
-      log.info("HTTP notification on query {} is not enabled. Skipping {} notification",
-        queryContext.getQueryHandleString(), getNotificationType());
+      log.info("{} HTTP notification for query {} is not enabled",
+        getNotificationType(), queryContext.getQueryHandleString());
       return false;
     }
 
@@ -137,14 +137,15 @@ public abstract class QueryEventHttpNotifier<T extends QueryEvent> extends Async
     updateBasicEventDetails(event, queryContext, eventDetails);
     updateExtraEventDetails(event, queryContext, eventDetails);
 
+    int responseCode;
     for (String httpEndPoint : httpEndPoints) {
       try {
-        notifyEvent(httpEndPoint, eventDetails, MediaType.valueOf(mediaType));
-        log.info("{} HTTP Notification sent successfully for query {} to {}", getNotificationType(),
-          queryContext.getQueryHandleString(), httpEndPoint);
+        responseCode = notifyEvent(httpEndPoint, eventDetails, MediaType.valueOf(mediaType));
+        log.info("{} HTTP Notification sent successfully for query {} to {}. Response code {}", getNotificationType(),
+          queryContext.getQueryHandleString(), httpEndPoint, responseCode);
       } catch (LensException e) {
-        log.error("Error while sending {} HTTP Notification for Query ", getNotificationType(),
-          queryContext.getQueryHandleString(), e);
+        log.error("Error while sending {} HTTP Notification for Query {} to {}", getNotificationType(),
+          queryContext.getQueryHandleString(), httpEndPoint,  e);
       }
     }
   }
@@ -160,11 +161,12 @@ public abstract class QueryEventHttpNotifier<T extends QueryEvent> extends Async
     Map<String, Object> eventDetails) {
     eventDetails.put("eventtype", getNotificationType().name());
     eventDetails.put("eventtime", event.getEventTime());
-    eventDetails.put("queryid", event.getQueryHandle().getHandleIdString());
+/*    eventDetails.put("queryid", event.getQueryHandle().getHandleIdString());
     if (org.apache.commons.lang3.StringUtils.isNotEmpty(queryContext.getQueryName())) {
       eventDetails.put("queryname", queryContext.getQueryName());
     }
-    eventDetails.put("user", queryContext.getSubmittedUser());
+    eventDetails.put("user", queryContext.getSubmittedUser());*/
+    eventDetails.put("query",queryContext.toLensQuery());
   }
 
   /**
@@ -184,16 +186,19 @@ public abstract class QueryEventHttpNotifier<T extends QueryEvent> extends Async
    * @param httpEndPoint
    * @param eventDetails
    * @param mediaType
-   * @throws LensException
+   * @return response code in case of success
+   * @throws LensException in case of exception or http response status != 2XX
    */
-  private void notifyEvent(String httpEndPoint, Map<String, Object> eventDetails, MediaType mediaType)
+  private int notifyEvent(String httpEndPoint, Map<String, Object> eventDetails, MediaType mediaType)
     throws LensException {
 
     final WebTarget target = buildClient().target(httpEndPoint);//.path("/queryapi/queries/");
     FormDataMultiPart mp = new FormDataMultiPart();
     for (Map.Entry<String, Object> eventDetail : eventDetails.entrySet()) {
+      MediaType finalMediaType = (eventDetail.getValue() instanceof Number || eventDetail.getValue() instanceof String)
+        ? MediaType.TEXT_PLAIN_TYPE : mediaType;
       mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name(eventDetail.getKey()).build(),
-        eventDetail.getValue(), mediaType));
+        eventDetail.getValue(), finalMediaType));
     }
     Response response = null;
     try {
@@ -201,9 +206,11 @@ public abstract class QueryEventHttpNotifier<T extends QueryEvent> extends Async
     } catch (Exception e) {
       throw new LensException("Error while publishing Http notification", e);
     }
-    if (response.getStatus() != 200) {
+    //2XX = SUCCESS
+    if (!(response.getStatus() >= 200 && response.getStatus() < 300)) {
       throw new LensException("Error while publishing Http notification. Response code " + response.getStatus());
     }
+    return response.getStatus();
   }
 
   /**
@@ -222,10 +229,4 @@ public abstract class QueryEventHttpNotifier<T extends QueryEvent> extends Async
       config.getInt(HTTP_NOTIFICATION_READ_TIMEOUT_MILLIS, DEFAULT_HTTP_NOTIFICATION_READ_TIMEOUT_MILLIS));
     return client;
   }
-
-
-/*  public static void main(String[] args) throws LensException {
-    Map<String,Object> details = new HashedMap(5){{put("sessionid","12345");put("query","88888999");put("abcd", QueryHandle.fromString("9178d449-57d2-4ccd-b554-6df916d1f03d"));}};
-    new QueryEventHttpNotifier(null).notifyEvent("http://krns4101.grid.uh1.inmobi.com:8080/lensapi/queryapi/queries/9178d449-57d2-4ccd-b554-6df916d1f03d/httpresultset", details);
-  }*/
 }

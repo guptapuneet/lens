@@ -46,13 +46,11 @@ public class TestQueryNotifictaionResource {
   public void prepareQuery(
     @FormDataParam("eventtype") String eventtype,
     @FormDataParam("eventtime") String eventtime,
-    @FormDataParam("queryid") String queryid,
-    @FormDataParam("queryname") String queryname,
-    @FormDataParam("user") String user,
-    @FormDataParam("status") QueryStatus.Status status) throws LensException {
+    @FormDataParam("query") LensQuery query) throws LensException {
 
-    System.out.println("Received Finished Event for queryid: " + queryid + " queryname:" + queryname
-      + " user:" + user + " status:" + status + " eventtype:" + eventtype);
+    System.out.println("@@@@ Received Finished Event for queryid: " + query.getQueryHandleString()
+      + " queryname:"+ query.getQueryName() + " user:" + query.getSubmittedUser()
+      + " status:" + query.getStatus() + " eventtype:" + eventtype);
 
     finished_count++;
   }

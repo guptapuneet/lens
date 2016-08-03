@@ -1895,17 +1895,22 @@ public class TestQueryService extends LensJerseyTest {
 
   @Test
   public void testFinishedNotifictaion() throws LensException, InterruptedException {
-    String query_success = "select ID, IDSTR, count(*) from " + TEST_TABLE + " group by ID, IDSTR";
+    String query = "select ID, IDSTR, count(*) from " + TEST_TABLE + " group by ID, IDSTR";
     String endpoint = getBaseUri()+"/queryapi/notifictaion/finished";
     LensConf conf = new LensConf();
     conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICATION_TYPE__PFX+"FINISHED", "true");
     conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICATION_TYPE__PFX+"FINISHED", "true");
     conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICTAION_MEDIATYPE, MediaType.APPLICATION_JSON);
     conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICTAION_URLS , endpoint+" , "+endpoint);
-    queryService.execute(lensSessionId, query_success, 20000, conf, "testHttpNotifictaionQuery");
-    assertEquals(TestQueryNotifictaionResource.finished_count,2);
 
-    String query_fail = "select ID, IDSTR, count(*) from " + TEST_TABLE + " group by ID, IDSTR limit -99";
+    queryService.execute(lensSessionId, query, 20000, conf, "testHttpNotifictaionQuery");
+    Thread.sleep(3000);
+    assertEquals(TestQueryNotifictaionResource.successful_count,2 ," count : " + TestQueryNotifictaionResource.finished_count);
 
+    conf.addProperty(LensConfConstants.QUERY_PERSISTENT_RESULT_SET , "true");
+    conf.addProperty(LensConfConstants.QUERY_OUTPUT_FORMATTER, "wrong.formatter");
+    queryService.execute(lensSessionId, query, 20000, conf, "testHttpNotifictaionQuery");
+    Thread.sleep(3000);
+    assertEquals(TestQueryNotifictaionResource.failed_count,2, "count : " + TestQueryNotifictaionResource.finished_count);
   }
 }

@@ -128,7 +128,7 @@ public abstract class QueryEventHttpNotifier<T extends QueryEvent> extends Async
         queryContext.getQueryHandleString(), getNotificationType());
       return;
     } else {
-      httpEndPoints = httpEndPointDetails.trim().split(","); //TODO split with ", "," "
+      httpEndPoints = httpEndPointDetails.trim().split("\\s*,\\s*"); //TODO split with ", "," "
     }
     String mediaType = queryContext.getConf().get(QUERY_HTTP_NOTIFICTAION_MEDIATYPE,
       DEFAULT_QUERY_HTTP_NOTIFICTAION_MEDIATYPE);

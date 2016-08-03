@@ -38,6 +38,8 @@ import lombok.extern.slf4j.Slf4j;
 public class TestQueryNotifictaionResource {
 
   public static int finished_count = 0;
+  public static int successful_count = 0;
+  public static int failed_count = 0;
 
   @POST
   @Path("finished")
@@ -53,6 +55,13 @@ public class TestQueryNotifictaionResource {
       + " status:" + query.getStatus() + " eventtype:" + eventtype);
 
     finished_count++;
+
+    if(query.getStatus().successful()) {
+      successful_count++;
+    } else if (query.getStatus().failed()) {
+      failed_count++;
+    }
   }
+
 
 }

@@ -18,6 +18,8 @@
  */
 package org.apache.lens.server.api;
 
+import javax.ws.rs.core.MediaType;
+
 import org.apache.lens.server.api.error.LensException;
 
 /**
@@ -1098,4 +1100,20 @@ public final class LensConfConstants {
    * Query current time for the scheduled query.
    */
   public static final String QUERY_CURRENT_TIME_IN_MILLIS = QUERY_PFX + "current.time.millis";
+
+  public static final String HTTP_NOTIFICATION_CONN_TIMEOUT_MILLIS = SERVER_PFX + "http.notification.conn.timeout.millis";
+
+  public static final int DEFAULT_HTTP_NOTIFICATION_CONN_TIMEOUT_MILLIS = 5000; //5 secs
+
+  public static final String HTTP_NOTIFICATION_READ_TIMEOUT_MILLIS = SERVER_PFX + "http.notification.read.timeout.millis";
+
+  public static final int DEFAULT_HTTP_NOTIFICATION_READ_TIMEOUT_MILLIS = 5000; //5 secs
+
+  public static final String QUERY_HTTP_NOTIFICATION_TYPE__PFX = QUERY_PFX + "http.notication.type.";
+
+  public static final String QUERY_HTTP_NOTIFICTAION_URLS = QUERY_PFX + "http.notifictaion.urls";
+
+  public static final String QUERY_HTTP_NOTIFICTAION_MEDIATYPE = QUERY_PFX + "http.notifictaion.mediatype";
+
+  public static final String DEFAULT_QUERY_HTTP_NOTIFICTAION_MEDIATYPE = MediaType.TEXT_PLAIN;
 }

@@ -114,6 +114,7 @@ public class TestQueryService extends LensJerseyTest {
       final Set<Class<?>> classes = super.getClasses();
       classes.add(GenericExceptionMapper.class);
       classes.add(LensJAXBContextResolver.class);
+      //classes.add(TestQueryNotifictaionResource.class);
       return classes;
     }
   }
@@ -1387,7 +1388,7 @@ public class TestQueryService extends LensJerseyTest {
   }
   /**
    * Data provider for test case
-   * {@link #testExecuteWithTimeoutAndPreFetchAndServerPersistence(long, int, boolean, long)}
+   * {@link #testExecuteWithTimeoutAndPreFetchAndServerPersistence(long, int, boolean, long, String, int)}
    */
   @DataProvider
   public Object[][] executeWithTimeoutAndPreFetechAndServerPersistenceDP() {
@@ -1889,5 +1890,18 @@ public class TestQueryService extends LensJerseyTest {
   @AfterMethod
   private void waitForPurge() throws InterruptedException {
     waitForPurge(0, queryService.finishedQueries);
+  }
+
+
+  @Test
+  public void testFinishedNotifictaion() throws LensException, InterruptedException {
+    String query = "select ID, IDSTR, count(*) from " + TEST_TABLE + " group by ID, IDSTR";
+    LensConf conf = new LensConf();
+    conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICATION_TYPE__PFX+"FINISHED", "true");
+    conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICTAION_URLS , getBaseUri()+"//queryapi/finished");
+    queryService.execute(lensSessionId, query, 20000, conf, "testHttpNotifictaionQuery");
+    Thread.sleep(5000);
+    assertEquals(TestQueryNotifictaionResource.finished_count,1);
+
   }
 }

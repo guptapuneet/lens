@@ -1899,7 +1899,7 @@ public class TestQueryService extends LensJerseyTest {
     String endpoint = getBaseUri() + "/queryapi/notifictaion/finished";
     LensConf conf = new LensConf();
     conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICATION_TYPE_FINISHED, "true");
-    conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICTAION_MEDIATYPE, mt);
+    conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICATION_MEDIATYPE, mt);
     conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICATION_URLS, endpoint + " , " + endpoint);
 
     //Test for SUCCESSFUL FINISH notification

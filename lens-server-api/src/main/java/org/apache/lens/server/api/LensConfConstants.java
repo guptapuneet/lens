@@ -895,10 +895,10 @@ public final class LensConfConstants {
   public static final int DEFAULT_LAUNCHER_POOL_MIN_THREADS = 3;
 
   /**
-   * Key used to get maximum number of threads in the laucnher thread pool
+   * Key used to get maximum number of threads in the launcher thread pool
    */
   public static final String LAUNCHER_POOL_MAX_THREADS = SERVER_PFX + "launcher.pool.max.threads";
-  // keeping the default to hundred, we may never grow till there, it would go to max for concurrrent queries allowed on
+  // keeping the default to hundred, we may never grow till there, it would go to max for concurrent queries allowed on
   // all drivers together.
   public static final int DEFAULT_LAUNCHER_POOL_MAX_THREADS = 100;
 
@@ -1121,17 +1121,22 @@ public final class LensConfConstants {
   /**
    * Default read timeout is 5 secs
    */
-  public static final int DEFAULT_HTTP_NOTIFICATION_READ_TIMEOUT_MILLIS = 5000; //5 secs
+  public static final int DEFAULT_HTTP_NOTIFICATION_READ_TIMEOUT_MILLIS = 10000; //10 secs
 
   /**
    * This is the media type for Query Http notifications
    */
-  public static final String QUERY_HTTP_NOTIFICTAION_MEDIATYPE = QUERY_PFX + "http.notification.mediatype";
+  public static final String QUERY_HTTP_NOTIFICATION_MEDIATYPE = QUERY_PFX + "http.notification.mediatype";
 
   /**
-   * This is the default media type for all Qerry Http notifictaions
+   * This is the default media type for all Query Http notifications
    */
-  public static final String DEFAULT_QUERY_HTTP_NOTIFICTAION_MEDIATYPE = MediaType.APPLICATION_JSON;
+  public static final String DEFAULT_QUERY_HTTP_NOTIFICATION_MEDIATYPE = MediaType.APPLICATION_JSON;
+
+  /**
+   * These are the end points for Query http notifications. Users can specify more than one comma separated end points
+   */
+  public static final String QUERY_HTTP_NOTIFICATION_URLS = QUERY_PFX + "http.notification.urls";
 
   /**
    * This is the prefix for Query http Notification. User is expected to add notification type along with prefix
@@ -1144,9 +1149,6 @@ public final class LensConfConstants {
    */
   public static final String QUERY_HTTP_NOTIFICATION_TYPE_FINISHED = QUERY_HTTP_NOTIFICATION_TYPE__PFX + "FINISHED";
 
-  /**
-   * These are the end points for Query http notifictaions. Users can specify more than one comma separated end points
-   */
-  public static final String QUERY_HTTP_NOTIFICATION_URLS = QUERY_PFX + "http.notification.urls";
+
 
 }

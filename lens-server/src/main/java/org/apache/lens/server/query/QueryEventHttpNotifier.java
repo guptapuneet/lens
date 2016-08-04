@@ -131,8 +131,8 @@ public abstract class QueryEventHttpNotifier<T extends QueryEvent> extends Async
     } else {
       httpEndPoints = httpEndPointDetails.trim().split("\\s*,\\s*");
     }
-    String mediaType = queryContext.getConf().get(QUERY_HTTP_NOTIFICTAION_MEDIATYPE,
-      DEFAULT_QUERY_HTTP_NOTIFICTAION_MEDIATYPE);
+    String mediaType = queryContext.getConf().get(QUERY_HTTP_NOTIFICATION_MEDIATYPE,
+      DEFAULT_QUERY_HTTP_NOTIFICATION_MEDIATYPE);
 
     Map<String, Object> eventDetails = new HashMap<>();
     updateBasicEventDetails(event, queryContext, eventDetails);
@@ -211,7 +211,7 @@ public abstract class QueryEventHttpNotifier<T extends QueryEvent> extends Async
   }
 
   /**
-   * Builds a rest client which has a connection and read timeout of 5 secs by default.
+   * Builds a rest client which has a connection and read timeout of 5 and 10 secs respectively by default.
    *
    * @return
    */

@@ -1893,24 +1893,35 @@ public class TestQueryService extends LensJerseyTest {
   }
 
 
-  @Test
-  public void testFinishedNotifictaion() throws LensException, InterruptedException {
+  @Test(dataProvider = "mediaTypeData")
+  public void testFinishedNotifictaion(MediaType mt) throws LensException, InterruptedException {
     String query = "select ID, IDSTR, count(*) from " + TEST_TABLE + " group by ID, IDSTR";
-    String endpoint = getBaseUri()+"/queryapi/notifictaion/finished";
+    String endpoint = getBaseUri() + "/queryapi/notifictaion/finished";
     LensConf conf = new LensConf();
-    conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICATION_TYPE__PFX+"FINISHED", "true");
-    conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICATION_TYPE__PFX+"FINISHED", "true");
-    conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICTAION_MEDIATYPE, MediaType.APPLICATION_JSON);
-    conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICTAION_URLS , endpoint+" , "+endpoint);
+    conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICATION_TYPE_FINISHED, "true");
+    conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICTAION_MEDIATYPE, mt);
+    conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICATION_URLS, endpoint + " , " + endpoint);
 
+    //Test for SUCCESSFUL FINISH notification
     queryService.execute(lensSessionId, query, 20000, conf, "testHttpNotifictaionQuery");
-    Thread.sleep(3000);
-    assertEquals(TestQueryNotifictaionResource.successful_count,2 ," count : " + TestQueryNotifictaionResource.finished_count);
 
-    conf.addProperty(LensConfConstants.QUERY_PERSISTENT_RESULT_SET , "true");
+    //TEST for CANCELLED FINISH notification
+    conf.addProperty(LensConfConstants.QUERY_PERSISTENT_RESULT_SET, "true");
+    conf.addProperty(LensConfConstants.QUERY_OUTPUT_FORMATTER, DeferredPersistentResultFormatter.class.getName());
+    conf.addProperty("deferPersistenceByMillis", 5000); // defer persistence for 5 secs
+    QueryHandle hanlde = queryService.executeAsync(lensSessionId, query, conf, "testHttpNotifictaionQuery");
+    queryService.cancelQuery(lensSessionId, hanlde);
+
+    //Test for FAILED FINISH notification
     conf.addProperty(LensConfConstants.QUERY_OUTPUT_FORMATTER, "wrong.formatter");
     queryService.execute(lensSessionId, query, 20000, conf, "testHttpNotifictaionQuery");
-    Thread.sleep(3000);
-    assertEquals(TestQueryNotifictaionResource.failed_count,2, "count : " + TestQueryNotifictaionResource.finished_count);
+
+    Thread.sleep(3000); //Keep some time for notifications to get delivered
+    assertEquals(TestQueryNotifictaionResource.successful_count, 2);
+    assertEquals(TestQueryNotifictaionResource.cancelled_count, 2);
+    assertEquals(TestQueryNotifictaionResource.failed_count, 2);
+    assertEquals(TestQueryNotifictaionResource.finished_count, 6);
+
+    TestQueryNotifictaionResource.clearState();
   }
 }

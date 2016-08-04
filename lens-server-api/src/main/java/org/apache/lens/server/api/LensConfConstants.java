@@ -1101,19 +1101,52 @@ public final class LensConfConstants {
    */
   public static final String QUERY_CURRENT_TIME_IN_MILLIS = QUERY_PFX + "current.time.millis";
 
-  public static final String HTTP_NOTIFICATION_CONN_TIMEOUT_MILLIS = SERVER_PFX + "http.notification.conn.timeout.millis";
+  /**
+   * This is the connection timeout for all HTTP Notifications sent by lens server
+   */
+  public static final String HTTP_NOTIFICATION_CONN_TIMEOUT_MILLIS = SERVER_PFX
+    + "http.notification.conn.timeout.millis";
 
+  /**
+   * Default connection timeout is 5 secs
+   */
   public static final int DEFAULT_HTTP_NOTIFICATION_CONN_TIMEOUT_MILLIS = 5000; //5 secs
 
-  public static final String HTTP_NOTIFICATION_READ_TIMEOUT_MILLIS = SERVER_PFX + "http.notification.read.timeout.millis";
+  /**
+   * This is the read timeout for all HTTP Notifications sent by lens server
+   */
+  public static final String HTTP_NOTIFICATION_READ_TIMEOUT_MILLIS = SERVER_PFX
+    + "http.notification.read.timeout.millis";
 
+  /**
+   * Default read timeout is 5 secs
+   */
   public static final int DEFAULT_HTTP_NOTIFICATION_READ_TIMEOUT_MILLIS = 5000; //5 secs
 
-  public static final String QUERY_HTTP_NOTIFICATION_TYPE__PFX = QUERY_PFX + "http.notication.type.";
+  /**
+   * This is the media type for Query Http notifications
+   */
+  public static final String QUERY_HTTP_NOTIFICTAION_MEDIATYPE = QUERY_PFX + "http.notification.mediatype";
 
-  public static final String QUERY_HTTP_NOTIFICTAION_URLS = QUERY_PFX + "http.notifictaion.urls";
+  /**
+   * This is the default media type for all Qerry Http notifictaions
+   */
+  public static final String DEFAULT_QUERY_HTTP_NOTIFICTAION_MEDIATYPE = MediaType.APPLICATION_JSON;
 
-  public static final String QUERY_HTTP_NOTIFICTAION_MEDIATYPE = QUERY_PFX + "http.notifictaion.mediatype";
+  /**
+   * This is the prefix for Query http Notification. User is expected to add notification type along with prefix
+   */
+  public static final String QUERY_HTTP_NOTIFICATION_TYPE__PFX = QUERY_PFX + "http.notification.type.";
 
-  public static final String DEFAULT_QUERY_HTTP_NOTIFICTAION_MEDIATYPE = MediaType.TEXT_PLAIN;
+  /**
+   * This is the property for enabling Query finished Http notification. This will include successful, failed and
+   * cancelled queries.
+   */
+  public static final String QUERY_HTTP_NOTIFICATION_TYPE_FINISHED = QUERY_HTTP_NOTIFICATION_TYPE__PFX + "FINISHED";
+
+  /**
+   * These are the end points for Query http notifictaions. Users can specify more than one comma separated end points
+   */
+  public static final String QUERY_HTTP_NOTIFICATION_URLS = QUERY_PFX + "http.notification.urls";
+
 }

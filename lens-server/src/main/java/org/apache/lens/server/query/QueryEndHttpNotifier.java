@@ -30,19 +30,16 @@ import org.apache.lens.server.model.LogSegregationContext;
 
 import org.apache.hadoop.conf.Configuration;
 
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class QueryEndHttpNotifier extends QueryEventHttpNotifier<QueryEnded> {
 
-  private final Configuration config;
   private final LogSegregationContext logSegregationContext;
   private static final int CORE_POOL_SIZE = 3;
 
-  public QueryEndHttpNotifier(Configuration config, @NonNull final LogSegregationContext logSegregationContext) {
+  public QueryEndHttpNotifier(Configuration config, LogSegregationContext logSegregationContext) {
     super(config, CORE_POOL_SIZE);
-    this.config = config;
     this.logSegregationContext = logSegregationContext;
   }
 
@@ -53,16 +50,15 @@ public class QueryEndHttpNotifier extends QueryEventHttpNotifier<QueryEnded> {
   }
 
   @Override
-  protected boolean isHttpNotifictaionEnabled(QueryEvent event, QueryContext queryContext) {
+  protected boolean isHttpNotificationEnabled(QueryEvent event, QueryContext queryContext) {
     return (event.getCurrentValue() != QueryStatus.Status.CLOSED) // CLOSED QueryEnded events to be skipped
-      && super.isHttpNotifictaionEnabled(event, queryContext);
+      && super.isHttpNotificationEnabled(event, queryContext);
   }
 
   @Override
   protected void updateExtraEventDetails(QueryEvent event, QueryContext queryContext,
     Map<String, Object> eventDetails) {
-    //Nothing specific as of now. We can attach query results later if required.
-    //eventDetails.put("status", event.getCurrentValue());//TODO Remove
+    //Nothing specific as of now for finished queries. We can attach query results later if required.
   }
 
   @Override

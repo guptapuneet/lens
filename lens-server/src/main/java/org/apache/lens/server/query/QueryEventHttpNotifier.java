@@ -52,10 +52,10 @@ import org.glassfish.jersey.moxy.json.MoxyJsonFeature;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Base class for all QueryEvent HTTP Notifictaions. Subclasses are expected to override
- * @{link #getNotificationType} and @{link {@link #updateExtraEventDetails(QueryEnded, QueryContext, Map)}}.
- * Subclasses can also override @{link {@link #isHttpNotifictaionEnabled(QueryEvent, QueryContext)}} if specific
- * logic is required to check if http notification is enabled for an event.
+ * Base class for all QueryEvent HTTP Notifications. Subclasses are expected to override
+ * @{link #getNotificationType} and {@link #updateExtraEventDetails(QueryEvent, QueryContext, Map)}.
+ * Subclasses can also override @{link {@link #isHttpNotificationEnabled(QueryEvent, QueryContext)}} if specific
+ * logic is required to check whether http notification is enabled/intended for an event.
  *
  */
 
@@ -71,14 +71,15 @@ public abstract class QueryEventHttpNotifier<T extends QueryEvent> extends Async
 
   /**
    * Type of query notifications that are supported.
-   * We can add to this list once we support more notifictaion types.
+   * We can add to this list once we support more notification types.
    */
   protected static enum NotificationType {
     FINISHED,
-    LAUNCHED;
+    LAUNCHED
   }
+
   /**
-   * Return the type of query NotificationType.
+   * Return the type of query Notification handled.
    * Expecting subclasses to pass appropriate type.
    * @return
    */
@@ -86,12 +87,12 @@ public abstract class QueryEventHttpNotifier<T extends QueryEvent> extends Async
 
   /**
    * Checks if the events needs a HTTP notification.
-   * 
+   *
    * @param event
    * @param queryContext
    * @return
    */
-  protected boolean isHttpNotifictaionEnabled(QueryEvent event, QueryContext queryContext) {
+  protected boolean isHttpNotificationEnabled(QueryEvent event, QueryContext queryContext) {
 
     if (queryContext == null) {
       log.warn("Could not find the context for {} for event:{}. {} HTTP Notification will be generated",
@@ -116,19 +117,19 @@ public abstract class QueryEventHttpNotifier<T extends QueryEvent> extends Async
    * @param event
    * @param queryContext
    */
-  public void process(QueryEnded event, QueryContext queryContext) {
-    if (!isHttpNotifictaionEnabled(event, queryContext)) {
+  protected void process(QueryEnded event, QueryContext queryContext) {
+    if (!isHttpNotificationEnabled(event, queryContext)) {
       return;
     }
 
-    String httpEndPointDetails = queryContext.getConf().get(QUERY_HTTP_NOTIFICTAION_URLS);
+    String httpEndPointDetails = queryContext.getConf().get(QUERY_HTTP_NOTIFICATION_URLS);
     String[] httpEndPoints = null;
     if (StringUtils.isEmpty(httpEndPointDetails)) {
       log.warn("HTTP notification end points not set for query {}. Skipping {} notification",
         queryContext.getQueryHandleString(), getNotificationType());
       return;
     } else {
-      httpEndPoints = httpEndPointDetails.trim().split("\\s*,\\s*"); //TODO split with ", "," "
+      httpEndPoints = httpEndPointDetails.trim().split("\\s*,\\s*");
     }
     String mediaType = queryContext.getConf().get(QUERY_HTTP_NOTIFICTAION_MEDIATYPE,
       DEFAULT_QUERY_HTTP_NOTIFICTAION_MEDIATYPE);
@@ -145,7 +146,7 @@ public abstract class QueryEventHttpNotifier<T extends QueryEvent> extends Async
           queryContext.getQueryHandleString(), httpEndPoint, responseCode);
       } catch (LensException e) {
         log.error("Error while sending {} HTTP Notification for Query {} to {}", getNotificationType(),
-          queryContext.getQueryHandleString(), httpEndPoint,  e);
+          queryContext.getQueryHandleString(), httpEndPoint, e);
       }
     }
   }
@@ -161,12 +162,7 @@ public abstract class QueryEventHttpNotifier<T extends QueryEvent> extends Async
     Map<String, Object> eventDetails) {
     eventDetails.put("eventtype", getNotificationType().name());
     eventDetails.put("eventtime", event.getEventTime());
-/*    eventDetails.put("queryid", event.getQueryHandle().getHandleIdString());
-    if (org.apache.commons.lang3.StringUtils.isNotEmpty(queryContext.getQueryName())) {
-      eventDetails.put("queryname", queryContext.getQueryName());
-    }
-    eventDetails.put("user", queryContext.getSubmittedUser());*/
-    eventDetails.put("query",queryContext.toLensQuery());
+    eventDetails.put("query", queryContext.toLensQuery());
   }
 
   /**
@@ -192,15 +188,16 @@ public abstract class QueryEventHttpNotifier<T extends QueryEvent> extends Async
   private int notifyEvent(String httpEndPoint, Map<String, Object> eventDetails, MediaType mediaType)
     throws LensException {
 
-    final WebTarget target = buildClient().target(httpEndPoint);//.path("/queryapi/queries/");
+    final WebTarget target = buildClient().target(httpEndPoint);
     FormDataMultiPart mp = new FormDataMultiPart();
     for (Map.Entry<String, Object> eventDetail : eventDetails.entrySet()) {
-      MediaType finalMediaType = (eventDetail.getValue() instanceof Number || eventDetail.getValue() instanceof String)
-        ? MediaType.TEXT_PLAIN_TYPE : mediaType;
+      //Using plain format for primitive data types.
+      MediaType resolvedMediaType = (eventDetail.getValue() instanceof Number
+        || eventDetail.getValue() instanceof String) ? MediaType.TEXT_PLAIN_TYPE : mediaType;
       mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name(eventDetail.getKey()).build(),
-        eventDetail.getValue(), finalMediaType));
+        eventDetail.getValue(), resolvedMediaType));
     }
-    Response response = null;
+    Response response;
     try {
       response = target.request().post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE));
     } catch (Exception e) {
@@ -214,7 +211,7 @@ public abstract class QueryEventHttpNotifier<T extends QueryEvent> extends Async
   }
 
   /**
-   * Builds a rest client which has  a connection and read timeout of 5 secs by default.
+   * Builds a rest client which has a connection and read timeout of 5 secs by default.
    *
    * @return
    */

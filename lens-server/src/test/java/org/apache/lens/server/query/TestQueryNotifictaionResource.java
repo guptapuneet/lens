@@ -40,6 +40,7 @@ public class TestQueryNotifictaionResource {
   public static int finished_count = 0;
   public static int successful_count = 0;
   public static int failed_count = 0;
+  public static int cancelled_count = 0;
 
   @POST
   @Path("finished")
@@ -51,16 +52,25 @@ public class TestQueryNotifictaionResource {
     @FormDataParam("query") LensQuery query) throws LensException {
 
     System.out.println("@@@@ Received Finished Event for queryid: " + query.getQueryHandleString()
-      + " queryname:"+ query.getQueryName() + " user:" + query.getSubmittedUser()
+      + " queryname:" + query.getQueryName() + " user:" + query.getSubmittedUser()
       + " status:" + query.getStatus() + " eventtype:" + eventtype);
 
     finished_count++;
 
-    if(query.getStatus().successful()) {
+    if (query.getStatus().successful()) {
       successful_count++;
     } else if (query.getStatus().failed()) {
       failed_count++;
+    } else if (query.getStatus().cancelled()) {
+      cancelled_count++;
     }
+  }
+
+  public static void clearState() {
+    finished_count = 0;
+    successful_count = 0;
+    cancelled_count = 0;
+    failed_count = 0;
   }
 
 

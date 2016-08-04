@@ -62,7 +62,7 @@ public class QueryEndHttpNotifier extends QueryEventHttpNotifier<QueryEnded> {
   }
 
   @Override
-  NotificationType getNotificationType() {
+  protected NotificationType getNotificationType() {
     return NotificationType.FINISHED;
   }
 }

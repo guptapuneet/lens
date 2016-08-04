@@ -26,10 +26,9 @@ import org.apache.lens.api.query.*;
 import org.apache.lens.server.api.error.LensException;
 
 
-import org.apache.commons.lang.StringUtils;
-
 import org.glassfish.jersey.media.multipart.FormDataParam;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -37,10 +36,14 @@ import lombok.extern.slf4j.Slf4j;
 @Path("/queryapi/notifictaion")
 public class TestQueryNotifictaionResource {
 
-  public static int finished_count = 0;
-  public static int successful_count = 0;
-  public static int failed_count = 0;
-  public static int cancelled_count = 0;
+  @Getter
+  private static int finishedCount = 0;
+  @Getter
+  private static int successfulCount = 0;
+  @Getter
+  private static int failedCount = 0;
+  @Getter
+  private static int cancelledCount = 0;
 
   @POST
   @Path("finished")
@@ -55,22 +58,22 @@ public class TestQueryNotifictaionResource {
       + " queryname:" + query.getQueryName() + " user:" + query.getSubmittedUser()
       + " status:" + query.getStatus() + " eventtype:" + eventtype);
 
-    finished_count++;
+    finishedCount++;
 
     if (query.getStatus().successful()) {
-      successful_count++;
+      successfulCount++;
     } else if (query.getStatus().failed()) {
-      failed_count++;
+      failedCount++;
     } else if (query.getStatus().cancelled()) {
-      cancelled_count++;
+      cancelledCount++;
     }
   }
 
   public static void clearState() {
-    finished_count = 0;
-    successful_count = 0;
-    cancelled_count = 0;
-    failed_count = 0;
+    finishedCount = 0;
+    successfulCount = 0;
+    cancelledCount = 0;
+    failedCount = 0;
   }
 
 

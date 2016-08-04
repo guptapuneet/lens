@@ -1141,13 +1141,13 @@ public final class LensConfConstants {
   /**
    * This is the prefix for Query http Notification. User is expected to add notification type along with prefix
    */
-  public static final String QUERY_HTTP_NOTIFICATION_TYPE__PFX = QUERY_PFX + "http.notification.type.";
+  public static final String QUERY_HTTP_NOTIFICATION_TYPE_PFX = QUERY_PFX + "http.notification.type.";
 
   /**
    * This is the property for enabling Query finished Http notification. This will include successful, failed and
    * cancelled queries.
    */
-  public static final String QUERY_HTTP_NOTIFICATION_TYPE_FINISHED = QUERY_HTTP_NOTIFICATION_TYPE__PFX + "FINISHED";
+  public static final String QUERY_HTTP_NOTIFICATION_TYPE_FINISHED = QUERY_HTTP_NOTIFICATION_TYPE_PFX + "FINISHED";
 
 
 

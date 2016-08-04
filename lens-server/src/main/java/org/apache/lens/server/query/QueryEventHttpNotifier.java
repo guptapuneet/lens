@@ -83,7 +83,7 @@ public abstract class QueryEventHttpNotifier<T extends QueryEvent> extends Async
    * Expecting subclasses to pass appropriate type.
    * @return
    */
-  abstract NotificationType getNotificationType();
+  protected abstract NotificationType getNotificationType();
 
   /**
    * Checks if the events needs a HTTP notification.
@@ -101,7 +101,7 @@ public abstract class QueryEventHttpNotifier<T extends QueryEvent> extends Async
     }
 
     boolean isQueryHTTPNotificationEnabled = queryContext.getConf().getBoolean(
-      QUERY_HTTP_NOTIFICATION_TYPE__PFX + getNotificationType().name(), false);
+      QUERY_HTTP_NOTIFICATION_TYPE_PFX + getNotificationType().name(), false);
     if (!isQueryHTTPNotificationEnabled) {
       log.info("{} HTTP notification for query {} is not enabled",
         getNotificationType(), queryContext.getQueryHandleString());

@@ -1917,10 +1917,10 @@ public class TestQueryService extends LensJerseyTest {
     queryService.execute(lensSessionId, query, 20000, conf, "testHttpNotifictaionQuery");
 
     Thread.sleep(3000); //Keep some time for notifications to get delivered
-    assertEquals(TestQueryNotifictaionResource.successful_count, 2);
-    assertEquals(TestQueryNotifictaionResource.cancelled_count, 2);
-    assertEquals(TestQueryNotifictaionResource.failed_count, 2);
-    assertEquals(TestQueryNotifictaionResource.finished_count, 6);
+    assertEquals(TestQueryNotifictaionResource.getSuccessfulCount(), 2);
+    assertEquals(TestQueryNotifictaionResource.getCancelledCount(), 2);
+    assertEquals(TestQueryNotifictaionResource.getFailedCount(), 2);
+    assertEquals(TestQueryNotifictaionResource.getFinishedCount(), 6);
 
     TestQueryNotifictaionResource.clearState();
   }

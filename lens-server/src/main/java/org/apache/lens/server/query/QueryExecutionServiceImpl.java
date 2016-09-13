@@ -2277,7 +2277,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
     long timeoutMillis, Configuration conf) throws LensException {
     QueryHandle handle = submitQuery(ctx);
     long timeOutTime = ctx.getSubmissionTime() + timeoutMillis;
-    log.info("EXECUTE_WITH_TIMEOUT operation for query {} will timeout by {}",handle ,timeOutTime);
+    log.info("query {} is executed with a timeout of {} and will timeout by {}", handle, timeoutMillis, timeOutTime);
     QueryHandleWithResultSet result = new QueryHandleWithResultSet(handle);
 
     boolean isQueued = true;
@@ -2388,13 +2388,12 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    */
   private void addQueryToCancellationPool(QueryContext queryCtx, Configuration config, long timeoutMillis) {
     if (config.getBoolean(CANCEL_QUERY_ON_TIMEOUT, DEFAULT_CANCEL_QUERY_ON_TIMEOUT)) {
-      log.info("Query {} could not be completed within the specified timeout interval {}. It will be cancelled",
-        queryCtx.getQueryHandle(), timeoutMillis);
+      log.info("Query {} could not be completed within the specified timeout interval. It will be cancelled",
+        queryCtx.getQueryHandleString());
       queryCancellationPool.submit(new CancelQueryTask(queryCtx.getQueryHandle()));
     } else {
-      log.info(
-        "Query {} could not be completed within the specified timeout interval {}. Query cancellation is disabled",
-        queryCtx.getQueryHandleString(), timeoutMillis );
+      log.info("Query {} could not be completed within the specified timeout interval. Query cancellation is disabled",
+        queryCtx.getQueryHandleString());
     }
   }
 

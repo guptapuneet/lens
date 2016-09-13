@@ -2315,7 +2315,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         // parallely especially in case of drivers like JDBC and in that case completion notification may not be
         // received by this listener. So its better to break the wait into smaller ones.
         long waitMillisPerCheck = totalWaitTime/10;
-        waitMillisPerCheck = (waitMillisPerCheck > 1000) ? 1000 : waitMillisPerCheck; // Lets keep max as 1 sec
+        waitMillisPerCheck = (waitMillisPerCheck > 500) ? 500 : waitMillisPerCheck; // Lets keep max as 0.5 sec
         synchronized (listener) {
           while (System.currentTimeMillis() < timeOutTime
             && !listener.querySuccessful

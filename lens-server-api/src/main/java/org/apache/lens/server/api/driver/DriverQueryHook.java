@@ -37,9 +37,52 @@ import org.apache.lens.server.api.query.QueryContext;
  *
  * This interface is expected to evolve for some time as more needs for hook are discovered
  *
-
+ * Note: Note if the hook updates any configuration, same should be reflected in QueryContext
+ * via {@link AbstractQueryContext#updateConf(Map)} to ensure the modified configuration is persisted and is available
+ * on server restarts and other bookkeeping needs.
  */
 public interface DriverQueryHook {
+
+  /**
+   * Called just before rewrite operation is tried on this driver
+   *
+   * @param ctx
+   * @throws LensException
+   */
+  void preRewrite(AbstractQueryContext ctx) throws LensException;
+
+  /**
+   * Called just after rewrite operation is tried on this driver
+   *
+   * @param ctx
+   * @throws LensException
+   */
+  void postRewrite(AbstractQueryContext ctx) throws LensException;
+
+  /**
+   * Called just before estimate operation is tried on this driver
+   *
+   * @param ctx
+   * @throws LensException
+   */
+  void preEstimate(AbstractQueryContext ctx) throws LensException;
+
+  /**
+   * Called just after estimate operation is tried on this driver
+   *
+   * @param ctx
+   * @throws LensException
+   */
+  void postEstimate(AbstractQueryContext ctx) throws LensException;
+
+  /**
+   * Called just after driver has been selected to execute a query.
+   *
+   * @param ctx
+   * @throws LensException
+   */
+  void postDriverSelection(AbstractQueryContext ctx) throws LensException;
+
   /**
    * Called just before launching the query on the selected driver.
    * @param ctx
@@ -47,15 +90,4 @@ public interface DriverQueryHook {
    */
   void preLaunch(QueryContext ctx) throws LensException;
 
-  /**
-   * Called just after driver has been selected to execute a query.
-   *
-   * Note: Note if this method updates any configuration, same should be reflected in QueryContext
-   * via {@link AbstractQueryContext#updateConf(Map)} to ensure the modified configration is persisted and is available
-   * on server restarts and other bookkeeping needs.
-   *
-   * @param ctx
-   * @throws LensException
-   */
-  void postDriverSelection(AbstractQueryContext ctx) throws LensException;
 }

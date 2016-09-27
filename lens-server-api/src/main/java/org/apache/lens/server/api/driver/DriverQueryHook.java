@@ -44,6 +44,13 @@ import org.apache.lens.server.api.query.QueryContext;
 public interface DriverQueryHook {
 
   /**
+   * This setter method is called by the driver once hook instance is created. This driver infomation can be used while
+   * extracting driver specific information form the QueryContext.
+   * @param driver
+   */
+   void setDriver(LensDriver driver);
+
+  /**
    * Called just before rewrite operation is tried on this driver
    *
    * @param ctx
@@ -52,7 +59,7 @@ public interface DriverQueryHook {
   void preRewrite(AbstractQueryContext ctx) throws LensException;
 
   /**
-   * Called just after rewrite operation is tried on this driver
+   * Called just after a successful rewrite operation is tried on this driver
    *
    * @param ctx
    * @throws LensException
@@ -61,6 +68,7 @@ public interface DriverQueryHook {
 
   /**
    * Called just before estimate operation is tried on this driver
+   * Note : Estimate operation will be skipped if rewrite operation fails for this driver
    *
    * @param ctx
    * @throws LensException
@@ -68,7 +76,7 @@ public interface DriverQueryHook {
   void preEstimate(AbstractQueryContext ctx) throws LensException;
 
   /**
-   * Called just after estimate operation is tried on this driver
+   * Called just after a successful estimate operation is tried on this driver
    *
    * @param ctx
    * @throws LensException

@@ -34,6 +34,11 @@ public class MockDriverQueryHook extends NoOpDriverQueryHook {
   public static final String UNSAVED_KEY_POST_SELECT = "TEST_UNSAVED__KEY_POST_SELECT";
   public static final String UNSAVED_VALUE_POST_SELECT = "TEST_UNSAVED_VALUE_POST_SELECT";
 
+  public static final String PRE_REWRITE = "PRE_REWRITE";
+  public static final String POST_REWRITE = "POST_REWRITE";
+  public static final String PRE_ESTIMATE = "PRE_ESTIMATE";
+  public static final String POST_ESTIMATE = "POST_ESTIMATE";
+
   @Override
   public void preLaunch(QueryContext ctx) {
     super.preLaunch(ctx);
@@ -50,5 +55,29 @@ public class MockDriverQueryHook extends NoOpDriverQueryHook {
 
     //Updated only in driver conf.
     ctx.getSelectedDriverConf().set(UNSAVED_KEY_POST_SELECT, UNSAVED_VALUE_POST_SELECT);
+  }
+
+  @Override
+  public void preRewrite(AbstractQueryContext ctx) throws LensException {
+    super.preRewrite(ctx);
+    ctx.getSelectedDriverConf().set(PRE_REWRITE, PRE_REWRITE);
+  }
+
+  @Override
+  public void postRewrite(AbstractQueryContext ctx) throws LensException {
+    super.postRewrite(ctx);
+    ctx.getSelectedDriverConf().set(POST_REWRITE, POST_REWRITE);
+  }
+
+  @Override
+  public void preEstimate(AbstractQueryContext ctx) throws LensException {
+    super.preEstimate(ctx);
+    ctx.getSelectedDriverConf().set(PRE_ESTIMATE, PRE_ESTIMATE);
+  }
+
+  @Override
+  public void postEstimate(AbstractQueryContext ctx) throws LensException {
+    super.postEstimate(ctx);
+    ctx.getSelectedDriverConf().set(POST_ESTIMATE, POST_ESTIMATE);
   }
 }

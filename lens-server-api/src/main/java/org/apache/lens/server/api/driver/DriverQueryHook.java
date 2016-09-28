@@ -44,7 +44,7 @@ import org.apache.lens.server.api.query.QueryContext;
 public interface DriverQueryHook {
 
   /**
-   * This setter method is called by the driver once hook instance is created. This driver infomation can be used while
+   * This setter method is called by the driver once hook instance is created. This driver information can be used while
    * extracting driver specific information form the QueryContext.
    * @param driver
    */

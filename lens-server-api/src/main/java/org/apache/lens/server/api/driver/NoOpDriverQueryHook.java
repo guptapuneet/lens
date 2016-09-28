@@ -25,11 +25,13 @@ import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.query.AbstractQueryContext;
 import org.apache.lens.server.api.query.QueryContext;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class NoOpDriverQueryHook implements DriverQueryHook {
 
+  @Getter
   private LensDriver driver;
 
   @Override

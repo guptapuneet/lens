@@ -48,7 +48,7 @@ public interface DriverQueryHook {
    * extracting driver specific information form the QueryContext.
    * @param driver
    */
-   void setDriver(LensDriver driver);
+  void setDriver(LensDriver driver);
 
   /**
    * Called just before rewrite operation is tried on this driver

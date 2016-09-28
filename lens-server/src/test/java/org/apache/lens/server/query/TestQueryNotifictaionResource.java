@@ -44,6 +44,10 @@ public class TestQueryNotifictaionResource {
   private static int failedCount = 0;
   @Getter
   private static int cancelledCount = 0;
+  @Getter
+  private static int accessTokenCount = 0;
+  @Getter
+  private static int dataCount = 0;
 
   @POST
   @Path("finished")
@@ -52,13 +56,24 @@ public class TestQueryNotifictaionResource {
   public void prepareQuery(
     @FormDataParam("eventtype") String eventtype,
     @FormDataParam("eventtime") String eventtime,
-    @FormDataParam("query") LensQuery query) throws LensException {
+    @FormDataParam("query") LensQuery query,
+    @QueryParam("access_token") String accessToken,
+    @QueryParam("data") String data) throws LensException {
 
     System.out.println("@@@@ Received Finished Event for queryid: " + query.getQueryHandleString()
       + " queryname:" + query.getQueryName() + " user:" + query.getSubmittedUser()
-      + " status:" + query.getStatus() + " eventtype:" + eventtype);
+      + " status:" + query.getStatus() + " eventtype:" + eventtype + " access_token:" + accessToken
+      + " data:" + data);
 
     finishedCount++;
+
+    if (accessToken != null && accessToken.equals("ABC123")) {
+      accessTokenCount++;
+    }
+
+    if (data != null && data.equals("x<>yz,\"abc")) {
+      dataCount++;
+    }
 
     if (query.getStatus().successful()) {
       successfulCount++;
@@ -74,6 +89,8 @@ public class TestQueryNotifictaionResource {
     successfulCount = 0;
     cancelledCount = 0;
     failedCount = 0;
+    accessTokenCount = 0;
+    dataCount = 0;
   }
 
 

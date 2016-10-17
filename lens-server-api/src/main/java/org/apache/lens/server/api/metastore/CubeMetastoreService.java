@@ -18,6 +18,7 @@
  */
 package org.apache.lens.server.api.metastore;
 
+import java.io.InputStream;
 import java.util.Date;
 import java.util.List;
 
@@ -571,6 +572,8 @@ public interface CubeMetastoreService extends LensService, SessionValidator {
 
   void updatePartitions(LensSessionHandle sessionid, String tblName, String storageName,
     XPartitionList partitions) throws LensException;
+
+  void addDBJar(LensSessionHandle sessionid, InputStream is) throws LensException;
 
   /**
    *

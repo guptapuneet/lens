@@ -20,6 +20,7 @@ package org.apache.lens.server.metastore;
 
 import static org.apache.lens.api.APIResult.*;
 
+import java.io.*;
 import java.util.List;
 
 import javax.ws.rs.*;
@@ -32,13 +33,18 @@ import org.apache.lens.api.DateTime;
 import org.apache.lens.api.LensSessionHandle;
 import org.apache.lens.api.StringList;
 import org.apache.lens.api.metastore.*;
+import org.apache.lens.server.LensServerConf;
 import org.apache.lens.server.LensServices;
+import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.metastore.CubeMetastoreService;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
+
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
+import org.glassfish.jersey.media.multipart.FormDataParam;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -1548,4 +1554,42 @@ public class MetastoreResource {
     getSvc().updatePartition(sessionid, table, storage, partition);
     return success();
   }
+
+  /**
+   * Add a resource to the current DB
+   * <p></p>
+   * <p>
+   * The returned @{link APIResult} will have status SUCCEEDED <em>only if</em> the add operation was successful for all
+   * services running in this Lens server.
+   * </p>
+   *
+   * @param sessionid session handle object
+   * @param fileInputStream      stream of the resource. Local or HDFS path
+   * @return {@link APIResult} with state {@link Status#SUCCEEDED}, if add was successful. {@link APIResult} with state
+   * {@link Status#PARTIAL}, if add succeeded only for some services. {@link APIResult} with state
+   * {@link Status#FAILED}, if add has failed
+   */
+  @POST
+  @Path("databases/jar")
+  @Consumes({MediaType.MULTIPART_FORM_DATA})
+  @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
+  public APIResult addDBResource(@QueryParam("sessionid") LensSessionHandle sessionid,
+    @FormDataParam("file") InputStream fileInputStream,
+    @FormDataParam("file") FormDataContentDisposition fileDetail) throws LensException{
+    int maxFileSize = LensServerConf.getHiveConf().getInt(LensConfConstants.DB_RESOURCE_JAR_MAX_SIZE,
+        LensConfConstants.DEFAULT_DB_RESOURCE_JAR_MAX_SIZE);
+    if (fileDetail.getSize() > maxFileSize) {
+      throw new LensException(" File is too big! "
+          + "File : " + fileDetail.getName()
+          + "FileSize : " + fileDetail.getSize() + "AllowedSize :" + maxFileSize);
+    }
+    try {
+      getSvc().addDBJar(sessionid, fileInputStream);
+    } catch (LensException e) {
+      log.error("Error in adding resource to db", e);
+      return new APIResult(Status.FAILED, e.getMessage());
+    }
+    return new APIResult(Status.SUCCEEDED, "Add resource succeeded");
+  }
+
 }

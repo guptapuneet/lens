@@ -20,6 +20,9 @@ package org.apache.lens.server.metastore;
 
 import static org.apache.lens.server.metastore.JAXBUtils.*;
 
+import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.Date;
 
@@ -36,14 +39,18 @@ import org.apache.lens.server.api.LensConfConstants;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.health.HealthStatus;
 import org.apache.lens.server.api.metastore.CubeMetastoreService;
+import org.apache.lens.server.session.LensSessionImpl;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hive.metastore.IMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.*;
 import org.apache.hadoop.hive.ql.metadata.Hive;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.metadata.Partition;
+import org.apache.hadoop.hive.ql.session.SessionState;
 import org.apache.hive.service.cli.CLIService;
 
 import com.google.common.collect.Lists;
@@ -726,6 +733,142 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
     }
   }
 
+
+  @Override
+  public synchronized void addDBJar(LensSessionHandle sessionid, InputStream is) throws LensException {
+    //baseDir can be local file system or HDFS
+    try {
+      getSession(sessionid).setReadClassLoaderFromCache(false);
+      acquire(sessionid);
+
+      String currentDB = SessionState.get().getCurrentDatabase();
+      String baseDir = getHiveConf().get(LensConfConstants.DATABASE_RESOURCE_DIR,
+          LensConfConstants.DEFAULT_DATABASE_RESOURCE_DIR);
+      String localDir = getHiveConf().get(LensConfConstants.DATABASE_LOCAL_RESOURCE_DIR,
+          LensConfConstants.DEFAULT_LOCAL_DATABASE_RESOURCE_DIR);
+      if (baseDir.startsWith("hdfs:")) {
+        Path jarFilePath = addDBJarToLocal(sessionid, is, localDir, currentDB);
+        //copy jar file to hdfs
+        copyJarFilesToHDFS(jarFilePath, new Path(baseDir, currentDB),
+            getHiveConf().get(LensConfConstants.DATABASE_RESOURCE_DIR));
+        List<LensSessionImpl.ResourceEntry> resourceEntries = new ArrayList<>();
+        resourceEntries.add(new LensSessionImpl.ResourceEntry("jar",
+            new Path(baseDir, currentDB + jarFilePath.getName()).toUri().toString()));
+        // add jarfile to dbresource entry so that it can be added to hive session
+        getSession(sessionid).getDbResService().addremoteDbResEntryMap(currentDB, resourceEntries);
+      } else {
+        addDBJarToLocal(sessionid, is, baseDir, currentDB);
+      }
+    } finally {
+      release(sessionid);
+    }
+  }
+  private void copyJarFilesToHDFS(Path source, Path dest, String resourceDir) throws LensException {
+    try {
+      FileSystem sourceFs = FileSystem.get(new URI(resourceDir), getHiveConf());
+      sourceFs.copyFromLocalFile(source, dest);
+      log.info("Jar file Copied from {} to {} ", source, dest);
+    } catch (IOException e) {
+      log.error("Error while copying file to HDFS ", e);
+      throw new LensException(e);
+    } catch (URISyntaxException e) {
+      log.error("Error in URI syntax ", e);
+      throw new LensException(e);
+    }
+  }
+
+  private Path addDBJarToLocal(LensSessionHandle sessionid, InputStream is, String baseDir, String currentDB)
+    throws LensException {
+    // Read list of databases in
+    FileSystem serverFs = null;
+    FileSystem jarOrderFs = null;
+    FSDataOutputStream fos = null;
+
+    try {
+      String dbDir = baseDir + File.separator + currentDB;
+      log.info("Database specific resources at {}", dbDir);
+      Path resTopDirPath = new Path(dbDir);
+      serverFs = FileSystem.newInstance(resTopDirPath.toUri(), getHiveConf());
+      if (!serverFs.exists(resTopDirPath)) {
+        log.warn("Database resource location does not exist. Database jar can't be uploaded", dbDir);
+        throw new LensException("Database resource location does not exist. Database jar can't be uploaded");
+      }
+
+      Path resJarOrderPath = new Path(dbDir, "jar_order");
+      jarOrderFs = FileSystem.newInstance(resJarOrderPath.toUri(), getHiveConf());
+      if (jarOrderFs.exists(resJarOrderPath)) {
+        log.warn("Database jar_order file exist - {}. Database jar can't be uploaded", resJarOrderPath);
+        throw new LensException("Database jar_order file exist. Database jar can't be uploaded");
+      }
+
+      String tempFileName = currentDB + "_uploading.jar";
+
+      Path uploadingPath = new Path(dbDir, tempFileName);
+      FileSystem uploadingFs = FileSystem.newInstance(uploadingPath.toUri(), getHiveConf());
+      if (uploadingFs.exists(uploadingPath)) {
+        log.warn("Already uploading a file - {}. This Database jar can't be uploaded. Try later!", uploadingPath);
+        throw new LensException("Jar can't be uploaded as another database jar upload is in progress. "
+            + "Pleas try again later!");
+      }
+      int lastIndex = 0;
+      Path dbFolderPath = new Path(baseDir, currentDB);
+      FileStatus[] existingFiles = serverFs.listStatus(dbFolderPath);
+      for (FileStatus fs : existingFiles) {
+        String fPath = fs.getPath().getName();
+        String[] tokens = fPath.split("_");
+
+        if (tokens.length > 1) {
+          String lastToken = tokens[tokens.length - 1];
+          int fIndex = Integer.parseInt(lastToken.substring(0, lastToken.indexOf(".jar")));
+          if (fIndex > lastIndex) {
+            lastIndex = fIndex;
+          }
+        }
+      }
+      int newIndex = lastIndex + 1;
+      Path resJarPath = new Path(baseDir, currentDB + File.separator + tempFileName);
+      log.info("new jar name : " + resJarPath.getName());
+      fos = serverFs.create(resJarPath);
+      IOUtils.copy(is, fos);
+      fos.flush();
+      Path renamePath = new Path(baseDir, currentDB + File.separator + currentDB + "_" + newIndex + ".jar");
+      if (!serverFs.rename(resJarPath, renamePath)) {
+        log.error("File rename failed from {} to {}", resJarPath, renamePath);
+        throw new LensException("File rename failed!");
+      }
+      return renamePath;
+    } catch (FileNotFoundException e) {
+      log.error("FileNotFoundException while uploading jar", e);
+      throw new LensException(e);
+    } catch (IOException e) {
+      log.error("IOException while uploading jar", e);
+      throw new LensException(e);
+    } finally {
+      if (fos != null) {
+        try {
+          fos.close();
+        } catch (IOException e) {
+          log.error("Error closing file system instance fos", e);
+        }
+      }
+      if (serverFs != null) {
+        try {
+          serverFs.close();
+        } catch (IOException e) {
+          log.error("Error closing file system instance serverFs", e);
+        }
+      }
+      if (jarOrderFs != null) {
+        try {
+          jarOrderFs.close();
+        } catch (IOException e) {
+          log.error("Error closing file system instance jarOrderFs", e);
+        }
+      }
+    }
+  }
+
+
   @Override
   public int addPartitionsToDimStorage(LensSessionHandle sessionid,
     String dimTblName, String storageName, XPartitionList partitions) throws LensException {
@@ -1251,6 +1394,7 @@ public class CubeMetastoreServiceImpl extends BaseLensService implements CubeMet
 
     try {
       /** Try to issue command on hive **/
+      SessionState.start(LensServerConf.getHiveConf());
       Hive.get(LensServerConf.getHiveConf()).getAllDatabases();
     } catch (HiveException e) {
       isHealthy = false;

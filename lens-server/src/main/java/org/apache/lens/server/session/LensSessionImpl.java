@@ -106,6 +106,8 @@ public class LensSessionImpl extends HiveSessionImpl implements AutoCloseable {
   @Setter(AccessLevel.PROTECTED)
   private DatabaseResourceService dbResService;
 
+  @Setter
+  private boolean readClassLoaderFromCache = true;
 
   /**
    * Inits the persist info.
@@ -248,6 +250,7 @@ public class LensSessionImpl extends HiveSessionImpl implements AutoCloseable {
   public void acquire() {
     this.acquire(true);
   }
+
   @Override
   public void acquire(boolean userAccess) {
     super.acquire(userAccess);
@@ -412,7 +415,7 @@ public class LensSessionImpl extends HiveSessionImpl implements AutoCloseable {
     return persistInfo.getResources() != null && !persistInfo.getResources().isEmpty();
   }
 
-  private DatabaseResourceService getDbResService() {
+  public DatabaseResourceService getDbResService() {
     if (dbResService == null) {
       HiveSessionService sessionService = LensServices.get().getService(SessionService.NAME);
       return sessionService.getDatabaseResourceService();
@@ -423,7 +426,7 @@ public class LensSessionImpl extends HiveSessionImpl implements AutoCloseable {
 
   protected ClassLoader getClassLoader(String database) {
     synchronized (sessionDbClassLoaders) {
-      if (sessionDbClassLoaders.containsKey(database)) {
+      if (sessionDbClassLoaders.containsKey(database) && readClassLoaderFromCache) {
         return sessionDbClassLoaders.get(database);
       } else {
         ClassLoader classLoader = getDbResService().getClassLoader(database);

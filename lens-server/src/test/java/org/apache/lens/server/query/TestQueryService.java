@@ -67,6 +67,7 @@ import org.apache.lens.server.api.query.QueryContext;
 import org.apache.lens.server.api.query.QueryExecutionService;
 import org.apache.lens.server.api.session.SessionService;
 import org.apache.lens.server.common.ErrorResponseExpectedData;
+import org.apache.lens.server.common.RestAPITestUtil;
 import org.apache.lens.server.common.TestDataUtils;
 import org.apache.lens.server.common.TestResourceFile;
 import org.apache.lens.server.error.GenericExceptionMapper;
@@ -767,6 +768,10 @@ public class TestQueryService extends LensJerseyTest {
       Thread.sleep(1000);
     }
     assertEquals(ctx.getSelectedDriverConf().get(KEY_PRE_LAUNCH), VALUE_PRE_LAUNCH);
+    assertEquals(ctx.getSelectedDriverConf().get(PRE_REWRITE), PRE_REWRITE);
+    assertEquals(ctx.getSelectedDriverConf().get(POST_REWRITE), POST_REWRITE);
+    assertEquals(ctx.getSelectedDriverConf().get(PRE_ESTIMATE), PRE_ESTIMATE);
+    assertEquals(ctx.getSelectedDriverConf().get(POST_ESTIMATE), POST_ESTIMATE);
     assertTrue(lensQuery.getSubmissionTime() > 0);
     assertTrue(lensQuery.getLaunchTime() > 0);
     assertTrue(lensQuery.getDriverStartTime() > 0);
@@ -1423,6 +1428,17 @@ public class TestQueryService extends LensJerseyTest {
     };
   }
 
+  @Test
+  public void testExecuteAsyncJDBCQuery() throws InterruptedException {
+    String query = "select ID, IDSTR from " + TEST_JDBC_TABLE;
+    QueryHandle handle = RestAPITestUtil.executeAndGetHandle(target(), Optional.of(lensSessionId), Optional.of(query),
+      Optional.of(getLensConf(LensConfConstants.QUERY_PERSISTENT_RESULT_SET, false)), APPLICATION_XML_TYPE);
+    // fetch results so that it can be purged
+    InMemoryQueryResult queryResult = RestAPITestUtil.getLensQueryResult(target(), lensSessionId, handle,
+      InMemoryQueryResult.class, APPLICATION_XML_TYPE);
+    assertEquals(queryResult.getRows().size(), 5);
+  }
+
   /**
    * @param timeOutMillis : wait time for execute with timeout api
    * @param preFetchRows : number of rows to pre-fetch in case of InMemoryResultSet
@@ -1454,7 +1470,7 @@ public class TestQueryService extends LensJerseyTest {
     conf.addProperty("deferPersistenceByMillis", deferPersistenceByMillis); // property used for test only
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), conf,
         APPLICATION_XML_TYPE));
-    QueryHandleWithResultSet result =target.request(APPLICATION_XML_TYPE)
+    QueryHandleWithResultSet result = target.request(APPLICATION_XML_TYPE)
             .post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE),
                 new GenericType<LensAPIResult<QueryHandleWithResultSet>>() {}).getData();
     QueryHandle handle = result.getQueryHandle();
@@ -1904,44 +1920,57 @@ public class TestQueryService extends LensJerseyTest {
 
 
   @Test(dataProvider = "mediaTypeData")
-  public void testFinishedNotifictaion(MediaType mt) throws Exception {
-    String query = "select ID, IDSTR, count(*) from " + TEST_TABLE + " group by ID, IDSTR";
-    String endpoint = getBaseUri() + "/queryapi/notifictaion/finished";
-    String encodedHttpEndPoint1 = endpoint + "?access_token=" + URLEncoder.encode("ABC123", "UTF-8");
-    System.out.println("encodedHttpEndPoint1 :" + encodedHttpEndPoint1);
-    String encodedHttpEndPoint2 = endpoint + "?access_token=" + URLEncoder.encode("ABC123", "UTF-8") + "&data="
-      + URLEncoder.encode("x<>yz,\"abc", "UTF-8");
-    System.out.println("encodedHttpEndPoint2 :" + encodedHttpEndPoint2);
+  public void testFinishedNotification(MediaType mt) throws Exception {
+    try {
+      String query = "select ID, IDSTR, count(*) from " + TEST_TABLE + " group by ID, IDSTR";
+      String endpoint = getBaseUri() + "/queryapi/notifictaion/finished";
+      String encodedHttpEndPoint1 = endpoint + "?access_token=" + URLEncoder.encode("ABC123", "UTF-8");
+      System.out.println("encodedHttpEndPoint1 :" + encodedHttpEndPoint1);
+      String encodedHttpEndPoint2 = endpoint + "?access_token=" + URLEncoder.encode("ABC123", "UTF-8") + "&data="
+        + URLEncoder.encode("x<>yz,\"abc", "UTF-8");
+      System.out.println("encodedHttpEndPoint2 :" + encodedHttpEndPoint2);
+      LensConf conf = new LensConf();
+      conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICATION_TYPE_FINISHED, "true");
+      conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICATION_MEDIATYPE, mt);
+      conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICATION_URLS, encodedHttpEndPoint1 + " , "
+        + encodedHttpEndPoint2);
 
-    LensConf conf = new LensConf();
-    conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICATION_TYPE_FINISHED, "true");
-    conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICATION_MEDIATYPE, mt);
-    conf.addProperty(LensConfConstants.QUERY_HTTP_NOTIFICATION_URLS, encodedHttpEndPoint1 + " , "
-      + encodedHttpEndPoint2);
+      //Test for SUCCESSFUL FINISH notification
+      QueryHandle handle1 = queryService.executeAsync(lensSessionId, query, conf,
+        "testHttpNotificationQuerySuccessful");
 
-    //Test for SUCCESSFUL FINISH notification
-    queryService.execute(lensSessionId, query, 20000, conf, "testHttpNotifictaionQuery");
+      //TEST for CANCELLED FINISH notification
+      conf.addProperty(LensConfConstants.QUERY_PERSISTENT_RESULT_SET, "true");
+      conf.addProperty(LensConfConstants.QUERY_OUTPUT_FORMATTER, DeferredPersistentResultFormatter.class.getName());
+      conf.addProperty("deferPersistenceByMillis", 5000); // defer persistence for 5 secs
+      QueryHandle handle2 = queryService.executeAsync(lensSessionId, query, conf, "testHttpNotificationQueryCanceled");
+      queryService.cancelQuery(lensSessionId, handle2);
 
-    //TEST for CANCELLED FINISH notification
-    conf.addProperty(LensConfConstants.QUERY_PERSISTENT_RESULT_SET, "true");
-    conf.addProperty(LensConfConstants.QUERY_OUTPUT_FORMATTER, DeferredPersistentResultFormatter.class.getName());
-    conf.addProperty("deferPersistenceByMillis", 5000); // defer persistence for 5 secs
-    QueryHandle hanlde = queryService.executeAsync(lensSessionId, query, conf, "testHttpNotifictaionQuery");
-    queryService.cancelQuery(lensSessionId, hanlde);
+      //Test for FAILED FINISH notification
+      conf.addProperty(LensConfConstants.QUERY_OUTPUT_FORMATTER, "wrong.formatter");
+      QueryHandle handle3 = queryService.executeAsync(lensSessionId, query, conf, "testHttpNotificationQueryFailed");
 
-    //Test for FAILED FINISH notification
-    conf.addProperty(LensConfConstants.QUERY_OUTPUT_FORMATTER, "wrong.formatter");
-    queryService.execute(lensSessionId, query, 20000, conf, "testHttpNotifictaionQuery");
-
-    Thread.sleep(3000); //Keep some time for notifications to get delivered
-    assertEquals(TestQueryNotifictaionResource.getSuccessfulCount(), 2);
-    assertEquals(TestQueryNotifictaionResource.getCancelledCount(), 2);
-    assertEquals(TestQueryNotifictaionResource.getFailedCount(), 2);
-    assertEquals(TestQueryNotifictaionResource.getFinishedCount(), 6);
-    assertEquals(TestQueryNotifictaionResource.getAccessTokenCount(), 6);
-    assertEquals(TestQueryNotifictaionResource.getDataCount(), 3);
-
-    TestQueryNotifictaionResource.clearState();
+      for (QueryHandle handle : new QueryHandle[]{handle1, handle2, handle3}) {
+        LensQuery lensQuery = queryService.getQuery(lensSessionId, handle);
+        while (!lensQuery.getStatus().finished()) {
+          Thread.sleep(100);
+          lensQuery = queryService.getQuery(lensSessionId, handle);
+        }
+        assertTrue(lensQuery.getQueryName().toUpperCase().contains(lensQuery.getStatus().getStatus().name()),
+          "Query finished with wrong status: " + lensQuery);
+        log.info("query {} finished", lensQuery);
+      }
+      // sleep more to allow notifications to go
+      Thread.sleep(3000);
+      assertEquals(TestQueryNotifictaionResource.getFinishedCount(), 6);
+      assertEquals(TestQueryNotifictaionResource.getSuccessfulCount(), 2);
+      assertEquals(TestQueryNotifictaionResource.getCancelledCount(), 2);
+      assertEquals(TestQueryNotifictaionResource.getFailedCount(), 2);
+      assertEquals(TestQueryNotifictaionResource.getAccessTokenCount(), 6);
+      assertEquals(TestQueryNotifictaionResource.getDataCount(), 3);
+    } finally {
+      TestQueryNotifictaionResource.clearState();
+    }
   }
 
   @Test
@@ -1951,16 +1980,16 @@ public class TestQueryService extends LensJerseyTest {
     WebTarget target = target().path("queryapi/queries");
     final FormDataMultiPart mp = new FormDataMultiPart();
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("sessionid").build(), lensSessionId,
-      MediaType.APPLICATION_XML_TYPE));
+      APPLICATION_XML_TYPE));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("query").build(), "select ID, IDSTR from "
       + TEST_TABLE));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("operation").build(), "execute_with_timeout"));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("timeoutmillis").build(), "300000"));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("queryName").build(), queryName.toString()));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), new LensConf(),
-      MediaType.APPLICATION_XML_TYPE));
+      APPLICATION_XML_TYPE));
 
-    QueryHandleWithResultSet result = target.request(MediaType.APPLICATION_XML_TYPE)
+    QueryHandleWithResultSet result = target.request(APPLICATION_XML_TYPE)
       .post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE),
         new GenericType<LensAPIResult<QueryHandleWithResultSet>>() {}).getData();
     assertNotNull(result.getQueryHandle());
@@ -1969,7 +1998,7 @@ public class TestQueryService extends LensJerseyTest {
     target = target().path("queryapi/queries/detail");
     List<LensQuery> results = target.queryParam("queryName", queryName)
       .queryParam("sessionid", lensSessionId)
-      .request(MediaType.APPLICATION_XML_TYPE)
+      .request(APPLICATION_XML_TYPE)
       .get(new GenericType<List<LensQuery>>(){});
     Assert.assertNotNull(results);
     Assert.assertEquals(1, results.size());

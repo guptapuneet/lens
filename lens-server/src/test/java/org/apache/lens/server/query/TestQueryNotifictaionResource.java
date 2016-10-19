@@ -27,6 +27,7 @@ import org.apache.lens.server.api.error.LensException;
 
 
 import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.testng.Assert;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -74,6 +75,9 @@ public class TestQueryNotifictaionResource {
     if (data != null && data.equals("x<>yz,\"abc")) {
       dataCount++;
     }
+
+    Assert.assertTrue(query.getQueryName().toUpperCase().contains(query.getStatus().getStatus().name()),
+      "query " + query.getQueryName() + " " + query.getStatus());
 
     if (query.getStatus().successful()) {
       successfulCount++;

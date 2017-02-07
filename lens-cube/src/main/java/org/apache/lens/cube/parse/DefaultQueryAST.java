@@ -59,14 +59,6 @@ public class DefaultQueryAST implements QueryAST {
     return null;
   }
 
-  public static DefaultQueryAST fromCandidateFact(CandidateFact fact, String storageTable, QueryAST ast) throws
-    LensException {
-    return new DefaultQueryAST(ast.getSelectAST(),
-      null,
-      ast.getGroupByAST(), ast.getHavingAST(), ast.getJoinAST(), ast.getOrderByAST(), ast.getLimitValue(),
-      ast.getFromString(),
-      fact.getStorageWhereString(storageTable.substring(storageTable.indexOf(".") + 1)));
-  }
   public static DefaultQueryAST fromStorageCandidate(StorageCandidate sc, QueryAST ast) throws
       LensException {
     return new DefaultQueryAST(ast.getSelectAST(),

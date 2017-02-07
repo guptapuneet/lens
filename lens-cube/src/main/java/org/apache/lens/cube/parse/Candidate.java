@@ -22,21 +22,6 @@ import org.apache.lens.server.api.error.LensException;
 public interface Candidate {
 
   /**
-   * Returns String representation of this Candidate
-   * TODO decide if this method should be moved to QueryAST instead
-   *
-   * @return
-   */
-  String toHQL() throws LensException;
-
-  /**
-   * Returns Query AST
-   *
-   * @return
-   */
-  QueryAST getQueryAst();
-
-  /**
    * Returns all the fact columns
    *
    * @return
@@ -63,13 +48,6 @@ public interface Candidate {
    * @return
    */
   double getCost();
-
-  /**
-   * Alias used for this candidate.
-   *
-   * @return
-   */
-  String getAlias();
 
   /**
    * Returns true if this candidate contains the given candidate
@@ -111,9 +89,9 @@ public interface Candidate {
   Set<FactPartition> getParticipatingPartitions();
 
   /**
-   * TODO union: in case of join , one of the candidates should be able to answer the mesaure expression
-   * TODO union: In case of union, all the candidates should answer the expression
-   * TODO union : add isExpresionEvaluable() to Candidate
+   * Checks whether an expression is evaluable by a candidate
+   * 1. For a JoinCandidate, atleast one of the child candidates should be able to answer the expression
+   * 2. For a UnionCandidate, all child candidates should answer the expression
    *
    * @param expr
    * @return
@@ -121,26 +99,9 @@ public interface Candidate {
   boolean isExpressionEvaluable(ExpressionResolver.ExpressionContext expr);
 
   /**
-   * Updates the columns queried for a candidate
-   *
-   * @param cubeql
+   * Gets the index positions of answerable measure phrases in CubeQueryContext#selectPhrases
+   * @return
    */
-  void updateAnswerableSelectColumns(CubeQueryContext cubeql) throws LensException;
-
-  ArrayList<Integer> getAnswerableMeasureIndices();
-
-  // Moved to CandidateUtil boolean isValidForTimeRange(TimeRange timeRange);
-  // Moved to CandidateUtil boolean isExpressionAnswerable(ASTNode node, CubeQueryContext context) throws LensException;
-  // NO caller Set<String> getTimePartCols(CubeQueryContext query) throws LensException;
-
-  //TODO add methods to update AST in this candidate in this class of in CandidateUtil.
-  //void updateFromString(CubeQueryContext query) throws LensException;
-
-  //void updateASTs(CubeQueryContext cubeql) throws LensException;
-
-  //void addToHaving(ASTNode ast)  throws LensException;
-
-  //Used Having push down flow
-  //String addAndGetAliasFromSelect(ASTNode ast, AliasDecider aliasDecider);
+  Set<Integer> getAnswerableMeasurePhraseIndices();
 
 }

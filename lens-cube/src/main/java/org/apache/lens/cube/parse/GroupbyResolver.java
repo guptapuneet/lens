@@ -136,8 +136,8 @@ class GroupbyResolver implements ContextRewriter {
         parent.addChild(exprAST);
         exprAST.setParent(parent);
         addChildAtIndex(index, cubeql.getSelectAST(), parent);
-        index++;
         updateSelectPhrase(cubeql, index, parent);
+        index++;
       }
     }
   }
@@ -166,7 +166,8 @@ class GroupbyResolver implements ContextRewriter {
     sel.setSelectAlias(selectAlias);
     sel.setFinalAlias(!StringUtils.isBlank(selectFinalAlias) ? "`" + selectFinalAlias + "`" : selectAlias);
     sel.setActualAlias(alias != null ? alias.toLowerCase() : null);
-    cubeql.addSelectPhrase(sel);
+    cubeql.getSelectPhrases().add(exprInd, sel);
+    //cubeql.addSelectPhrase(sel);
   }
 
   private void addChildAtIndex(int index, ASTNode parent, ASTNode child) {

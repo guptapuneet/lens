@@ -43,6 +43,7 @@ import lombok.Setter;
 /**
  * Holds context of a candidate fact table.
  */
+@Deprecated
 public class CandidateFact implements CandidateTable, QueryAST {
   final CubeFactTable fact;
   @Getter

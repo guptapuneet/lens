@@ -543,8 +543,8 @@ public class CubeTestSetup {
     cubeMeasures.add(new ColumnMeasure(new FieldSchema(prefix + "msr3", "int", prefix + "third measure")));
 
     cubeDimensions = new HashSet<CubeDimAttribute>();
-    cubeDimensions.add(new BaseDimAttribute(new FieldSchema(prefix + "cityid", "timestamp", "the cityid ")));
-    cubeDimensions.add(new BaseDimAttribute(new FieldSchema(prefix + "zipcode", "timestamp", "the zipcode")));
+    cubeDimensions.add(new BaseDimAttribute(new FieldSchema(prefix + "cityid", "int", prefix + "the cityid ")));
+    cubeDimensions.add(new BaseDimAttribute(new FieldSchema(prefix + "zipcode", "int", prefix + "the zipcode")));
 
     cubeDimensions.add(new BaseDimAttribute(new FieldSchema("d_time", "timestamp", "d time")));
     cubeDimensions.add(new BaseDimAttribute(new FieldSchema("processing_time", "timestamp", "processing time")));
@@ -586,8 +586,8 @@ public class CubeTestSetup {
     cubeDimensions.add(new ReferencedDimAttribute(new FieldSchema("cityname", "string", "city name"),
       "city name", "cubecity", "name", null, null, 0.0));
     // union join context
-    cubeDimensions.add(new ReferencedDimAttribute(new FieldSchema(prefix + "cityname", "string", "city name"),
-        "city name", "cubeCityJoinUnionCtx", "name", null, null, 0.0));
+    cubeDimensions.add(new ReferencedDimAttribute(new FieldSchema(prefix + "cityname", "string", prefix + "city name"),
+        prefix + "city name", "cubeCityJoinUnionCtx", "name", null, null, 0.0));
     List<ChainRefCol> references = new ArrayList<>();
     references.add(new ChainRefCol("timedatechain1", "full_date"));
     references.add(new ChainRefCol("timehourchain1", "full_hour"));
@@ -679,17 +679,14 @@ public class CubeTestSetup {
     exprs.add(new ExprColumn(new FieldSchema("notnullcityid", "int", "Not null cityid"),
         "Not null cityid Expr", "case when cityid is null then 0 else cityid end"));
     // union join context
-    exprs.add(new ExprColumn(new FieldSchema(prefix + "notnullcityid", "int", "Not null cityid"),
-        "Not null cityid Expr", "case when union_join_ctx_cityid is null then 0 else union_join_ctx_cityid end"));
-    exprs.add(new ExprColumn(new FieldSchema(prefix + "sum_msr1_msr2", "int", "sum of msr1 and msr2"),
-        "sum of msr1 and msr2", "sum(union_join_ctx_msr1) + sum(union_join_ctx_msr2)"));
-   exprs.add(new ExprColumn(new FieldSchema(prefix + "msr1_greater_than_100", "int", "msr1 greater than 100"),
-        "msr1 greater than 100", "case when sum(union_join_ctx_msr1) > 100 then \"high\" else \"low\" end"));
-    exprs.add(new ExprColumn(new FieldSchema(prefix + "non_zero_msr2_sum", "int", "non zero msr2 sum"),
-        "non zero msr2 sum", "sum(case when union_join_ctx_msr2 > 0 then union_join_ctx_msr2 else 0 end)"));
-
-
-
+    exprs.add(new ExprColumn(new FieldSchema(prefix + "notnullcityid", "int", prefix + "Not null cityid"),
+        prefix + "Not null cityid Expr", "case when union_join_ctx_cityid is null then 0 else union_join_ctx_cityid end"));
+    exprs.add(new ExprColumn(new FieldSchema(prefix + "sum_msr1_msr2", "int", prefix + "sum of msr1 and msr2"),
+        prefix + "sum of msr1 and msr2", "sum(union_join_ctx_msr1) + sum(union_join_ctx_msr2)"));
+   exprs.add(new ExprColumn(new FieldSchema(prefix + "msr1_greater_than_100", "int", prefix + "msr1 greater than 100"),
+       prefix + "msr1 greater than 100", "case when sum(union_join_ctx_msr1) > 100 then \"high\" else \"low\" end"));
+    exprs.add(new ExprColumn(new FieldSchema(prefix + "non_zero_msr2_sum", "int", prefix + "non zero msr2 sum"),
+        prefix + "non zero msr2 sum", "sum(case when union_join_ctx_msr2 > 0 then union_join_ctx_msr2 else 0 end)"));
 
     Map<String, String> cubeProperties = new HashMap<String, String>();
     cubeProperties.put(MetastoreUtil.getCubeTimedDimensionListKey(TEST_CUBE_NAME),

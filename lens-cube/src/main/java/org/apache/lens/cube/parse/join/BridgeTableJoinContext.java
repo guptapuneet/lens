@@ -139,10 +139,10 @@ public class BridgeTableJoinContext {
     // iterate over all select expressions and add them for select clause if do_flattening_early is disabled
     if (!doFlatteningEarly) {
       BridgeTableSelectCtx selectCtx = new BridgeTableSelectCtx(bridgeTableFieldAggr, arrayFilter, toAlias);
-      selectCtx.processSelectAST(queryAST.getSelectAST());
+      selectCtx.processSelectAST(sc.getQueryAst().getSelectAST());
       selectCtx.processWhereClauses(sc);
-      selectCtx.processGroupbyAST(queryAST.getGroupByAST());
-      selectCtx.processOrderbyAST(queryAST.getOrderByAST());
+      selectCtx.processGroupbyAST(sc.getQueryAst().getGroupByAST());
+      selectCtx.processOrderbyAST(sc.getQueryAst().getOrderByAST());
       clause.append(",").append(StringUtils.join(selectCtx.getSelectedBridgeExprs(), ","));
     } else {
       for (String col : cubeql.getTblAliasToColumns().get(toAlias)) {

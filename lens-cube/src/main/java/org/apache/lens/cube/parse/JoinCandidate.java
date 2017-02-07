@@ -2,20 +2,9 @@ package org.apache.lens.cube.parse;
 
 import java.util.*;
 
-import com.google.common.collect.Lists;
-import org.antlr.runtime.CommonToken;
-import org.apache.hadoop.hive.ql.parse.ASTNode;
-import org.apache.hadoop.hive.ql.parse.HiveParser;
-import org.apache.hadoop.util.StringUtils;
-import org.apache.lens.cube.error.LensCubeErrorCode;
-import org.apache.lens.cube.metadata.Cube;
 import org.apache.lens.cube.metadata.FactPartition;
 import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
-
-import lombok.Getter;
-
-import static org.apache.hadoop.hive.ql.parse.HiveParser.Identifier;
 
 /**
  * Represents a join of two candidates
@@ -28,26 +17,13 @@ public class JoinCandidate implements Candidate {
   private Candidate childCandidate1;
   private Candidate childCandidate2;
   private String toStr;
-  @Getter
-  private String alias;
   private QueryAST queryAST;
   private CubeQueryContext cubeql;
 
-  public JoinCandidate(Candidate childCandidate1, Candidate childCandidate2, String alias, CubeQueryContext cubeql) {
+  public JoinCandidate(Candidate childCandidate1, Candidate childCandidate2, CubeQueryContext cubeql) {
     this.childCandidate1 = childCandidate1;
     this.childCandidate2 = childCandidate2;
-    this.alias = alias;
     this.cubeql = cubeql;
-  }
-
-  @Override
-  public String toHQL() throws LensException {
-  return null;
-  }
-
-  @Override
-  public QueryAST getQueryAst() {
-    return null;
   }
 
   @Override
@@ -61,15 +37,13 @@ public class JoinCandidate implements Candidate {
   @Override
   public Date getStartTime() {
     return childCandidate1.getStartTime().after(childCandidate2.getStartTime())
-        ? childCandidate1.getStartTime()
-        : childCandidate2.getStartTime();
+        ? childCandidate1.getStartTime() : childCandidate2.getStartTime();
   }
 
   @Override
   public Date getEndTime() {
     return childCandidate1.getEndTime().before(childCandidate2.getEndTime())
-        ? childCandidate1.getEndTime()
-        : childCandidate2.getEndTime();
+        ? childCandidate1.getEndTime() : childCandidate2.getEndTime();
   }
 
   @Override
@@ -104,9 +78,15 @@ public class JoinCandidate implements Candidate {
         && this.childCandidate2.evaluateCompleteness(timeRange, parentTimeRange, failOnPartialData);
   }
 
+  /**
+   * @return all the partitions from the children
+   */
   @Override
   public Set<FactPartition> getParticipatingPartitions() {
-    return null;
+    Set<FactPartition> factPartitionsSet = new HashSet<>();
+    factPartitionsSet.addAll(childCandidate1.getParticipatingPartitions());
+    factPartitionsSet.addAll(childCandidate2.getParticipatingPartitions());
+    return factPartitionsSet;
   }
 
   @Override
@@ -115,20 +95,12 @@ public class JoinCandidate implements Candidate {
   }
 
   @Override
-  public void updateAnswerableSelectColumns(CubeQueryContext cubeql) {
-
-  }
-
-  @Override
-  public ArrayList<Integer> getAnswerableMeasureIndices() {
+  public Set<Integer> getAnswerableMeasurePhraseIndices() {
     Set<Integer> mesureIndices = new HashSet<>();
-    Set<StorageCandidate> scs = new HashSet<>();
-    scs.addAll(CandidateUtil.getStorageCandidates(getChildren()));
-    // All children in the UnionCandiate will be having common quriable measure
-    for (StorageCandidate sc : scs) {
-      mesureIndices.addAll(sc.getAnswerableMeasureIndices());
+    for (Candidate cand : getChildren()) {
+      mesureIndices.addAll(cand.getAnswerableMeasurePhraseIndices());
     }
-    return new ArrayList<>(mesureIndices);
+    return mesureIndices;
   }
 
   @Override

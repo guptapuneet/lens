@@ -354,7 +354,9 @@ public class DenormalizationResolver implements ContextRewriter {
                 if (denormCtx.getReferencedCols().get(refcol.col.getName()).isEmpty()) {
                   log.info("Not considering storage candidate :{} as column {} is not available", sc, refcol.col);
                   cubeql.addStoragePruningMsg(sc, CandidateTablePruneCause.columnNotFound(refcol.col.getName()));
-                  i.remove();
+                  Collection<Candidate> prunedCandidates = CandidateUtil.filterCandidates(cubeql.getCandidates(), sc);
+                  cubeql.addCandidatePruningMsg(prunedCandidates,
+                      new CandidateTablePruneCause(CandidateTablePruneCode.ELEMENT_IN_SET_PRUNED));
                 }
               }
           }
@@ -363,7 +365,7 @@ public class DenormalizationResolver implements ContextRewriter {
           throw new LensException(LensCubeErrorCode.NO_FACT_HAS_COLUMN.getLensErrorInfo(),
               cubeql.getColumnsQueriedForTable(cubeql.getCube().getName()).toString());
         }
-        cubeql.pruneCandidateFactSet(CandidateTablePruneCode.COLUMN_NOT_FOUND);
+
       }
       if (cubeql.getDimensions() != null && !cubeql.getDimensions().isEmpty()) {
         for (Dimension dim : cubeql.getDimensions()) {

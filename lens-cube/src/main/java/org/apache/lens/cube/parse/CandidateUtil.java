@@ -5,6 +5,7 @@ import java.util.*;
 import org.antlr.runtime.CommonToken;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
 import org.apache.lens.cube.metadata.CubeMetastoreClient;
+import org.apache.lens.cube.metadata.FactPartition;
 import org.apache.lens.cube.metadata.MetastoreUtil;
 import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
@@ -105,6 +106,9 @@ public class CandidateUtil {
     }
     if (sourceAst.getGroupByAST() != null) {
       targetAst.setGroupByAST(MetastoreUtil.copyAST(sourceAst.getGroupByAST()));
+    }
+    if (sourceAst.getHavingAST() != null) {
+      targetAst.setHavingAST(MetastoreUtil.copyAST(sourceAst.getHavingAST()));
     }
   }
 
@@ -211,10 +215,9 @@ public class CandidateUtil {
     return new StorageCandidate(sc);
   }
 
-  public static class UnionCandidateComparator<T> implements Comparator<UnionCandidate> {
-
+  public static class ChildrenSizeBasedCandidateComparator<T> implements Comparator<Candidate> {
     @Override
-    public int compare(UnionCandidate o1, UnionCandidate o2) {
+    public int compare(Candidate o1, Candidate o2) {
       return Integer.valueOf(o1.getChildren().size() - o2.getChildren().size());
     }
   }
@@ -268,22 +271,15 @@ public class CandidateUtil {
    * @param selectAST Outer query selectAST
    * @param cubeql Cubequery Context
    *
-   *  Update the final alias in the outer select query. Replace the query with final alias, if user hasn't \
-   *  specified any alias in final selectAST deelete the alias
+   *  Update the final alias in the outer select expressions
+   *  1. Replace queriedAlias with finalAlias if both are not same
+   *  2. If queriedAlias is missing add finalAlias as alias
    */
   public static void updateFinalAlias(ASTNode selectAST, CubeQueryContext cubeql) {
     for (int i = 0; i < selectAST.getChildCount(); i++) {
       ASTNode selectExpr = (ASTNode) selectAST.getChild(i);
       ASTNode aliasNode = HQLParser.findNodeByPath(selectExpr, Identifier);
       String finalAlias = cubeql.getSelectPhrases().get(i).getFinalAlias().replaceAll("`", "");
-      String actualAlias = cubeql.getSelectPhrases().get(i).getActualAlias();
-      if (actualAlias == null ) {
-        if (aliasNode != null){
-          //Since actual alias supplied by user is null, we should delete this alias node
-          selectExpr.deleteChild(1);
-        }
-        continue;
-      }
       if (aliasNode != null) {
         String queryAlias = aliasNode.getText();
         if (!queryAlias.equals(finalAlias)) {
@@ -310,5 +306,16 @@ public class CandidateUtil {
       }
     }
     return false;
+  }
+
+
+  public static Set<String> getMissingPartitions(StorageCandidate sc) {
+    Set<String> missingParts = new HashSet<>();
+    for (FactPartition part : sc.getParticipatingPartitions()) {
+      if (!part.isFound()) {
+        missingParts.add(part.toString()); //TODOD union . add approprite partition String
+      }
+    }
+    return missingParts;
   }
 }

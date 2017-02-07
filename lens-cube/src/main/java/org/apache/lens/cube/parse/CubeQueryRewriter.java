@@ -154,8 +154,6 @@ public class CubeQueryRewriter {
     rewriters.add(new GroupbyResolver(conf));
     rewriters.add(new FieldValidator());
     rewriters.add(storageTableResolver);
-    rewriters.add(new CandidateCoveringSetsResolver(conf));
-
     //TODO union: Add CoveringSetResolver which creates UnionCandidates and JoinCandidates. Some code form candidateTblResolver(phase 2) to be moved to CoveringSetResolver
     //TODO union: AggregateResolver,GroupbyResolver,FieldValidator before CoveringSetResolver
     // Resolve joins and generate base join tree
@@ -166,7 +164,7 @@ public class CubeQueryRewriter {
     // in join and denorm resolvers
     //TODO union : this should be CoveringSetResolver now
     rewriters.add(candidateTblResolver);
-
+    rewriters.add(new CandidateCoveringSetsResolver(conf));
     // Phase 1: resolve fact tables.
     //TODO union: This phase 1 of storageTableResolver should happen before CoveringSetResolver
     if (lightFactFirst) {

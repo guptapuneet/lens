@@ -57,7 +57,7 @@ abstract class DimHQLContext extends SimpleHQLContext {
   }
 
   protected void setMissingExpressions() throws LensException {
-    setFrom(String.format("%s", getFromTable()));
+    setFrom(String.format(astFromString, getFromTable()));
     setWhere(joinWithAnd(
       genWhereClauseWithDimPartitions(where), getQuery().getConf().getBoolean(
         CubeQueryConfUtil.REPLACE_TIMEDIM_WITH_PART_COL, CubeQueryConfUtil.DEFAULT_REPLACE_TIMEDIM_WITH_PART_COL)

@@ -354,23 +354,25 @@ public class AutoJoinContext {
    * Same is done in case of join paths defined in Dimensions.
    *
    * @param cube
-   * @param cand picked Candidate
+   * @param scSet picked StorageCandidates
    * @param dimsToQuery
    * @throws LensException
    */
-  public void pruneAllPaths(CubeInterface cube, final Candidate cand,
+  public void pruneAllPaths(CubeInterface cube, Set<StorageCandidate> scSet,
     final Map<Dimension, CandidateDim> dimsToQuery) throws LensException {
     // Remove join paths which cannot be satisfied by the resolved candidate
     // fact and dimension tables
-    if (cand != null) {
+    if (scSet != null) {
       // include columns from picked candidate
-      Collection<String> factColumns = cand.getColumns();
-
+      Set<String> candColumns = new HashSet<>();
+      for (StorageCandidate sc : scSet) {
+        candColumns.addAll(sc.getColumns());
+      }
       for (List<JoinPath> paths : allPaths.values()) {
         for (int i = 0; i < paths.size(); i++) {
           JoinPath jp = paths.get(i);
           List<String> cubeCols = jp.getColumnsForTable((AbstractCubeTable) cube);
-          if (cubeCols != null && !factColumns.containsAll(cubeCols)) {
+          if (cubeCols != null && !candColumns.containsAll(cubeCols)) {
             // This path requires some columns from the cube which are not
             // present in the candidate fact
             // Remove this path

@@ -102,10 +102,6 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
   // Mapping of a qualified column name to its table alias
   private final Map<String, String> colToTableAlias = new HashMap<>();
 
-  //TODO union: remove candidateFactSets and use
-  @Getter
-  private final Set<Set<CandidateFact>> candidateFactSets = new HashSet<>();
-
   /**
    * This is the set of working Candidates that gets updated during different phases of
    * query resolution. Each {@link ContextRewriter} may add/remove/update Candiadtes in
@@ -151,13 +147,8 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
   // Join conditions used in all join expressions
   @Getter
   private final Map<QBJoinTree, String> joinConds = new HashMap<QBJoinTree, String>();
-
-  // storage specific
-  @Getter
-  protected final Set<CandidateFact> candidateFacts = new HashSet<CandidateFact>();
   @Getter
   protected final Map<Dimension, Set<CandidateDim>> candidateDims = new HashMap<Dimension, Set<CandidateDim>>();
-
   // query trees
   @Getter
   @Setter
@@ -515,10 +506,17 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     }
   }
 */
-  public void addCandidatePruningMsg(Candidate cand, CandidateTablePruneCause factPruningMsg) {
+  public void addCandidatePruningMsg(Collection<Candidate> candidateCollection, CandidateTablePruneCause pruneCause) {
+    for (Candidate c : candidateCollection){
+      addCandidatePruningMsg(c, pruneCause);
+    }
+
+  }
+
+  public void addCandidatePruningMsg(Candidate cand, CandidateTablePruneCause pruneCause) {
     Set<StorageCandidate> scs = CandidateUtil.getStorageCandidates(cand);
     for (StorageCandidate sc : scs) {
-      addStoragePruningMsg(sc, factPruningMsg);
+      addStoragePruningMsg(sc, pruneCause);
     }
   }
 
@@ -772,6 +770,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     return fromString;
   }
 
+
   private void getQLString(QBJoinTree joinTree, StringBuilder builder, StorageCandidate candidate,
     Map<Dimension, CandidateDim> dimsToQuery) throws LensException {
     List<String> joiningTables = new ArrayList<>();
@@ -891,7 +890,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     if (hasCubeInQuery()) {
       if (candidates.size() > 0) {
         cand = candidates.iterator().next();
-        log.info("Available candidate facts:{}, picking up {} for querying", candidates, cand);
+        log.info("Available Candidates:{}, picking up Candaidate: {} for querying", candidates, cand);
       } else {
         String reason = "";
         if (!storagePruningMsgs.isEmpty()) {
@@ -922,10 +921,6 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
 
   private HQLContextInterface hqlContext;
 
-  //TODO union : Delete this and use pickedCandidate
-  @Getter
-  private Collection<CandidateFact> pickedFacts;
-
   @Getter
   //TODO union : This will be the final Candidate . private Candidate pickedCandidate
   private Candidate pickedCandidate;
@@ -949,21 +944,22 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
   public String toHQL() throws LensException {
     Candidate cand = pickCandidateToQuery();
     Map<Dimension, CandidateDim> dimsToQuery = pickCandidateDimsToQuery(dimensions);
-    Set<StorageCandidate> scSet = null;
+    Set<StorageCandidate> scSet = new HashSet<>();
     if (cand != null) {
-      scSet = CandidateUtil.getStorageCandidates(cand);
+      scSet.addAll(CandidateUtil.getStorageCandidates(cand));
     }
-    log.info("facts:{}, dimsToQuery: {}", cand, dimsToQuery);
-
+    log.info("Candidate: {}, DimsToQuery: {}", cand, dimsToQuery);
     if (autoJoinCtx != null) {
       // prune join paths for picked fact and dimensions
-      autoJoinCtx.pruneAllPaths(cube, cand, dimsToQuery);
+      autoJoinCtx.pruneAllPaths(cube, scSet, dimsToQuery);
     }
 
     Map<StorageCandidate, Set<Dimension>> factDimMap = new HashMap<>();
     if (cand != null) {
       // copy ASTs for each storage candidate
       for (StorageCandidate sc : scSet) {
+        // Set the default queryAST for StorageCandidate and copy child ASTs from cubeql.
+        // Later in the rewrite flow each Storage candidate will modify them accordingly.
         sc.setQueryAst(DefaultQueryAST.fromStorageCandidate(sc, this));
         CandidateUtil.copyASTs(this, sc.getQueryAst());
         factDimMap.put(sc, new HashSet<>(dimsToQuery.keySet()));
@@ -975,7 +971,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
 
     // pick dimension tables required during expression expansion for the picked fact and dimensions
     Set<Dimension> exprDimensions = new HashSet<>();
-    if (scSet != null) {
+    if (!scSet.isEmpty()) {
       for (StorageCandidate sc : scSet) {
         Set<Dimension> factExprDimTables = exprCtx.rewriteExprCtx(sc, dimsToQuery, sc.getQueryAst());
         exprDimensions.addAll(factExprDimTables);
@@ -986,13 +982,13 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
       exprDimensions.addAll(exprCtx.rewriteExprCtx(null, dimsToQuery, this));
     }
     dimsToQuery.putAll(pickCandidateDimsToQuery(exprDimensions));
-    log.info("facts:{}, dimsToQuery: {}", scSet, dimsToQuery);
+    log.info("StorageCandidates: {}, DimsToQuery: {}", scSet, dimsToQuery);
 
     // pick denorm tables for the picked fact and dimensions
     Set<Dimension> denormTables = new HashSet<>();
-    if (scSet != null) {
+    if (!scSet.isEmpty()) {
       for (StorageCandidate sc : scSet) {
-        Set<Dimension> factDenormTables = deNormCtx.rewriteDenormctx(sc, dimsToQuery, scSet.size() > 1);
+        Set<Dimension> factDenormTables = deNormCtx.rewriteDenormctx(sc, dimsToQuery, !scSet.isEmpty());
         denormTables.addAll(factDenormTables);
         factDimMap.get(sc).addAll(factDenormTables);
       }
@@ -1000,11 +996,11 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
       denormTables.addAll(deNormCtx.rewriteDenormctx(null, dimsToQuery, false));
     }
     dimsToQuery.putAll(pickCandidateDimsToQuery(denormTables));
-    log.info("facts:{}, dimsToQuery: {}", scSet, dimsToQuery);
+    log.info("StorageCandidates: {}, DimsToQuery: {}", scSet, dimsToQuery);
     // Prune join paths once denorm tables are picked
     if (autoJoinCtx != null) {
       // prune join paths for picked fact and dimensions
-      autoJoinCtx.pruneAllPaths(cube, cand, dimsToQuery);
+      autoJoinCtx.pruneAllPaths(cube, scSet, dimsToQuery);
     }
     if (autoJoinCtx != null) {
       // add optional dims from Join resolver
@@ -1020,16 +1016,15 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
       }
       dimsToQuery.putAll(pickCandidateDimsToQuery(joiningTables));
     }
-    log.info("Picked Fact:{} dimsToQuery: {}", scSet, dimsToQuery);
+    log.info("Picked StorageCandidates: {} DimsToQuery: {}", scSet, dimsToQuery);
     pickedDimTables = dimsToQuery.values();
     pickedCandidate = cand;
-    if (scSet != null) {
-      for (StorageCandidate sc : scSet) {
-        sc.updateAnswerableSelectColumns(this);
-      }
+    if (!scSet.isEmpty()) {
       for (StorageCandidate sc : scSet) {
         sc.updateFromString(this, factDimMap.get(sc), dimsToQuery);
       }
+    } else {
+      updateFromString(null, dimsToQuery);
     }
     //update dim filter with fact filter
     if (scSet != null && scSet.size() > 0) {
@@ -1046,13 +1041,15 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     }
 
     if (cand == null) {
-      DimHQLContext dimHQLContext = new DimOnlyHQLContext(dimsToQuery, this, this);
-      return dimHQLContext.toHQL();
+      hqlContext = new DimOnlyHQLContext(dimsToQuery, this, this);
+      return hqlContext.toHQL();
     } else if (cand instanceof StorageCandidate) {
-      return cand.toHQL();
+      StorageCandidate sc = (StorageCandidate) cand;
+      sc.updateAnswerableSelectColumns(this);
+      return getInsertClause() + sc.toHQL();
     } else {
       UnionQueryWriter uqc = new UnionQueryWriter(cand, this);
-      return uqc.toHQL();
+      return getInsertClause() + uqc.toHQL();
     }
   }
 
@@ -1169,7 +1166,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
   public String getInsertClause() {
     ASTNode destTree = qb.getParseInfo().getDestForClause(clauseName);
     if (destTree != null && ((ASTNode) (destTree.getChild(0))).getToken().getType() != TOK_TMP_FILE) {
-      return "INSERT OVERWRITE" + HQLParser.getString(destTree);
+      return "INSERT OVERWRITE " + HQLParser.getString(destTree) + " ";
     }
     return "";
   }
@@ -1240,10 +1237,10 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
    * <p></p>
    * Prune a candidate set, if any of the fact is missing.
    *
-   * @param pruneCause
    */
   //TODO union : deprecated
   @Deprecated
+  /*
   public void pruneCandidateFactSet(CandidateTablePruneCode pruneCause) {
     // remove candidate fact sets that have missing facts
     for (Iterator<Set<CandidateFact>> i = candidateFactSets.iterator(); i.hasNext();) {
@@ -1257,7 +1254,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
     // prune candidate facts
     pruneCandidateFactWithCandidateSet(CandidateTablePruneCode.ELEMENT_IN_SET_PRUNED);
   }
-
+*/
   /**
    * Prune candidate fact with respect to available candidate fact sets.
    * <p></p>
@@ -1265,13 +1262,16 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
    *
    * @param pruneCause
    */
+/*
   public void pruneCandidateFactWithCandidateSet(CandidateTablePruneCode pruneCause) {
     // remove candidate facts that are not part of any covering set
     pruneCandidateFactWithCandidateSet(new CandidateTablePruneCause(pruneCause));
   }
-
+*/
   //TODO union : deprecated
+  /*
   @Deprecated
+
   public void pruneCandidateFactWithCandidateSet(CandidateTablePruneCause pruneCause) {
     // remove candidate facts that are not part of any covering set
     Set<CandidateFact> allCoveringFacts = new HashSet<CandidateFact>();
@@ -1287,7 +1287,7 @@ public class CubeQueryContext extends TracksQueriedColumns implements QueryAST {
       }
     }
   }
-
+*/
 
   public void addQueriedTimeDimensionCols(final String timeDimColName) {
 

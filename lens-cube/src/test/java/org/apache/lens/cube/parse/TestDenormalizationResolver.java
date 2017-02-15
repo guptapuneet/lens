@@ -289,15 +289,10 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
   public void testCubeQueryWithTwoRefCols() throws Exception {
     Configuration tConf = new Configuration(conf);
     tConf.set(CubeQueryConfUtil.DRIVER_SUPPORTED_STORAGES, "");
-    CubeQueryContext cubeql = rewriteCtx("select dim2, test_time_dim2 from testcube where " + TWO_DAYS_RANGE, tConf);
-    Set<String> candidates = new HashSet<String>();
-    for (Candidate cand : cubeql.getCandidates()) {
-      candidates.add(cand.toString());
-    }
-    // testfact contains test_time_dim_day_id, but not dim2 - it should have been removed.
-    Assert.assertFalse(candidates.contains("testfact"));
-    // summary2 contains dim2, but not test_time_dim2 - it should have been removed.
-    Assert.assertFalse(candidates.contains("summary2"));
+    //test_time_dim2 and dim2 are not querable together
+    NoCandidateFactAvailableException e = (NoCandidateFactAvailableException)getLensExceptionInRewrite(
+      "select dim2, test_time_dim2 from testcube where " + TWO_DAYS_RANGE, tConf);
+    e.getJsonMessage();
   }
 
   @Test

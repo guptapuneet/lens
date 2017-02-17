@@ -123,9 +123,9 @@ public class TestTimeRangeResolver extends TestQueryRewrite {
     Configuration conf = getConf();
     DateTime dt = new DateTime(1990, 3, 23, 12, 0, 0, 0);
     conf.setLong(LensConfConstants.QUERY_CURRENT_TIME_IN_MILLIS, dt.getMillis());
-    CubeQueryContext ctx = rewriteCtx("select msr12 from basecube where time_range_in(d_time, 'now.day-275days','now')",
-        conf);
-    TimeRange timeRange = ctx.getTimeRanges().get(0);
+    NoCandidateFactAvailableException e = (NoCandidateFactAvailableException)getLensExceptionInRewrite(
+     "select msr12 from basecube where time_range_in(d_time, 'now.day-275days','now')", conf);
+    TimeRange timeRange = e.getCubeQueryContext().getTimeRanges().get(0);
     // Month starts from zero.
     Calendar from = new GregorianCalendar(1989, 5, 21, 0, 0, 0);
     assertEquals(timeRange.getFromDate(), from.getTime());

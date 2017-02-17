@@ -45,7 +45,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     }
 
     if (cubeql.getCandidates().size() == 0){
-      throw new NoCandidateFactAvailableException(cubeql.getStoragePruningMsgs());
+      throw new NoCandidateFactAvailableException(cubeql);
     }
 
     List<QueriedPhraseContext> qpcList = cubeql.getQueriedPhrases();
@@ -66,7 +66,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
       throw new NoCandidateFactAvailableException(cubeql.getCube().getName()
         + " does not have any facts that can cover the requested time range " + cubeql.getTimeRanges().toString()
         + " and queried measure set " + getColumns(queriedMsrs).toString(),
-        cubeql.getStoragePruningMsgs());
+        cubeql);
     }
     log.info("Time covering candidates :{}", timeRangeCoveringSet);
 
@@ -79,7 +79,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
         throw new NoCandidateFactAvailableException(cubeql.getCube().getName()
           + " does not have any facts that can cover the queried measure set "
           + getColumns(queriedMsrs).toString(),
-          cubeql.getStoragePruningMsgs());
+          cubeql);
       }
       updateFinalCandidates(measureCoveringSets, cubeql);
     }

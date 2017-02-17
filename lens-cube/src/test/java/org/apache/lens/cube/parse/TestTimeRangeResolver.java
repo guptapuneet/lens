@@ -21,7 +21,8 @@ package org.apache.lens.cube.parse;
 
 import static org.apache.lens.cube.metadata.DateFactory.*;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.COLUMN_NOT_FOUND;
-import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.STORAGE_NOT_AVAILABLE_IN_RANGE;
+import static org.apache.lens.cube.parse.CandidateTablePruneCause.
+    CandidateTablePruneCode.STORAGE_NOT_AVAILABLE_IN_RANGE;
 import static org.apache.lens.cube.parse.CandidateTablePruneCause.CandidateTablePruneCode.UNSUPPORTED_STORAGE;
 
 import static org.testng.Assert.assertEquals;
@@ -72,7 +73,8 @@ public class TestTimeRangeResolver extends TestQueryRewrite {
         getConf());
     NoCandidateFactAvailableException ne = (NoCandidateFactAvailableException) e;
     PruneCauses.BriefAndDetailedError causes = ne.getJsonMessage();
-    assertTrue(causes.getBrief().contains("No storages available for all of these time ranges: [dt [2016-01-01-00:00:00,000 to 2017-01-01-00:00:00,000)]"));
+    assertTrue(causes.getBrief().contains("No storages available for all of these time ranges: "
+          + "[dt [2016-01-01-00:00:00,000 to 2017-01-01-00:00:00,000)]"));
     assertEquals(causes.getDetails().size(), 3);
 
     Set<CandidateTablePruneCause.CandidateTablePruneCode> expectedPruneCodes = Sets.newTreeSet();
@@ -94,26 +96,23 @@ public class TestTimeRangeResolver extends TestQueryRewrite {
         getConf());
     List<CandidateTablePruneCause> causes = findPruningMessagesForStorage("c3_testfact_deprecated",
       ctx.getStoragePruningMsgs());
-    assertEquals(causes.size(),1);
+    assertEquals(causes.size(), 1);
     assertEquals(causes.get(0).getCause(), UNSUPPORTED_STORAGE);
 
-    causes = findPruningMessagesForStorage("c4_testfact_deprecated",
-      ctx.getStoragePruningMsgs());
-    assertEquals(causes.size(),1);
+    causes = findPruningMessagesForStorage("c4_testfact_deprecated", ctx.getStoragePruningMsgs());
+    assertEquals(causes.size(), 1);
     assertEquals(causes.get(0).getCause(), UNSUPPORTED_STORAGE);
 
     // testfact_deprecated's validity should be in between of both ranges. So both ranges should be in the invalid list
     // That would prove that parsing of properties has gone through successfully
 
-    causes = findPruningMessagesForStorage("c1_testfact_deprecated",
-      ctx.getStoragePruningMsgs());
-    assertEquals(causes.size(),1);
+    causes = findPruningMessagesForStorage("c1_testfact_deprecated", ctx.getStoragePruningMsgs());
+    assertEquals(causes.size(), 1);
     assertEquals(causes.get(0).getCause(), STORAGE_NOT_AVAILABLE_IN_RANGE);
     assertTrue(causes.get(0).getInvalidRanges().containsAll(ctx.getTimeRanges()));
 
-    causes = findPruningMessagesForStorage("c2_testfact_deprecated",
-      ctx.getStoragePruningMsgs());
-    assertEquals(causes.size(),1);
+    causes = findPruningMessagesForStorage("c2_testfact_deprecated", ctx.getStoragePruningMsgs());
+    assertEquals(causes.size(), 1);
     assertEquals(causes.get(0).getCause(), STORAGE_NOT_AVAILABLE_IN_RANGE);
     assertTrue(causes.get(0).getInvalidRanges().containsAll(ctx.getTimeRanges()));
   }

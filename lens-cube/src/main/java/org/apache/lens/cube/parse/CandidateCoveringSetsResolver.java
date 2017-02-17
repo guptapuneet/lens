@@ -18,11 +18,8 @@
  */
 package org.apache.lens.cube.parse;
 
-import static org.apache.lens.cube.parse.CandidateUtil.getColumns;
-
 import java.util.*;
 
-import org.apache.lens.cube.error.NoCandidateFactAvailableException;
 import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
 

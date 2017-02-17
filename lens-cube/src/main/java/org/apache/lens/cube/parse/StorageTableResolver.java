@@ -125,9 +125,9 @@ class StorageTableResolver implements ContextRewriter {
       for (TimeRange range : cubeql.getTimeRanges()) {
         isComplete &= candidate.evaluateCompleteness(range, range, failOnPartialData);
       }
-      if (!isComplete) {
+      if (failOnPartialData &&  !isComplete) {
         candidateIterator.remove();
-
+        log.info("Not considering candidate:{} as its data is not is not complete", candidate);
         Set<StorageCandidate> scSet = CandidateUtil.getStorageCandidates(candidate);
         for (StorageCandidate sc : scSet) {
           if (!sc.getNonExistingPartitions().isEmpty()) {
@@ -269,14 +269,15 @@ class StorageTableResolver implements ContextRewriter {
         valid = partitionColumnExists;
         if (!partitionColumnExists) {
           String timeDim = cubeql.getBaseCube().getTimeDimOfPartitionColumn(range.getPartitionColumn());
-          TimeRange fallBackRange = StorageUtil.getFallbackRange(range, sc.getFact().getCubeName(), cubeql);
+          TimeRange fallBackRange = StorageUtil.getFallbackRange(range, sc.getFact().getName(), cubeql);
           if (fallBackRange == null) {
             log.info("No partitions for range:{}. fallback range: {}", range, fallBackRange);
             pruningCauses.add(CandidateTablePruneCode.TIME_RANGE_NOT_ANSWERABLE);
             continue;
           }
-          valid = client
-            .isStorageTableCandidateForRange(storageTable, fallBackRange.getFromDate(), fallBackRange.getToDate());
+          valid = client.partColExists(storageTable, fallBackRange.getPartitionColumn())
+              && client.isStorageTableCandidateForRange(storageTable, fallBackRange.getFromDate(),
+                  fallBackRange.getToDate());
           if (!valid) {
             pruningCauses.add(CandidateTablePruneCode.TIME_RANGE_NOT_ANSWERABLE);
           }

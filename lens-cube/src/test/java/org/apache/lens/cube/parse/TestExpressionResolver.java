@@ -257,7 +257,7 @@ public class TestExpressionResolver extends TestQueryRewrite {
           " and substr(testCube.dim1, 3) != 'XYZ' "
           + " group by testCube.dim1 != 'x' AND testCube.dim2 != 10"
           + " having (sum(testCube.msr2) + max(testCube.msr3))/ count(testcube.msr4) > 100.0"
-          + " order by testCube.dim1 != 'x' AND testCube.dim2 != 10 asc", getWhereForHourly2days("C1_testfact2_raw"));
+          + " order by booleancut asc", getWhereForHourly2days("C1_testfact2_raw"));
     TestCubeRewriter.compareQueries(hqlQuery, expected);
   }
   @Test

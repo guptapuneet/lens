@@ -287,6 +287,103 @@ public class UnionQueryWriter {
     return false;
   }
 
+  private boolean isNodeDefault(ASTNode node) {
+    if (HQLParser.isAggregateAST((ASTNode) node.getChild(0))) {
+      if (HQLParser.getString((ASTNode) node.getChild(0).getChild(1)).equals(DEFAULT_MEASURE)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private List<ASTNode> getProjectedNonDefaultPhrases() {
+    List<ASTNode> phrases = new ArrayList<>();
+    int selectPhraseCount = cubeql.getSelectPhrases().size();
+    for (int i = 0; i < selectPhraseCount; i++) {
+      for (StorageCandidate sc : storageCandidates) {
+        ASTNode selectAST = sc.getQueryAst().getSelectAST();
+        if (isNodeDefault((ASTNode) selectAST.getChild(i))) {
+          continue;
+        } else {
+          phrases.add((ASTNode) selectAST.getChild(i));
+          break;
+        }
+      }
+    }
+    return phrases;
+  }
+
+  private void removeRedundantProjectedPhrases() {
+    List<ASTNode> phrases = getProjectedNonDefaultPhrases();
+    List<String> phrasesWithoutAlias = new ArrayList<>();
+    // populate all phrases without alias
+    for (ASTNode node : phrases) {
+      phrasesWithoutAlias.add(HQLParser.getString((ASTNode) node.getChild(0)));
+    }
+    Map<String, List<Integer>> phraseCountMap = new HashMap<>();
+    Map<String, List<String>> aliasMap = new HashMap<>();
+    for (int i = 0; i < phrasesWithoutAlias.size(); i++) {
+      String phrase = phrasesWithoutAlias.get(i);
+      if (phraseCountMap.containsKey(phrase)) {
+        phraseCountMap.get(phrase).add(i);
+      } else {
+        List<Integer> indices = new ArrayList<>();
+        indices.add(i);
+        phraseCountMap.put(phrase, indices);
+      }
+    }
+    for (List<Integer> values : phraseCountMap.values()) {
+      if (values.size() > 1) {
+        String aliasToKeep = HQLParser.findNodeByPath((ASTNode)
+            phrases.get(values.get(0)), Identifier).toString();
+        ArrayList<String> dupAliases = new ArrayList<>();
+        for (int i : values.subList(1, values.size())) {
+          dupAliases.add(HQLParser.findNodeByPath((ASTNode)
+              phrases.get(i), Identifier).toString());
+        }
+        aliasMap.put(aliasToKeep, dupAliases);
+      }
+    }
+
+    for (String col : phraseCountMap.keySet()) {
+      if (phraseCountMap.get(col).size() > 1) {
+        List<Integer> childenToDelete = phraseCountMap.get(col).
+            subList(1, phraseCountMap.get(col).size());
+        int counter = 0;
+        for (int i : childenToDelete) {
+          for (StorageCandidate sc : storageCandidates) {
+            sc.getQueryAst().getSelectAST().deleteChild(i - counter);
+          }
+          counter++;
+        }
+      }
+    }
+    updateOuterSelectDuplicateAliases(queryAst.getSelectAST(), aliasMap);
+  }
+
+  public void updateOuterSelectDuplicateAliases(ASTNode node,
+      Map<String, List<String>> aliasMap) {
+    if (node.getToken().getType() == HiveParser.DOT) {
+      String table = HQLParser.findNodeByPath(node, TOK_TABLE_OR_COL, Identifier).toString();
+      String col = node.getChild(1).toString();
+      for (Map.Entry<String, List<String>> entry : aliasMap.entrySet()) {
+        if (entry.getValue().contains(col)) {
+          try {
+            node.setChild(1, HQLParser.parseExpr(entry.getKey()));
+          } catch (LensException e) {
+            log.error("Unable to parse select expression: {}.", entry.getKey());
+          }
+        }
+
+      }
+    }
+    for (int i = 0; i < node.getChildCount(); i++) {
+      ASTNode child = (ASTNode) node.getChild(i);
+      updateOuterSelectDuplicateAliases(child, aliasMap);
+    }
+  }
+
+
   /**
    * Set the default value for the non queriable measures. If a measure is not
    * answerable from a StorageCandidate set it as 0.0
@@ -297,12 +394,14 @@ public class UnionQueryWriter {
     for (int i = 0; i < cubeql.getSelectPhrases().size(); i++) {
       SelectPhraseContext phrase = cubeql.getSelectPhrases().get(i);
       ASTNode aliasNode = new ASTNode(new CommonToken(Identifier, phrase.getSelectAlias()));
+      // Select phrase is dimension
       if (!phrase.hasMeasures(cubeql)) {
         for (StorageCandidate sc : storageCandidates) {
           ASTNode exprWithOutAlias = (ASTNode) sc.getQueryAst().getSelectAST().getChild(i).getChild(0);
           storageCandidateToSelectAstMap.get(sc.toString()).
               addChild(getSelectExpr(exprWithOutAlias, aliasNode, false));
         }
+        // Select phrase is measure
       } else if (!phrase.getQueriedMsrs().isEmpty()) {
         for (StorageCandidate sc : storageCandidates) {
           if (sc.getAnswerableMeasurePhraseIndices().contains(phrase.getPosition())) {
@@ -320,6 +419,7 @@ public class UnionQueryWriter {
                 addChild(getSelectExpr(resolvedExprNode, aliasNode, false));
           }
         }
+        // Select phrase is expression
       } else {
         for (StorageCandidate sc : storageCandidates) {
           if (phrase.isEvaluable(cubeql, sc)
@@ -364,6 +464,7 @@ public class UnionQueryWriter {
       aliasDecider.setCounter(selectAliasCounter);
       processHavingAST(sc.getQueryAst().getSelectAST(), aliasDecider, sc);
     }
+    removeRedundantProjectedPhrases();
   }
 
   /**
@@ -590,7 +691,7 @@ public class UnionQueryWriter {
     List<String> hqlQueries = new ArrayList<>();
     for (StorageCandidate sc : storageCandidates) {
       Set<Dimension> queriedDims = factDimMap.get(sc);
-      hqlQueries.add(" ( " + sc.toHQL(queriedDims) + " ) ");
+      hqlQueries.add(sc.toHQL(queriedDims));
     }
     return from.append(" ( ")
         .append(StringUtils.join(" UNION ALL ", hqlQueries))

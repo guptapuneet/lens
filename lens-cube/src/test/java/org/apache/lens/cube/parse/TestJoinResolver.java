@@ -377,7 +377,7 @@ public class TestJoinResolver extends TestQueryRewrite {
         + "sum((basecube.msr2)) as `sum(msr2)` FROM ", " join "
         + getDbName() + "c1_citytable citydim ON baseCube.cityid = citydim.id and citydim.dt = 'latest'"
         + " join " + getDbName() + "c1_statetable cityState ON citydim.stateid=cityState.id and cityState.dt= 'latest'",
-      null, "group by citystate.capital order by citystate.capital asc",
+      null, "group by citystate.capital order by citystatecapital",
       null, getWhereForDailyAndHourly2days("basecube", "c1_testfact1_base"));
     TestCubeRewriter.compareQueries(hqlQuery, expected);
 

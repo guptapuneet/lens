@@ -39,8 +39,13 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
 
   @Override
   public void rewriteContext(CubeQueryContext cubeql) throws LensException {
+
     if (!cubeql.hasCubeInQuery()) {
       return; //Dimension query
+    }
+
+    if (cubeql.getCandidates().size() == 0){
+      throw new NoCandidateFactAvailableException(cubeql.getStoragePruningMsgs());
     }
 
     List<QueriedPhraseContext> qpcList = cubeql.getQueriedPhrases();

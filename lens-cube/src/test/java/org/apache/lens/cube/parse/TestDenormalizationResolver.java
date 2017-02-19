@@ -227,10 +227,10 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
         continue;
       }
 
-      if (entry.getKey().equals("c2_summary2,c2_summary3,c2_summary4,c4_testfact,c2_summary1,c3_testfact," +
-        "c3_testfact2_raw,c4_testfact2,c99_cheapfact,c5_testfact,c0_cheapfact,c2_testfact,c2_testfactmonthly," +
-        "c0_testfact")) {
-        Assert.assertEquals(entry.getValue().size(),1);
+      if (entry.getKey().equals("c2_summary2,c2_summary3,c2_summary4,c4_testfact,c2_summary1,c3_testfact,"
+        + "c3_testfact2_raw,c4_testfact2,c99_cheapfact,c5_testfact,c0_cheapfact,c2_testfact,c2_testfactmonthly,"
+        + "c0_testfact")) {
+        Assert.assertEquals(entry.getValue().size(), 1);
         //Only storage C1 is supported.
         Assert.assertTrue(entry.getValue().get(0).getCause().equals(CandidateTablePruneCode.UNSUPPORTED_STORAGE));
         conditionsChecked++;
@@ -238,7 +238,7 @@ public class TestDenormalizationResolver extends TestQueryRewrite {
       }
     }
 
-    Assert.assertEquals(conditionsChecked,4 ,"All prune causes not checked");
+    Assert.assertEquals(conditionsChecked, 4, "All prune causes not checked");
   }
 
   @Test

@@ -70,9 +70,9 @@ public class TestBaseCubeQueries extends TestQueryRewrite {
   @Test
   public void testNoCandidateFactAvailableExceptionCompareTo() throws Exception {
     //maxCause : UNSUPPORTED_STORAGE
-    NoCandidateFactAvailableException ne1 =(NoCandidateFactAvailableException)
-      getLensExceptionInRewrite("select dim1, test_time_dim, msr3, msr13 from basecube where "
-      + TWO_DAYS_RANGE, conf);
+    NoCandidateFactAvailableException ne1 =
+      (NoCandidateFactAvailableException)getLensExceptionInRewrite(
+        "select dim1, test_time_dim, msr3, msr13 from basecube where " + TWO_DAYS_RANGE, conf);
     //maxCause : STORAGE_NOT_AVAILABLE_IN_RANGE
     NoCandidateFactAvailableException ne2 = (NoCandidateFactAvailableException)
       getLensExceptionInRewrite("select dim1 from " + cubeName + " where " + LAST_YEAR_RANGE, getConf());

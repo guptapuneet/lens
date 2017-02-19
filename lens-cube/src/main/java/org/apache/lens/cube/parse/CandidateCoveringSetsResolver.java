@@ -33,8 +33,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CandidateCoveringSetsResolver implements ContextRewriter {
 
-  //private List<Candidate> finalCandidates = new ArrayList<>();
+  private final Configuration conf;
   public CandidateCoveringSetsResolver(Configuration conf) {
+    this.conf = conf;
   }
 
   @Override
@@ -55,11 +56,6 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
         queriedMsrs.add(qpc);
       }
     }
-
-    /*// if no measures are queried, add all StorageCandidates individually as single covering sets
-    if (queriedMsrs.isEmpty()) {
-      finalCandidates.addAll(cubeql.getCandidates());
-    }*/
 
     List<Candidate> timeRangeCoveringSet = resolveTimeRangeCoveringFactSet(cubeql, queriedMsrs, qpcList);
     if (timeRangeCoveringSet.isEmpty()) {

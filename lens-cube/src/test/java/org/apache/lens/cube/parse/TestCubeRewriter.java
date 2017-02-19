@@ -1259,8 +1259,8 @@ public class TestCubeRewriter extends TestQueryRewrite {
         " testcube.cityid > 100 ", " group by testcube.cityid having" + " sum(testCube.msr2) < 1000",
         getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact")),
       getExpectedQuery(TEST_CUBE_NAME, "SELECT testCube.cityid as `cityid`, sum(testCube.msr2) as `msr2`" + " FROM ",
-        " testcube.cityid > 100 ", " group by testcube.cityid having"
-          + " sum(testCube.msr2) < 1000 order by testCube.cityid asc",
+        " testcube.cityid > 100 ", " group by testCube.cityid having"
+          + " sum(testCube.msr2) < 1000 order by cityid asc",
         getWhereForDailyAndHourly2days(TEST_CUBE_NAME, "C2_testfact")),
     };
     Configuration conf = getConf();

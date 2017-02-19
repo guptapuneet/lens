@@ -527,7 +527,7 @@ public class TestBridgeTableQueries extends TestQueryRewrite {
             + " on userdim.id = usersports.user_id ",
         null,
         " and array_contains(usersports.balias0, 'CRICKET') group by usersports.balias0 "
-            + "order by usersports.balias0 asc",
+            + "order by name asc",
         null, getWhereForDailyAndHourly2days("basecube", "c1_testfact1_base"));
     TestCubeRewriter.compareQueries(hqlQuery, expected);
     // run with chain ref column
@@ -543,7 +543,7 @@ public class TestBridgeTableQueries extends TestQueryRewrite {
             + " on userdim.id = usersports.user_id ",
         null,
         " and array_contains(usersports.balias0, 'CRICKET') group by usersports.balias0 "
-            + "order by usersports.balias0 asc",
+            + "order by sports asc",
         null, getWhereForDailyAndHourly2days("basecube", "c1_testfact1_base"));
     hqlQuery = rewrite(query, hConf);
     TestCubeRewriter.compareQueries(hqlQuery, expected);

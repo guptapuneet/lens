@@ -31,6 +31,8 @@ import org.apache.lens.server.api.metastore.DataCompletenessChecker;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hive.ql.lib.Node;
+
 import org.apache.hadoop.hive.ql.metadata.HiveException;
 import org.apache.hadoop.hive.ql.parse.ASTNode;
 import org.apache.hadoop.hive.ql.parse.HiveParser;
@@ -221,10 +223,37 @@ public class StorageCandidate implements Candidate, CandidateTable {
     // update the selectAST with final alias.
     if (this == cubeql.getPickedCandidate()) {
       CandidateUtil.updateFinalAlias(queryAst.getSelectAST(), cubeql);
+      updateOrderByWithFinalAlias(queryAst.getOrderByAST(), queryAst.getSelectAST());
     }
     return CandidateUtil
       .buildHQLString(queryAst.getSelectString(), fromString, whereString, queryAst.getGroupByString(),
         queryAst.getOrderByString(), queryAst.getHavingString(), queryAst.getLimitValue());
+  }
+
+  /**
+   * Update Orderby children with final alias used in select
+   *
+   * @param orderby
+   * @param select
+   */
+  private void updateOrderByWithFinalAlias(ASTNode orderby, ASTNode select) {
+    if (orderby == null) {
+      return;
+    }
+    for(Node orderbyNode : orderby.getChildren()) {
+      ASTNode orderBychild = (ASTNode) orderbyNode;
+      for(Node selectNode : select.getChildren()) {
+        ASTNode selectChild = (ASTNode) selectNode;
+        if (selectChild.getChildCount() == 2) {
+          if (HQLParser.getString((ASTNode) selectChild.getChild(0))
+              .equals(HQLParser.getString((ASTNode) orderBychild.getChild(0)))) {
+            ASTNode alias = new ASTNode((ASTNode) selectChild.getChild(1));
+            orderBychild.replaceChildren(0, 0, alias);
+            break;
+          }
+        }
+      }
+    }
   }
 
   @Override
@@ -363,7 +392,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
           log.debug("Update period is the least update period");
         } else if ((iter.getNumIters() - iter.getCounter()) > lookAheadNumParts) {
           // see if this is the part of the last-n look ahead partitions
-          log.debug("Not a look ahead partition");
+          log.debug("Not a look ahead head partition");
         } else {
           log.debug("Looking for look ahead process time partitions for {}", part);
           // check if finer partitions are required
@@ -460,9 +489,8 @@ public class StorageCandidate implements Candidate, CandidateTable {
     throws LensException {
     // Check the measure tags.
     if (!evaluateMeasuresCompleteness(timeRange)) {
-      log
-        .info("Fact table:{} has partitions with incomplete data: {} for given ranges: {}", fact, dataCompletenessMap,
-          cubeql.getTimeRanges());
+      log.info("Storage candidate:{} has partitions with incomplete data: {} for given ranges: {}", this,
+        dataCompletenessMap, cubeql.getTimeRanges());
       if (failOnPartialData) {
         return false;
       }
@@ -517,7 +545,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
     this.participatingPartitions.addAll(rangeParts);
     numQueriedParts += rangeParts.size();
     if (!unsupportedTimeDims.isEmpty()) {
-      log.info("Not considering fact table:{} as it doesn't support time dimensions: {}", this.getFact(),
+      log.info("Not considering storage candidate:{} as it doesn't support time dimensions: {}", this,
         unsupportedTimeDims);
       cubeql.addStoragePruningMsg(this, timeDimNotSupported(unsupportedTimeDims));
       return false;
@@ -526,7 +554,7 @@ public class StorageCandidate implements Candidate, CandidateTable {
     // TODO union : Relook at this.
     nonExistingPartitions.addAll(nonExistingParts);
     if (rangeParts.size() == 0 || (failOnPartialData && !nonExistingParts.isEmpty())) {
-      log.info("No partitions for fallback range:{}", timeRange);
+      log.info("Not considering storage candidate:{} as no partitions for fallback range:{}", this, timeRange);
       return false;
     }
     String extraWhere = extraWhereClauseFallback.toString();

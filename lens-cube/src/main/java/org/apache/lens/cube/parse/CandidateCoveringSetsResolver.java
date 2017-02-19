@@ -23,6 +23,7 @@ import static org.apache.lens.cube.parse.CandidateUtil.getColumns;
 import java.util.*;
 
 import org.apache.lens.cube.error.NoCandidateFactAvailableException;
+
 import org.apache.lens.cube.metadata.TimeRange;
 import org.apache.lens.server.api.error.LensException;
 
@@ -48,6 +49,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
     if (cubeql.getCandidates().size() == 0){
       throw new NoCandidateFactAvailableException(cubeql);
     }
+
 
     List<QueriedPhraseContext> qpcList = cubeql.getQueriedPhrases();
     Set<QueriedPhraseContext> queriedMsrs = new HashSet<>();
@@ -96,6 +98,7 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
 
   private void updateFinalCandidates(List<List<Candidate>> joinCandidates, CubeQueryContext cubeql) {
     List<Candidate> finalCandidates = new ArrayList<>();
+
     for (Iterator<List<Candidate>> itr = joinCandidates.iterator(); itr.hasNext();) {
       List<Candidate> joinCandidate = itr.next();
       if (joinCandidate.size() == 1) {
@@ -325,13 +328,5 @@ public class CandidateCoveringSetsResolver implements ContextRewriter {
         }
       }
     }
-  }
-
-  private static Set<String> getColumns(Collection<QueriedPhraseContext> queriedPhraseContexts) {
-    Set<String> cols = new HashSet<>();
-    for (QueriedPhraseContext qur : queriedPhraseContexts) {
-      cols.addAll(qur.getColumns());
-    }
-    return cols;
   }
 }

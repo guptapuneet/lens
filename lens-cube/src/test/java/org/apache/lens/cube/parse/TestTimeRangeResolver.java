@@ -72,7 +72,8 @@ public class TestTimeRangeResolver extends TestQueryRewrite {
         getConf());
     NoCandidateFactAvailableException ne = (NoCandidateFactAvailableException) e;
     PruneCauses.BriefAndDetailedError causes = ne.getJsonMessage();
-    assertTrue(causes.getBrief().contains("No storages available for all of these time ranges: [dt [2016-01-01-00:00:00,000 to 2017-01-01-00:00:00,000)]"));
+    assertTrue(causes.getBrief().contains("No storages available for all of these time ranges: "
+          + "[dt [2016-01-01-00:00:00,000 to 2017-01-01-00:00:00,000)]"));
     assertEquals(causes.getDetails().size(), 3);
 
     Set<CandidateTablePruneCause.CandidateTablePruneCode> expectedPruneCodes = Sets.newTreeSet();

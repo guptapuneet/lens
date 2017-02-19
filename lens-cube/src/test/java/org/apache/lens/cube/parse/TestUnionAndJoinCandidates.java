@@ -126,21 +126,19 @@ public class TestUnionAndJoinCandidates extends TestQueryRewrite {
       outerSelect = "SELECT (basecube.alias0) as `city id`, (basecube.alias1) as `union_join_ctx_cityname`, "
           + "sum((basecube.alias2)) as `sum(union_join_ctx_msr1)`, sum((basecube.alias3)) "
           + "as `sum(union_join_ctx_msr2)`, sum((basecube.alias4)) as `union_join_ctx_non_zero_msr2_sum`, "
-          + "case  when (sum((basecube.alias5)) > 100) then \"high\" else \"low\" end "
-          + "as `union_join_ctx_msr1_greater_than_100`, (sum((basecube.alias6)) + 10) "
+          + "case  when (sum((basecube.alias2)) > 100) then \"high\" else \"low\" end as "
+          + "`union_join_ctx_msr1_greater_than_100`, (sum((basecube.alias2)) + 10) "
           + "as `(sum(union_join_ctx_msr1) + 10)` FROM ";
       expectedInnerSelect1 = "SELECT (basecube.union_join_ctx_cityid) as `alias0`, "
           + "(cubecityjoinunionctx.name) as `alias1`, sum((basecube.union_join_ctx_msr1)) as `alias2`, "
-          + "sum(0.0) as `alias3`, sum(0.0) as `alias4`, sum((basecube.union_join_ctx_msr1)) as `alias5`, "
-          + "sum((basecube.union_join_ctx_msr1)) as `alias6`";
+          + "sum(0.0) as `alias3`, sum(0.0) as `alias4` FROM";
       expectedInnerSelect2 = "SELECT (basecube.union_join_ctx_cityid) as `alias0`, "
           + "(cubecityjoinunionctx.name) as `alias1`, sum((basecube.union_join_ctx_msr1)) as `alias2`, "
-          + "sum(0.0) as `alias3`, sum(0.0) as `alias4`, sum((basecube.union_join_ctx_msr1)) as `alias5`, "
-          + "sum((basecube.union_join_ctx_msr1)) as `alias6`";
-      expectedInnerSelect3 = "SELECT (basecube.union_join_ctx_cityid) as `alias0`, "
-          + "(cubecityjoinunionctx.name) as `alias1`, sum(0.0) as `alias2`, sum((basecube.union_join_ctx_msr2)) "
-          + "as `alias3`, sum(case  when ((basecube.union_join_ctx_msr2) > 0) then (basecube.union_join_ctx_msr2) "
-          + "else 0 end) as `alias4`, sum(0.0) as `alias5`, sum(0.0) as `alias6`";
+          + "sum(0.0) as `alias3`, sum(0.0) as `alias4` FROM";
+      expectedInnerSelect3 = "SELECT (basecube.union_join_ctx_cityid) as `alias0`, (cubecityjoinunionctx.name) "
+          + "as `alias1`, sum(0.0) as `alias2`, sum((basecube.union_join_ctx_msr2)) as `alias3`, "
+          + "sum(case  when ((basecube.union_join_ctx_msr2) > 0) then (basecube.union_join_ctx_msr2) else 0 end) "
+          + "as `alias4` FROM";
       String innerGroupBy = "GROUP BY (basecube.union_join_ctx_cityid), (cubecityjoinunionctx.name)";
       outerGroupBy = "GROUP BY (basecube.alias0), (basecube.alias1)";
 

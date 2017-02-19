@@ -656,6 +656,8 @@ class ExpressionResolver implements ContextRewriter {
                   if (!cand.isExpressionEvaluable(ec)) {
                     log.info("Not considering Candidate :{} as {} is not evaluable", cand, ec.exprCol.getName());
                     sItr.remove();
+                    cubeql.addCandidatePruningMsg(cand,
+                        CandidateTablePruneCause.expressionNotEvaluable(ec.exprCol.getName()));
                   }
                 }
               } else {

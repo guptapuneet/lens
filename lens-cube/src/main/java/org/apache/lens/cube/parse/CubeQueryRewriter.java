@@ -148,6 +148,8 @@ public class CubeQueryRewriter {
     rewriters.add(denormResolver);
     // Resolve time ranges
     rewriters.add(new TimerangeResolver(conf));
+    // Do col life validation
+    rewriters.add(new TimeRangeChecker(conf));
     // Resolve candidate fact tables and dimension tables for columns queried
     rewriters.add(candidateTblResolver);
     // Resolve aggregations and generate base select tree
@@ -160,8 +162,6 @@ public class CubeQueryRewriter {
     //TODO union: AggregateResolver,GroupbyResolver,FieldValidator before CoveringSetResolver
     // Resolve joins and generate base join tree
     rewriters.add(new JoinResolver(conf));
-    // Do col life validation
-    rewriters.add(new TimeRangeChecker(conf));
     // Resolve candidate fact tables and dimension tables for columns included
     // in join and denorm resolvers
     //TODO union : this should be CoveringSetResolver now

@@ -150,10 +150,6 @@ public class CubeQueryRewriter {
     rewriters.add(denormResolver);
     // Resolve time ranges
     rewriters.add(new TimerangeResolver(conf));
-    // Resolve joins and generate base join tree
-    rewriters.add(new JoinResolver(conf));
-    // Do col life validation for the time range(s) queried
-    rewriters.add(new TimeRangeChecker(conf));
     // Phase 1 of candidateTblResolver: Resolve candidate storages and dimension tables for columns queried
     rewriters.add(candidateTblResolver);
     // Resolve aggregations and generate base select tree
@@ -163,6 +159,11 @@ public class CubeQueryRewriter {
     rewriters.add(new FieldValidator());
     // Phase 1 of storageTableResolver: Validate and prune candidate storages
     rewriters.add(storageTableResolver);
+    // Resolve joins and generate base join tree
+    rewriters.add(new JoinResolver(conf));
+    // Do col life validation for the time range(s) queried
+    rewriters.add(new TimeRangeChecker(conf));
+
     // Phase 2 of candidateTblResolver: Resolve candidate storages and dimension tables for columns included
     // in join and denorm resolvers
     rewriters.add(candidateTblResolver);

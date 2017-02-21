@@ -148,30 +148,28 @@ public class CubeQueryRewriter {
     rewriters.add(denormResolver);
     // Resolve time ranges
     rewriters.add(new TimerangeResolver(conf));
-    // Do col life validation
+    //validate fields queryability (in case of derived cubes setup)
+    rewriters.add(new FieldValidator());
+    // Resolve joins and generate base join tree
+    rewriters.add(new JoinResolver(conf));
+    // Do col life validation fore the time range(s) queried
     rewriters.add(new TimeRangeChecker(conf));
-    // Resolve candidate fact tables and dimension tables for columns queried
+    // Phase 1: Resolve candidate storages and dimension tables for columns queried
     rewriters.add(candidateTblResolver);
     // Resolve aggregations and generate base select tree
     rewriters.add(new AggregateResolver());
     rewriters.add(new GroupbyResolver(conf));
-    rewriters.add(new FieldValidator());
+    // Phase 1: Validate and prune candidate storages
     rewriters.add(storageTableResolver);
-    //TODO union: Add CoveringSetResolver which creates UnionCandidates and JoinCandidates.
-    //TODO union: Some code form candidateTblResolver(phase 2) to be moved to CoveringSetResolver
-    //TODO union: AggregateResolver,GroupbyResolver,FieldValidator before CoveringSetResolver
-    // Resolve joins and generate base join tree
-    rewriters.add(new JoinResolver(conf));
-    // Resolve candidate fact tables and dimension tables for columns included
+    // Phase 2: Resolve candidate storages and dimension tables for columns included
     // in join and denorm resolvers
-    //TODO union : this should be CoveringSetResolver now
     rewriters.add(candidateTblResolver);
+    // Find Union and Join combinations from Storage Candidates that can answer the queried time range(s) and all
+    // queried measures
     rewriters.add(new CandidateCoveringSetsResolver(conf));
     // Phase 1: resolve fact tables.
-    //TODO union: This phase 1 of storageTableResolver should happen before CoveringSetResolver
     if (lightFactFirst) {
       // Prune candidate tables for which denorm column references do not exist
-      //TODO union: phase 2 of denormResolver needs to be moved before CoveringSetResolver
       rewriters.add(denormResolver);
       // Prune candidate facts without any valid expressions
       rewriters.add(exprResolver);
